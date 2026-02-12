@@ -39,9 +39,9 @@ node -v
 ```
 
 Si no están instalados:
-    .NET SDK 9 -> https://dotnet.microsoft.com/download
-    Node.js 24 -> https://nodejs.org/en
-    PostgreSQL -> https://www.postgresql.org/download/
+- .NET SDK 9 -> https://dotnet.microsoft.com/download
+- Node.js 24 -> https://nodejs.org/en
+- PostgreSQL -> https://www.postgresql.org/download/
 
 
 ## Probar Backend:
