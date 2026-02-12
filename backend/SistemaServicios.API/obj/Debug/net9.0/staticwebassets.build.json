@@ -1,0 +1,12 @@
+{
+  "Version": 1,
+  "Hash": "uW72O8xZjMQMHTX4uSxVCA+IbawnOExtPQ3nCKcDUhY=",
+  "Source": "SistemaServicios.API",
+  "BasePath": "_content/SistemaServicios.API",
+  "Mode": "Default",
+  "ManifestType": "Build",
+  "ReferencedProjectsConfiguration": [],
+  "DiscoveryPatterns": [],
+  "Assets": [],
+  "Endpoints": []
+}
