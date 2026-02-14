@@ -1,14 +1,10 @@
-
 bin/
 obj/
-
 *.user
 *.userosscache
 *.sln.docstates
-
 .vscode/
 .vs/
-
 *.dll
 *.exe
 *.pdb

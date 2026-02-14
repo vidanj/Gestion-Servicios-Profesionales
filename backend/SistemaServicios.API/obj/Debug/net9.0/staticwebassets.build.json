@@ -1,12 +1,1 @@
-{
-  "Version": 1,
-  "Hash": "uW72O8xZjMQMHTX4uSxVCA+IbawnOExtPQ3nCKcDUhY=",
-  "Source": "SistemaServicios.API",
-  "BasePath": "_content/SistemaServicios.API",
-  "Mode": "Default",
-  "ManifestType": "Build",
-  "ReferencedProjectsConfiguration": [],
-  "DiscoveryPatterns": [],
-  "Assets": [],
-  "Endpoints": []
-}
+{"Version":1,"Hash":"UIuxDCN9kW4xmxvxzFJ8Y5/H+lA9TctwqXv0n52IXGk=","Source":"SistemaServicios.API","BasePath":"/","Mode":"Root","ManifestType":"Build","ReferencedProjectsConfiguration":[],"DiscoveryPatterns":[],"Assets":[],"Endpoints":[]}

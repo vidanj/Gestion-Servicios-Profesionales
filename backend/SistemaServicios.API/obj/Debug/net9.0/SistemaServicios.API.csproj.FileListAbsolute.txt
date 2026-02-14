@@ -35,3 +35,40 @@ C:\Users\Jcampuzano.DESKTOP-PS04FBC\OneDrive - Sistemas Automatizados\Documentos
 C:\Users\Jcampuzano.DESKTOP-PS04FBC\OneDrive - Sistemas Automatizados\Documentos\REPOS\UTH\Gestion-Servicios-Profesionales\backend\SistemaServicios.API\obj\Debug\net9.0\SistemaServicios.API.pdb
 C:\Users\Jcampuzano.DESKTOP-PS04FBC\OneDrive - Sistemas Automatizados\Documentos\REPOS\UTH\Gestion-Servicios-Profesionales\backend\SistemaServicios.API\obj\Debug\net9.0\SistemaServicios.API.genruntimeconfig.cache
 C:\Users\Jcampuzano.DESKTOP-PS04FBC\OneDrive - Sistemas Automatizados\Documentos\REPOS\UTH\Gestion-Servicios-Profesionales\backend\SistemaServicios.API\obj\Debug\net9.0\ref\SistemaServicios.API.dll
+C:\Users\hayab\OneDrive\Documents\UTH_ING(2)\Servicios-profesional\Gestion-Servicios-Profesionales\backend\SistemaServicios.API\bin\Debug\net9.0\appsettings.Development.json
+C:\Users\hayab\OneDrive\Documents\UTH_ING(2)\Servicios-profesional\Gestion-Servicios-Profesionales\backend\SistemaServicios.API\bin\Debug\net9.0\appsettings.json
+C:\Users\hayab\OneDrive\Documents\UTH_ING(2)\Servicios-profesional\Gestion-Servicios-Profesionales\backend\SistemaServicios.API\bin\Debug\net9.0\SistemaServicios.API.staticwebassets.endpoints.json
+C:\Users\hayab\OneDrive\Documents\UTH_ING(2)\Servicios-profesional\Gestion-Servicios-Profesionales\backend\SistemaServicios.API\bin\Debug\net9.0\SistemaServicios.API.exe
+C:\Users\hayab\OneDrive\Documents\UTH_ING(2)\Servicios-profesional\Gestion-Servicios-Profesionales\backend\SistemaServicios.API\bin\Debug\net9.0\SistemaServicios.API.deps.json
+C:\Users\hayab\OneDrive\Documents\UTH_ING(2)\Servicios-profesional\Gestion-Servicios-Profesionales\backend\SistemaServicios.API\bin\Debug\net9.0\SistemaServicios.API.runtimeconfig.json
+C:\Users\hayab\OneDrive\Documents\UTH_ING(2)\Servicios-profesional\Gestion-Servicios-Profesionales\backend\SistemaServicios.API\bin\Debug\net9.0\SistemaServicios.API.dll
+C:\Users\hayab\OneDrive\Documents\UTH_ING(2)\Servicios-profesional\Gestion-Servicios-Profesionales\backend\SistemaServicios.API\bin\Debug\net9.0\SistemaServicios.API.pdb
+C:\Users\hayab\OneDrive\Documents\UTH_ING(2)\Servicios-profesional\Gestion-Servicios-Profesionales\backend\SistemaServicios.API\bin\Debug\net9.0\Microsoft.AspNetCore.OpenApi.dll
+C:\Users\hayab\OneDrive\Documents\UTH_ING(2)\Servicios-profesional\Gestion-Servicios-Profesionales\backend\SistemaServicios.API\bin\Debug\net9.0\Microsoft.OpenApi.dll
+C:\Users\hayab\OneDrive\Documents\UTH_ING(2)\Servicios-profesional\Gestion-Servicios-Profesionales\backend\SistemaServicios.API\bin\Debug\net9.0\Swashbuckle.AspNetCore.Swagger.dll
+C:\Users\hayab\OneDrive\Documents\UTH_ING(2)\Servicios-profesional\Gestion-Servicios-Profesionales\backend\SistemaServicios.API\bin\Debug\net9.0\Swashbuckle.AspNetCore.SwaggerGen.dll
+C:\Users\hayab\OneDrive\Documents\UTH_ING(2)\Servicios-profesional\Gestion-Servicios-Profesionales\backend\SistemaServicios.API\bin\Debug\net9.0\Swashbuckle.AspNetCore.SwaggerUI.dll
+C:\Users\hayab\OneDrive\Documents\UTH_ING(2)\Servicios-profesional\Gestion-Servicios-Profesionales\backend\SistemaServicios.API\obj\Debug\net9.0\SistemaServicios.API.csproj.AssemblyReference.cache
+C:\Users\hayab\OneDrive\Documents\UTH_ING(2)\Servicios-profesional\Gestion-Servicios-Profesionales\backend\SistemaServicios.API\obj\Debug\net9.0\rpswa.dswa.cache.json
+C:\Users\hayab\OneDrive\Documents\UTH_ING(2)\Servicios-profesional\Gestion-Servicios-Profesionales\backend\SistemaServicios.API\obj\Debug\net9.0\SistemaServicios.API.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\hayab\OneDrive\Documents\UTH_ING(2)\Servicios-profesional\Gestion-Servicios-Profesionales\backend\SistemaServicios.API\obj\Debug\net9.0\SistemaServicios.API.AssemblyInfoInputs.cache
+C:\Users\hayab\OneDrive\Documents\UTH_ING(2)\Servicios-profesional\Gestion-Servicios-Profesionales\backend\SistemaServicios.API\obj\Debug\net9.0\SistemaServicios.API.AssemblyInfo.cs
+C:\Users\hayab\OneDrive\Documents\UTH_ING(2)\Servicios-profesional\Gestion-Servicios-Profesionales\backend\SistemaServicios.API\obj\Debug\net9.0\SistemaServicios.API.csproj.CoreCompileInputs.cache
+C:\Users\hayab\OneDrive\Documents\UTH_ING(2)\Servicios-profesional\Gestion-Servicios-Profesionales\backend\SistemaServicios.API\obj\Debug\net9.0\SistemaServicios.API.MvcApplicationPartsAssemblyInfo.cs
+C:\Users\hayab\OneDrive\Documents\UTH_ING(2)\Servicios-profesional\Gestion-Servicios-Profesionales\backend\SistemaServicios.API\obj\Debug\net9.0\SistemaServicios.API.MvcApplicationPartsAssemblyInfo.cache
+C:\Users\hayab\OneDrive\Documents\UTH_ING(2)\Servicios-profesional\Gestion-Servicios-Profesionales\backend\SistemaServicios.API\obj\Debug\net9.0\SistemaServicios.API.sourcelink.json
+C:\Users\hayab\OneDrive\Documents\UTH_ING(2)\Servicios-profesional\Gestion-Servicios-Profesionales\backend\SistemaServicios.API\obj\Debug\net9.0\rjimswa.dswa.cache.json
+C:\Users\hayab\OneDrive\Documents\UTH_ING(2)\Servicios-profesional\Gestion-Servicios-Profesionales\backend\SistemaServicios.API\obj\Debug\net9.0\rjsmrazor.dswa.cache.json
+C:\Users\hayab\OneDrive\Documents\UTH_ING(2)\Servicios-profesional\Gestion-Servicios-Profesionales\backend\SistemaServicios.API\obj\Debug\net9.0\rjsmcshtml.dswa.cache.json
+C:\Users\hayab\OneDrive\Documents\UTH_ING(2)\Servicios-profesional\Gestion-Servicios-Profesionales\backend\SistemaServicios.API\obj\Debug\net9.0\scopedcss\bundle\SistemaServicios.API.styles.css
+C:\Users\hayab\OneDrive\Documents\UTH_ING(2)\Servicios-profesional\Gestion-Servicios-Profesionales\backend\SistemaServicios.API\obj\Debug\net9.0\staticwebassets.build.json
+C:\Users\hayab\OneDrive\Documents\UTH_ING(2)\Servicios-profesional\Gestion-Servicios-Profesionales\backend\SistemaServicios.API\obj\Debug\net9.0\staticwebassets.build.json.cache
+C:\Users\hayab\OneDrive\Documents\UTH_ING(2)\Servicios-profesional\Gestion-Servicios-Profesionales\backend\SistemaServicios.API\obj\Debug\net9.0\staticwebassets.development.json
+C:\Users\hayab\OneDrive\Documents\UTH_ING(2)\Servicios-profesional\Gestion-Servicios-Profesionales\backend\SistemaServicios.API\obj\Debug\net9.0\staticwebassets.build.endpoints.json
+C:\Users\hayab\OneDrive\Documents\UTH_ING(2)\Servicios-profesional\Gestion-Servicios-Profesionales\backend\SistemaServicios.API\obj\Debug\net9.0\swae.build.ex.cache
+C:\Users\hayab\OneDrive\Documents\UTH_ING(2)\Servicios-profesional\Gestion-Servicios-Profesionales\backend\SistemaServicios.API\obj\Debug\net9.0\SistemaS.8BA0F723.Up2Date
+C:\Users\hayab\OneDrive\Documents\UTH_ING(2)\Servicios-profesional\Gestion-Servicios-Profesionales\backend\SistemaServicios.API\obj\Debug\net9.0\SistemaServicios.API.dll
+C:\Users\hayab\OneDrive\Documents\UTH_ING(2)\Servicios-profesional\Gestion-Servicios-Profesionales\backend\SistemaServicios.API\obj\Debug\net9.0\refint\SistemaServicios.API.dll
+C:\Users\hayab\OneDrive\Documents\UTH_ING(2)\Servicios-profesional\Gestion-Servicios-Profesionales\backend\SistemaServicios.API\obj\Debug\net9.0\SistemaServicios.API.pdb
+C:\Users\hayab\OneDrive\Documents\UTH_ING(2)\Servicios-profesional\Gestion-Servicios-Profesionales\backend\SistemaServicios.API\obj\Debug\net9.0\SistemaServicios.API.genruntimeconfig.cache
+C:\Users\hayab\OneDrive\Documents\UTH_ING(2)\Servicios-profesional\Gestion-Servicios-Profesionales\backend\SistemaServicios.API\obj\Debug\net9.0\ref\SistemaServicios.API.dll
