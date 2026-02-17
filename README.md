@@ -16,7 +16,7 @@ El Sistema de Gestión de Servicios Profesionales es una aplicación web orienta
 - Yup
 
 ## Backend
-- .NET SDK 9.0.201
+- .NET SDK 8.0.418
 - ASP.NET Core Web API
 - Entity Framework Core
 - Npgsql (PostgreSQL Provider)

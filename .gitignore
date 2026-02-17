@@ -7,3 +7,5 @@
 *.userosscache
 *.sln.docstates
 .vscode/
+
+PULL_REQUEST_TEMPLATE.md
