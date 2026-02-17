@@ -32,7 +32,7 @@ Verificar instalación:
 
 ```bash
 dotnet --version
-# 9.0.201
+# 8.0.418
 
 node -v
 # v24.13.1
