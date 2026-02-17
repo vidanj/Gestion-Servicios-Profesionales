@@ -3,49 +3,43 @@ using SistemaServicios.API.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// --- INICIO DE CONFIGURACIÓN DE BASE DE DATOS ---
-// Esto lee la conexión de tu archivo appsettings.json y conecta PostgreSQL
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+// ==========================================
+// 1. CONFIGURACIÓN DE SERVICIOS (AGREGAR AL CONTENEDOR)
+// ==========================================
 
+// A) Base de Datos (PostgreSQL)
+// Esto lee la conexión de tu archivo appsettings.json
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(connectionString));
-// --- FIN DE CONFIGURACIÓN DE BASE DE DATOS ---
 
-// Add services to the container.
-// builder.Services.AddOpenApi(); // <-- COMENTADO: Esto daba error en .NET 8
+// B) Controladores (IMPORTANTE: Esto faltaba)
+// Sin esto, UsersController es invisible.
+builder.Services.AddControllers();
+
+// C) Swagger / OpenAPI (IMPORTANTE: Esto faltaba)
+// Esto crea la documentación y la página de pruebas.
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+// ==========================================
+// 2. CONFIGURACIÓN DEL PIPELINE HTTP
+// ==========================================
+
+// Configurar Swagger solo en desarrollo
 if (app.Environment.IsDevelopment())
 {
-    // app.MapOpenApi(); // <-- COMENTADO: Esto daba error en .NET 8
+    app.UseSwagger();
+    app.UseSwaggerUI(); 
 }
 
 app.UseHttpsRedirection();
 
-var summaries = new[]
-{
-    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-};
+app.UseAuthorization();
 
-app.MapGet("/weatherforecast", () =>
-{
-    var forecast =  Enumerable.Range(1, 5).Select(index =>
-        new WeatherForecast
-        (
-            DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-            Random.Shared.Next(-20, 55),
-            summaries[Random.Shared.Next(summaries.Length)]
-        ))
-        .ToArray();
-    return forecast;
-})
-.WithName("GetWeatherForecast");
+// Esto le dice a la app: "Usa las rutas que definí en UsersController"
+app.MapControllers();
 
 app.Run();
-
-record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
-{
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
-}
