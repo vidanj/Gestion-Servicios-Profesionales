@@ -49,7 +49,6 @@ Si no están instalados:
 ```bash
 cd backend
 dotnet clean
-
 dotnet tool install dotnet-ef
 dotnet restore
 dotnet tool restore
