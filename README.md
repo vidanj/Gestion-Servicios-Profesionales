@@ -39,7 +39,7 @@ node -v
 ```
 
 Si no están instalados:
-- .NET SDK 9 -> https://dotnet.microsoft.com/download
+- .NET SDK 8 -> https://dotnet.microsoft.com/es-es/download/dotnet/8.0 #8.0.204
 - Node.js 24 -> https://nodejs.org/en
 - PostgreSQL -> https://www.postgresql.org/download/
 
@@ -48,7 +48,11 @@ Si no están instalados:
 
 ```bash
 cd backend
+dotnet clean
+dotnet new tool-manifest
+dotnet tool install dotnet-ef
 dotnet restore
+dotnet tool restore
 dotnet build
 cd SistemaServicios.API
 dotnet run
