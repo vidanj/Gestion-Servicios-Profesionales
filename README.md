@@ -49,7 +49,7 @@ Si no están instalados:
 ```bash
 cd backend
 dotnet clean
-dotnet new tool-manifest --force
+
 dotnet tool install dotnet-ef
 dotnet restore
 dotnet tool restore
