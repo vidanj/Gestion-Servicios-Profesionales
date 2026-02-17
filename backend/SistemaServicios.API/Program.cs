@@ -1,15 +1,25 @@
+using Microsoft.EntityFrameworkCore;
+using SistemaServicios.API.Data;
+
 var builder = WebApplication.CreateBuilder(args);
 
+// --- INICIO DE CONFIGURACIÓN DE BASE DE DATOS ---
+// Esto lee la conexión de tu archivo appsettings.json y conecta PostgreSQL
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseNpgsql(connectionString));
+// --- FIN DE CONFIGURACIÓN DE BASE DE DATOS ---
+
 // Add services to the container.
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-builder.Services.AddOpenApi();
+// builder.Services.AddOpenApi(); // <-- COMENTADO: Esto daba error en .NET 8
 
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi();
+    // app.MapOpenApi(); // <-- COMENTADO: Esto daba error en .NET 8
 }
 
 app.UseHttpsRedirection();
