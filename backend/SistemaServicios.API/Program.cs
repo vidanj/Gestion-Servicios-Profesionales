@@ -1,51 +1,33 @@
-using Microsoft.EntityFrameworkCore;
-using SistemaServicios.API.Data;
+using SistemaServicios.API.Extensions; // Usamos tu nueva clase
 
 var builder = WebApplication.CreateBuilder(args);
 
-// --- INICIO DE CONFIGURACIÓN DE BASE DE DATOS ---
-// Esto lee la conexión de tu archivo appsettings.json y conecta PostgreSQL
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+// --- 1. CONFIGURACIÓN LIMPIA (Aquí llamamos a tu clase nueva) ---
+builder.Services.AddApplicationServices(builder.Configuration);
 
-builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(connectionString));
-// --- FIN DE CONFIGURACIÓN DE BASE DE DATOS ---
+builder.Services.AddControllers();
 
-// Add services to the container.
-// builder.Services.AddOpenApi(); // <-- COMENTADO: Esto daba error en .NET 8
+// --- 2. CONFIGURACIÓN OPENAPI (.NET 9 NATIVO) ---
+// Esto es lo que Efrén quería que usaras en vez de Swagger viejo
+builder.Services.AddOpenApi();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+// --- 3. PIPELINE ---
 if (app.Environment.IsDevelopment())
 {
-    // app.MapOpenApi(); // <-- COMENTADO: Esto daba error en .NET 8
+    app.MapOpenApi(); // Genera el JSON de la API
+    
+    // Agregamos una interfaz bonita para probar (Swagger/Scalar)
+    // Nota: En .NET 9 a veces se usa Scalar, pero por ahora MapOpenApi es lo vital.
+    app.UseSwaggerUI(options =>
+    {
+        options.SwaggerEndpoint("/openapi/v1.json", "Sistema Servicios API");
+    });
 }
 
 app.UseHttpsRedirection();
-
-var summaries = new[]
-{
-    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-};
-
-app.MapGet("/weatherforecast", () =>
-{
-    var forecast =  Enumerable.Range(1, 5).Select(index =>
-        new WeatherForecast
-        (
-            DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-            Random.Shared.Next(-20, 55),
-            summaries[Random.Shared.Next(summaries.Length)]
-        ))
-        .ToArray();
-    return forecast;
-})
-.WithName("GetWeatherForecast");
+app.UseAuthorization();
+app.MapControllers();
 
 app.Run();
-
-record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
-{
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
-}

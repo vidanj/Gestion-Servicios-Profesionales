@@ -7,13 +7,13 @@ namespace SistemaServicios.API.Models
     {
         public int Id { get; set; }
 
-        // Relación con el Profesional (Dueño del servicio)
+        // Relación con el Profesional (Dueño del servicio) -> CAMBIADO A GUID
         [Required]
-        public int ProfessionalId { get; set; }
+        public Guid ProfessionalId { get; set; }
         [ForeignKey("ProfessionalId")]
         public User? Professional { get; set; }
 
-        // Relación con Categoría (Nueva)
+        // Relación con Categoría (Esta SE QUEDA como int, eso está bien)
         [Required]
         public int CategoryId { get; set; }
         [ForeignKey("CategoryId")]

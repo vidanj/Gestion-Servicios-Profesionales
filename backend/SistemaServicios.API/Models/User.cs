@@ -4,27 +4,34 @@ namespace SistemaServicios.API.Models
 {
     public class User
     {
-        public int Id { get; set; }
-
-        [Required]
-        public string Name { get; set; } = string.Empty;
+        [Key]
+        public Guid Id { get; set; } // UUID (Identificador único universal)
 
         [Required]
         [EmailAddress]
-        public string Email { get; set; } = string.Empty;
+        public string Email { get; set; }
 
         [Required]
-        public string PasswordHash { get; set; } = string.Empty;
+        public string PasswordHash { get; set; } // Hash de contraseña
 
-        public string Role { get; set; } = "Client"; // Client, Professional, Admin
+        [Required]
+        public string FirstName { get; set; } // Nombre separado
 
-        // Nuevos campos V2
+        [Required]
+        public string LastName { get; set; } // Apellido separado
+
+        [Required]
+        public string Role { get; set; } // Admin, Cliente, Profesional
+
         public string? PhoneNumber { get; set; }
+
         public decimal AverageRating { get; set; } = 0;
+
         public bool Status { get; set; } = true;
+
         public string? ProfileImageUrl { get; set; }
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-        public DateTime? UpdatedAt { get; set; }
+        public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
     }
 }

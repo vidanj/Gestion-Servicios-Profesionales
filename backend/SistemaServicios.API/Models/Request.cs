@@ -7,15 +7,15 @@ namespace SistemaServicios.API.Models
     {
         public int Id { get; set; }
 
-        // Relación: Quién solicita (El Cliente)
+        // Relación: Quién solicita (El Cliente) -> CAMBIADO A GUID
         [Required]
-        public int ClientId { get; set; }
+        public Guid ClientId { get; set; }
         [ForeignKey("ClientId")]
         public User? Client { get; set; }
 
-        // Relación: A quién contratan (El Profesional)
+        // Relación: A quién contratan (El Profesional) -> CAMBIADO A GUID
         [Required]
-        public int ProfessionalId { get; set; }
+        public Guid ProfessionalId { get; set; }
         [ForeignKey("ProfessionalId")]
         public User? Professional { get; set; }
 

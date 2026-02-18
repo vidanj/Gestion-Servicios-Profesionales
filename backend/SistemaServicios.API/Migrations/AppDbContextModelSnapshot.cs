@@ -59,8 +59,8 @@ namespace SistemaServicios.API.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<int>("ClientId")
-                        .HasColumnType("integer");
+                    b.Property<Guid>("ClientId")
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -101,8 +101,8 @@ namespace SistemaServicios.API.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<int>("ClientId")
-                        .HasColumnType("integer");
+                    b.Property<Guid>("ClientId")
+                        .HasColumnType("uuid");
 
                     b.Property<string>("Comment")
                         .HasColumnType("text");
@@ -110,8 +110,8 @@ namespace SistemaServicios.API.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<int>("ProfessionalId")
-                        .HasColumnType("integer");
+                    b.Property<Guid>("ProfessionalId")
+                        .HasColumnType("uuid");
 
                     b.Property<int>("RequestId")
                         .HasColumnType("integer");
@@ -138,8 +138,8 @@ namespace SistemaServicios.API.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<int>("ClientId")
-                        .HasColumnType("integer");
+                    b.Property<Guid>("ClientId")
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime?>("CompletionDate")
                         .HasColumnType("timestamp with time zone");
@@ -147,8 +147,8 @@ namespace SistemaServicios.API.Migrations
                     b.Property<string>("Description")
                         .HasColumnType("text");
 
-                    b.Property<int>("ProfessionalId")
-                        .HasColumnType("integer");
+                    b.Property<Guid>("ProfessionalId")
+                        .HasColumnType("uuid");
 
                     b.Property<decimal>("QuotedPrice")
                         .HasColumnType("decimal(18,2)");
@@ -204,8 +204,8 @@ namespace SistemaServicios.API.Migrations
                     b.Property<bool>("IsActive")
                         .HasColumnType("boolean");
 
-                    b.Property<int>("ProfessionalId")
-                        .HasColumnType("integer");
+                    b.Property<Guid>("ProfessionalId")
+                        .HasColumnType("uuid");
 
                     b.Property<string>("Title")
                         .IsRequired()
@@ -225,11 +225,9 @@ namespace SistemaServicios.API.Migrations
 
             modelBuilder.Entity("SistemaServicios.API.Models.User", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+                        .HasColumnType("uuid");
 
                     b.Property<decimal>("AverageRating")
                         .HasColumnType("numeric");
@@ -241,7 +239,11 @@ namespace SistemaServicios.API.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<string>("Name")
+                    b.Property<string>("FirstName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("LastName")
                         .IsRequired()
                         .HasColumnType("text");
 
@@ -262,7 +264,7 @@ namespace SistemaServicios.API.Migrations
                     b.Property<bool>("Status")
                         .HasColumnType("boolean");
 
-                    b.Property<DateTime?>("UpdatedAt")
+                    b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
@@ -278,28 +280,22 @@ namespace SistemaServicios.API.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
+                    b.Property<string>("DocumentType")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.Property<string>("DocumentUrl")
+                        .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<DateTime?>("ExpiresAt")
+                    b.Property<bool>("IsVerified")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid>("ProfessionalId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("SubmittedAt")
                         .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("ExternalReference")
-                        .HasColumnType("text");
-
-                    b.Property<int>("ProfessionalId")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("VerificationType")
-                        .IsRequired()
-                        .HasColumnType("text");
 
                     b.Property<DateTime?>("VerifiedAt")
                         .HasColumnType("timestamp with time zone");

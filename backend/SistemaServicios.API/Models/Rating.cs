@@ -13,15 +13,15 @@ namespace SistemaServicios.API.Models
         [ForeignKey("RequestId")]
         public Request? Request { get; set; }
 
-        // Relación: Quién escribe la reseña (Cliente)
+        // Relación: Quién escribe la reseña (Cliente) -> CAMBIADO A GUID
         [Required]
-        public int ClientId { get; set; }
+        public Guid ClientId { get; set; }
         [ForeignKey("ClientId")]
         public User? Client { get; set; }
 
-        // Relación: A quién están calificando (Profesional)
+        // Relación: A quién están calificando (Profesional) -> CAMBIADO A GUID
         [Required]
-        public int ProfessionalId { get; set; }
+        public Guid ProfessionalId { get; set; }
         [ForeignKey("ProfessionalId")]
         public User? Professional { get; set; }
 

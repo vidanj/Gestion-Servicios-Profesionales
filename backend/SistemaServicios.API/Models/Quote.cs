@@ -8,24 +8,24 @@ namespace SistemaServicios.API.Models
         public int Id { get; set; }
 
         [Required]
-        public int ServiceId { get; set; }
+        public int ServiceId { get; set; } 
         [ForeignKey("ServiceId")]
         public Service? Service { get; set; }
 
         [Required]
-        public int ClientId { get; set; }
+        public Guid ClientId { get; set; } 
         [ForeignKey("ClientId")]
         public User? Client { get; set; }
 
         [Column(TypeName = "decimal(18,2)")]
         public decimal EstimatedPrice { get; set; }
 
-        public int EstimatedDuration { get; set; } // Horas o días estimados
+        public int EstimatedDuration { get; set; } 
         
         public string? Description { get; set; }
-        public string Status { get; set; } = "Pending"; // Pending, Accepted, Rejected
+        public string Status { get; set; } = "Pending"; 
 
-        public DateTime? ValidUntil { get; set; } // Fecha límite de la cotización
+        public DateTime? ValidUntil { get; set; } 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }
 }

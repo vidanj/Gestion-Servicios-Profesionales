@@ -7,19 +7,20 @@ namespace SistemaServicios.API.Models
     {
         public int Id { get; set; }
 
+        // CAMBIO DE int A Guid AQUÍ:
         [Required]
-        public int ProfessionalId { get; set; }
+        public Guid ProfessionalId { get; set; }
+        
         [ForeignKey("ProfessionalId")]
         public User? Professional { get; set; }
 
-        public string VerificationType { get; set; } = string.Empty; // INE, Titulo, Certificado
-        public string Status { get; set; } = "Pending"; // Pending, Approved, Rejected
-        
-        public string? ExternalReference { get; set; } // Número de folio o ID del documento
-        public string? DocumentUrl { get; set; } // Foto del documento
+        public string DocumentUrl { get; set; } = string.Empty; // URL de la INE, Título, etc.
 
+        public string DocumentType { get; set; } = "INE"; // INE, Cedula, Antecedentes
+
+        public bool IsVerified { get; set; } = false;
+
+        public DateTime SubmittedAt { get; set; } = DateTime.UtcNow;
         public DateTime? VerifiedAt { get; set; }
-        public DateTime? ExpiresAt { get; set; }
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }
 }
