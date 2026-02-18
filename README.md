@@ -54,6 +54,7 @@ dotnet restore
 dotnet tool restore
 dotnet build
 cd SistemaServicios.API
+dotnet ef database update
 dotnet run
 #http://localhost:5116/weatherforecast
 ```
