@@ -32,6 +32,7 @@ bld/
 *.pfx
 *.publishsettings
 launchSettings.json
+*launchSettings.json
 
 # ========================
 # NuGet
