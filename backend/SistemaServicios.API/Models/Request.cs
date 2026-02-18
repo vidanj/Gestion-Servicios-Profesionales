@@ -3,38 +3,41 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace SistemaServicios.API.Models
 {
+    public enum RequestStatus
+    {
+        Pending = 0,
+        Accepted = 1,
+        InProgress = 2,
+        Completed = 3,
+        Cancelled = 4
+    }
+
     public class Request
     {
         public int Id { get; set; }
 
-        // Relación: Quién solicita (El Cliente) -> CAMBIADO A GUID
         [Required]
         public Guid ClientId { get; set; }
-        [ForeignKey("ClientId")]
         public User? Client { get; set; }
 
-        // Relación: A quién contratan (El Profesional) -> CAMBIADO A GUID
         [Required]
         public Guid ProfessionalId { get; set; }
-        [ForeignKey("ProfessionalId")]
         public User? Professional { get; set; }
 
-        // Relación: Qué servicio se contrató
         [Required]
         public int ServiceId { get; set; }
-        [ForeignKey("ServiceId")]
         public Service? Service { get; set; }
 
-        [Required]
-        public string Status { get; set; } = "Pending"; // Pending, Accepted, Completed, Cancelled
+        public RequestStatus Status { get; set; } = RequestStatus.Pending;
 
         [Column(TypeName = "decimal(18,2)")]
-        public decimal QuotedPrice { get; set; } // Precio final acordado
-
-        public string? Description { get; set; } // Notas del trabajo
+        public decimal QuotedPrice { get; set; }
+        
+        [MaxLength(1000)]
+        public string? Description { get; set; }
 
         public DateTime RequestDate { get; set; } = DateTime.UtcNow;
-        public DateTime? ScheduledDate { get; set; } // Para cuándo es
-        public DateTime? CompletionDate { get; set; } // Cuándo terminó
+        public DateTime? ScheduledDate { get; set; }
+        public DateTime? CompletionDate { get; set; }
     }
 }

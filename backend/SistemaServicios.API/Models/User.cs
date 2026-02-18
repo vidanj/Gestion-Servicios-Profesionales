@@ -1,36 +1,37 @@
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace SistemaServicios.API.Models
 {
+    public enum UserRole
+    {
+        Admin = 0,
+        Client = 1,
+        Professional = 2
+    }
+
     public class User
     {
         [Key]
-        public Guid Id { get; set; } // UUID (Identificador único universal)
+        public Guid Id { get; set; }
 
         [Required]
         [EmailAddress]
-        public string Email { get; set; }
-
-        [Required]
-        public string PasswordHash { get; set; } // Hash de contraseña
-
-        [Required]
-        public string FirstName { get; set; } // Nombre separado
-
-        [Required]
-        public string LastName { get; set; } // Apellido separado
-
-        [Required]
-        public string Role { get; set; } // Admin, Cliente, Profesional
-
+        public required string Email { get; set; }
+        public required string PasswordHash { get; set; }
+        [MaxLength(255)]
+        public required string FirstName { get; set; }
+        [MaxLength(255)]
+        public required string LastName { get; set; }
+        public UserRole Role { get; set; } = UserRole.Client;
+        [MaxLength(20)]
         public string? PhoneNumber { get; set; }
 
+        [Column(TypeName = "decimal(18,2)")]
         public decimal AverageRating { get; set; } = 0;
-
         public bool Status { get; set; } = true;
-
+        [MaxLength(2048)]
         public string? ProfileImageUrl { get; set; }
-
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
     }

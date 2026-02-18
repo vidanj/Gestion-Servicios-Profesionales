@@ -8,14 +8,19 @@ namespace SistemaServicios.API.Extensions
     {
         public static IServiceCollection AddApplicationServices(this IServiceCollection services, IConfiguration config)
         {
-            // 1. lo que hace que cargue el archivo .env 
-            Env.Load();
+            // Busca el .env subiendo desde el directorio actual hasta encontrarlo
+            var directory = new DirectoryInfo(Directory.GetCurrentDirectory());
 
-            // 2. Obtener la cadena de conexión de la variable de entorno
-            var connectionString = Environment.GetEnvironmentVariable("DB_CONNECTION") 
-                                ?? config.GetConnectionString("DefaultConnection");
+            while (directory != null && !File.Exists(Path.Combine(directory.FullName, ".env")))
+            {
+                directory = directory.Parent;
+            }
 
-            // 3. Conecta a PostgreSQL
+            if (directory != null)
+                Env.Load(Path.Combine(directory.FullName, ".env"));
+
+            var connectionString = Environment.GetEnvironmentVariable("DB_CONNECTION");
+
             services.AddDbContext<AppDbContext>(options =>
                 options.UseNpgsql(connectionString));
 
