@@ -39,20 +39,37 @@ node -v
 ```
 
 Si no están instalados:
-- .NET SDK 9 -> https://dotnet.microsoft.com/download
-- Node.js 24 -> https://nodejs.org/en
-- PostgreSQL -> https://www.postgresql.org/download/
+    .NET SDK 9 -> https://dotnet.microsoft.com/download
+    Node.js 24 -> https://nodejs.org/en
+    PostgreSQL -> https://www.postgresql.org/download/
 
+# Configurar .env
+En la raíz del repositorio crear un archivo .env
+```bash
+/repo-root
+   .env        👈 Crear aquí
+   global.json
+   /backend
+   /frontend
+```
+Configurar Conexion a postgresSQL
+```bash
+DB_CONNECTION=Host=localhost;Port=5432;Database=DATABASE;Username=USER;Password=PASS
+```
 
 ## Probar Backend:
 
 ```bash
 cd backend
+dotnet clean
+dotnet tool install dotnet-ef
 dotnet restore
+dotnet tool restore
 dotnet build
 cd SistemaServicios.API
+dotnet ef database update
 dotnet run
-#http://localhost:5116/weatherforecast
+#http://localhost:5116/openapi/v1.json
 ```
 
 ## Probar Frontend
