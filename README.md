@@ -39,16 +39,19 @@ node -v
 ```
 
 Si no están instalados:
-- .NET SDK 9 -> https://dotnet.microsoft.com/download
-- Node.js 24 -> https://nodejs.org/en
-- PostgreSQL -> https://www.postgresql.org/download/
+    .NET SDK 9 -> https://dotnet.microsoft.com/download
+    Node.js 24 -> https://nodejs.org/en
+    PostgreSQL -> https://www.postgresql.org/download/
 
 
 ## Probar Backend:
 
 ```bash
 cd backend
+dotnet clean
+dotnet tool install dotnet-ef
 dotnet restore
+dotnet tool restore
 dotnet build
 cd SistemaServicios.API
 dotnet run
