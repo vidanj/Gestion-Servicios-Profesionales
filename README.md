@@ -43,6 +43,19 @@ Si no están instalados:
     Node.js 24 -> https://nodejs.org/en
     PostgreSQL -> https://www.postgresql.org/download/
 
+# Configurar .env
+En la raíz del repositorio crear un archivo .env
+```bash
+/repo-root
+   .env        👈 Crear aquí
+   global.json
+   /backend
+   /frontend
+```
+Configurar Conexion a postgresSQL
+```bash
+DB_CONNECTION=Host=localhost;Port=5432;Database=DATABASE;Username=USER;Password=PASS
+```
 
 ## Probar Backend:
 
