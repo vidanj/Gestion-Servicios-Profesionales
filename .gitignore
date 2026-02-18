@@ -1,3 +1,11 @@
 .env.local
+.env
+[Bb]in/
+[Oo]bj/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+.vscode/
 
-
+PULL_REQUEST_TEMPLATE.md
