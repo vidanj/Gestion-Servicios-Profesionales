@@ -56,7 +56,7 @@ dotnet build
 cd SistemaServicios.API
 dotnet ef database update
 dotnet run
-#http://localhost:5116/weatherforecast
+#http://localhost:5116/openapi/v1.json
 ```
 
 ## Probar Frontend
