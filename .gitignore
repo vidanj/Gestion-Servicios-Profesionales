@@ -1,11 +1,85 @@
-.env.local
+# ========================
+# Variables de entorno
+# ========================
 .env
+.env.*
+!.env.example
+
+# ========================
+# .NET / C# Build
+# ========================
 [Bb]in/
 [Oo]bj/
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+build/
+bld/
+
+# ========================
+# Visual Studio
+# ========================
+.vs/
 *.suo
 *.user
 *.userosscache
 *.sln.docstates
+*.csproj.user
+*.dbmdl
+*.jfm
+*.pfx
+*.publishsettings
+launchSettings.json
+
+# ========================
+# NuGet
+# ========================
+*.nupkg
+*.snupkg
+**/packages/
+project.nuget.cache
+
+# ========================
+# Rider / JetBrains
+# ========================
+.idea/
+*.sln.iml
+
+# ========================
+# VS Code
+# ========================
 .vscode/
 
+# ========================
+# OS Files
+# ========================
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+.DS_Store
+
+# ========================
+# Logs & Temp
+# ========================
+*.log
+*.tmp
+*.cache
+*.bak
+*.swp
+
+# ========================
+# Publicación / Deploy
+# ========================
+publish/
+**/PublishOutput/
+
+# ========================
+# Entity Framework
+# ========================
+# (No ignorar Migrations/ — deben versionarse)
+
+# ========================
+# Proyecto específico
+# ========================
 PULL_REQUEST_TEMPLATE.md
