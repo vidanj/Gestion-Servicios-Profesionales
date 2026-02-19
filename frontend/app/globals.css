@@ -24,3 +24,52 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* ── Login page: override Chakra UI's emotion CSS reset for native form elements ── */
+[data-scope="login"] input {
+  all: unset;
+  box-sizing: border-box;
+  display: block;
+  width: 100%;
+  padding: 1.25rem 1.5rem 1.25rem 3.5rem;
+  background: #05070b;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 9999px;
+  color: white;
+  font-size: 1.125rem;
+  transition: box-shadow 0.15s, border-color 0.15s;
+}
+[data-scope="login"] input::placeholder {
+  color: rgba(255, 255, 255, 0.25);
+}
+[data-scope="login"] input:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px #7c3aed;
+  border-color: #7c3aed;
+}
+[data-scope="login"] input[type="checkbox"] {
+  all: revert;
+  accent-color: #7c3aed;
+  width: 1rem;
+  height: 1rem;
+  cursor: pointer;
+}
+[data-scope="login"] button[type="button"] {
+  all: unset;
+  box-sizing: border-box;
+  display: block;
+  width: 100%;
+  padding: 1rem;
+  border-radius: 9999px;
+  background: linear-gradient(to right, #6d28d9, #7c3aed);
+  color: white;
+  font-size: 1.125rem;
+  font-weight: 600;
+  text-align: center;
+  cursor: pointer;
+  box-shadow: 0 10px 15px -3px rgba(124, 58, 237, 0.3);
+  transition: background 0.15s;
+}
+[data-scope="login"] button[type="button"]:hover {
+  background: linear-gradient(to right, #5b21b6, #6d28d9);
+}
