@@ -31,8 +31,7 @@ bld/
 *.jfm
 *.pfx
 *.publishsettings
-launchSettings.json
-*launchSettings.json
+
 
 # ========================
 # NuGet
