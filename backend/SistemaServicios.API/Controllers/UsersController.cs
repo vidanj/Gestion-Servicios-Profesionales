@@ -16,14 +16,12 @@ namespace SistemaServicios.API.Controllers
             _context = context;
         }
 
-        // 1. LISTAR USUARIOS (GET: api/Users)
         [HttpGet]
         public async Task<ActionResult<IEnumerable<User>>> GetUsers()
         {
             return await _context.Users.ToListAsync();
         }
 
-        // 2. OBTENER USUARIO POR ID (GET: api/Users/{guid})
         [HttpGet("{id}")]
         public async Task<ActionResult<User>> GetUser(Guid id)
         {
@@ -37,37 +35,28 @@ namespace SistemaServicios.API.Controllers
             return user;
         }
 
-        // 3. CREAR USUARIO (POST: api/Users)
         [HttpPost]
         public async Task<ActionResult<User>> PostUser(User user)
         {
-            
-            
-            user.CreatedAt = DateTime.UtcNow; // Forzamos la fecha de creación
+            user.CreatedAt = DateTime.UtcNow;
             user.UpdatedAt = DateTime.UtcNow;
             
-            
-
             _context.Users.Add(user);
             await _context.SaveChangesAsync();
 
             return CreatedAtAction("GetUser", new { id = user.Id }, user);
         }
 
-        // 4. EDITAR USUARIO (PUT: api/Users/{guid})
         [HttpPut("{id}")]
         public async Task<IActionResult> PutUser(Guid id, User user)
         {
             if (id != user.Id)
             {
-                return BadRequest("El ID de la URL no coincide con el del cuerpo de la petición.");
+                return BadRequest();
             }
 
             user.UpdatedAt = DateTime.UtcNow;
-
             _context.Entry(user).State = EntityState.Modified;
-
-
             _context.Entry(user).Property(x => x.CreatedAt).IsModified = false;
 
             try
@@ -89,7 +78,6 @@ namespace SistemaServicios.API.Controllers
             return NoContent();
         }
 
-        // 5. ELIMINAR USUARIO (DELETE: api/Users/{guid})
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteUser(Guid id)
         {
