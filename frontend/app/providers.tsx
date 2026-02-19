@@ -1,9 +1,6 @@
 "use client";
 
-import { ColorModeScript } from "@chakra-ui/react";
-import { SaasProvider } from "@saas-ui/react";
-
-import { theme } from "../src/theme";
+import { ChakraProvider, defaultSystem } from "@chakra-ui/react";
 
 type ProvidersProps = {
   children: React.ReactNode;
@@ -11,9 +8,8 @@ type ProvidersProps = {
 
 export default function Providers({ children }: ProvidersProps) {
   return (
-    <SaasProvider theme={theme}>
-      <ColorModeScript initialColorMode={theme.config.initialColorMode} />
+    <ChakraProvider value={defaultSystem}>
       {children}
-    </SaasProvider>
+    </ChakraProvider>
   );
 }

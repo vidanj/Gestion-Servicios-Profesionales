@@ -1,12 +1,7 @@
 {
   "compilerOptions": {
-    "baseUrl": ".",
     "target": "ES2017",
-    "lib": [
-      "dom",
-      "dom.iterable",
-      "esnext"
-    ],
+    "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
@@ -16,7 +11,7 @@
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "jsx": "preserve",
+    "jsx": "react-jsx",
     "incremental": true,
     "plugins": [
       {
@@ -24,27 +19,11 @@
       }
     ],
     "paths": {
-      "@/*": [
-        "./*"
-      ],
-      "#components/*": [
-        "src/components/*"
-      ],
-      "#data/*": [
-        "src/data/*"
-      ],
-      "#hooks/*": [
-        "src/hooks/*"
-      ],
-      "#theme/*": [
-        "src/theme/*"
-      ],
-      "components/*": [
-        "src/components/*"
-      ],
-      "hooks/*": [
-        "src/hooks/*"
-      ]
+      "@/*": ["./src/*"],
+      "#components/*": ["./src/components/*"],
+      "#data/*": ["./src/data/*"],
+      "hooks/*": ["./src/hooks/*"],
+      "components/*": ["./src/components/*"]
     }
   },
   "include": [
@@ -53,10 +32,7 @@
     "**/*.tsx",
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts",
-    "**/*.mts",
-    "next.config.js"
+    "**/*.mts"
   ],
-  "exclude": [
-    "node_modules"
-  ]
+  "exclude": ["node_modules"]
 }

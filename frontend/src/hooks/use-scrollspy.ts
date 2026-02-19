@@ -1,28 +1,32 @@
-import * as React from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 export function useScrollSpy(
   selectors: string[],
-  options?: IntersectionObserverInit
-) {
-  const [activeId, setActiveId] = React.useState<string | null>()
-  const observer = React.useRef<IntersectionObserver | null>(null)
-  React.useEffect(() => {
-    const elements = selectors.map((selector) =>
-      document.querySelector(selector)
-    )
+  options?: IntersectionObserverInit,
+): string | null {
+  const [activeId, setActiveId] = useState<string | null>(null)
+  const observer = useRef<IntersectionObserver | null>(null)
+
+  useEffect(() => {
+    const elements = selectors
+      .map((s) => document.querySelector(s))
+      .filter(Boolean) as Element[]
+
     observer.current?.disconnect()
+
     observer.current = new IntersectionObserver((entries) => {
-      entries.forEach((entry) => {
-        if (entry?.isIntersecting) {
-          setActiveId(entry.target.getAttribute('id'))
+      for (const entry of entries) {
+        if (entry.isIntersecting) {
+          setActiveId(entry.target.id)
         }
-      })
+      }
     }, options)
-    elements.forEach((el) => {
-      if (el) observer.current?.observe(el)
-    })
+
+    elements.forEach((el) => observer.current?.observe(el))
+
     return () => observer.current?.disconnect()
-  }, [selectors, options])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectors.join(',')])
 
   return activeId
 }

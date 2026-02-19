@@ -1,17 +1,14 @@
 import {
   Avatar,
+  BoxProps,
   Card,
-  CardBody,
-  CardHeader,
-  CardProps,
   Heading,
   Stack,
   Text,
 } from "@chakra-ui/react";
-import { Link } from "@saas-ui/react";
 import { FaTwitter } from "react-icons/fa";
 
-export interface TestimonialProps extends CardProps {
+export interface TestimonialProps extends BoxProps {
   name: string;
   description: React.ReactNode;
   avatar: string;
@@ -28,25 +25,28 @@ export const Testimonial = ({
   ...rest
 }: TestimonialProps) => {
   return (
-    <Card position="relative" {...rest}>
-      <CardHeader display="flex" flexDirection="row" alignItems="center">
-        <Avatar name={name} src={avatar} size="sm" bg="transparent" />
-        <Stack spacing="1" ms="4">
+    <Card.Root position="relative" {...rest}>
+      <Card.Header display="flex" flexDirection="row" alignItems="center">
+        <Avatar.Root size="sm">
+          {avatar ? <Avatar.Image src={avatar} /> : null}
+          <Avatar.Fallback name={name} />
+        </Avatar.Root>
+        <Stack gap="1" ms="4">
           <Heading size="sm">{name}</Heading>
-          <Text color="muted" size="xs">
+          <Text color="muted" fontSize="xs">
             {description}
           </Text>
         </Stack>
-      </CardHeader>
-      <CardBody>
+      </Card.Header>
+      <Card.Body>
         {children}
 
         {href && (
-          <Link href={href} position="absolute" top="4" right="4">
+          <a href={href} style={{ position: 'absolute', top: '1rem', right: '1rem' }}>
             <FaTwitter />
-          </Link>
+          </a>
         )}
-      </CardBody>
-    </Card>
+      </Card.Body>
+    </Card.Root>
   );
 };

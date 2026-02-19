@@ -1,32 +1,28 @@
 import {
   Box,
-  Card,
-  CardProps,
+  BoxProps,
   Grid,
   GridItem,
   GridItemProps,
   Heading,
-  useTheme,
 } from '@chakra-ui/react'
-import { transparentize } from '@chakra-ui/theme-tools'
 
 import { Section, SectionProps } from '#components/section'
 import { Testimonial, TestimonialProps } from '#components/testimonials'
 
 export interface HighlightBoxProps
   extends GridItemProps,
-    Omit<CardProps, 'title'> {}
+    Omit<BoxProps, 'title'> {}
 
 export const HighlightsItem: React.FC<HighlightBoxProps> = (props) => {
   const { children, title, ...rest } = props
   return (
     <GridItem
-      as={Card}
       borderRadius="md"
+      borderWidth="1px"
       p="8"
       flex="1 0"
       alignItems="flex-start"
-      spacing="8"
       overflow="hidden"
       position="relative"
       bg="white"
@@ -54,7 +50,6 @@ export const HighlightsTestimonialItem: React.FC<
     gradient = ['primary.500', 'secondary.500'],
     ...rest
   } = props
-  const theme = useTheme()
   return (
     <HighlightsItem
       justifyContent="center"
@@ -63,11 +58,8 @@ export const HighlightsTestimonialItem: React.FC<
       {...rest}
     >
       <Box
-        bgGradient={`linear(to-br, ${transparentize(
-          gradient[0],
-          0.8,
-        )(theme)}, ${transparentize(gradient[1], 0.8)(theme)})`}
-        opacity="1"
+        bgGradient={`linear(to-br, ${gradient[0]}, ${gradient[1]})`}
+        opacity="0.8"
         position="absolute"
         inset="0px"
         pointerEvents="none"
@@ -82,10 +74,6 @@ export const HighlightsTestimonialItem: React.FC<
           </Box>
         }
         avatar={avatar}
-        border="0"
-        bg="transparent"
-        boxShadow="none"
-        color="white"
         position="relative"
       >
         {children}

@@ -4,7 +4,7 @@ import {
   Box,
   Button,
   Container,
-  Divider,
+  Separator,
   Heading,
   HStack,
   SimpleGrid,
@@ -12,17 +12,17 @@ import {
   Text,
 } from "@chakra-ui/react";
 
-import { MarketingLayout } from "#components/layout";
-import { Hero } from "#components/hero";
-import { ButtonLink } from "#components/button-link/button-link";
+import { MarketingLayout } from "@/components/layout";
+import { Hero } from "@/components/hero";
+import { ButtonLink } from "@/components/button-link/button-link";
 import {
   Highlights,
   HighlightsItem,
   HighlightsTestimonialItem,
-} from "#components/highlights";
+} from "@/components/highlights";
 
-import { Features } from "#components/features";
-import testimonials from "#data/testimonials";
+import { Features } from "@/components/features";
+import testimonials from "@/data/testimonials";
 
 export default function About() {
   return (
@@ -39,19 +39,19 @@ export default function About() {
           title="Conectamos talento con oportunidades reales"
           description="Gestión de Servicios Profesionales es una plataforma inspirada en Fiverr, creada para facilitar la contratación y publicación de servicios profesionales de manera rápida, segura y organizada."
         >
-          <HStack spacing="4" mt="8" flexWrap="wrap">
+          <HStack gap="4" mt="8" flexWrap="wrap">
             <ButtonLink href="#mission" colorScheme="primary">
               Nuestra misión
             </ButtonLink>
-            <Button variant="outline" as="a" href="#values">
-              Nuestros valores
+            <Button variant="outline" asChild>
+              <a href="#values">Nuestros valores</a>
             </Button>
           </HStack>
         </Hero>
 
         <Container maxW="6xl" mt="20">
-          <SimpleGrid columns={{ base: 1, md: 2 }} spacing="12">
-            <Stack spacing="4">
+          <SimpleGrid columns={{ base: 1, md: 2 }} gap="12">
+            <Stack gap="4">
               <Heading fontSize="2xl">¿Qué es este sistema?</Heading>
               <Text color="muted">
                 Gestión de Servicios Profesionales es un sistema diseñado para
@@ -65,7 +65,7 @@ export default function About() {
               </Text>
             </Stack>
 
-            <Stack spacing="4">
+            <Stack gap="4">
               <Heading fontSize="2xl">¿Por qué lo creamos?</Heading>
               <Text color="muted">
                 Porque contratar servicios no debería ser complicado. Queremos
@@ -79,12 +79,12 @@ export default function About() {
             </Stack>
           </SimpleGrid>
 
-          <Divider my="16" />
+          <Separator my="16" />
 
-          <Stack spacing="10" id="mission">
+          <Stack gap="10" id="mission">
             <Heading fontSize="3xl">Misión y visión</Heading>
 
-            <SimpleGrid columns={{ base: 1, md: 2 }} spacing="10">
+            <SimpleGrid columns={{ base: 1, md: 2 }} gap="10">
               <Box p="8" borderRadius="2xl" borderWidth="1px">
                 <Heading fontSize="xl" mb="3">
                   🎯 Misión
@@ -109,7 +109,7 @@ export default function About() {
             </SimpleGrid>
           </Stack>
 
-          <Divider my="16" />
+          <Separator my="16" />
 
           <Highlights id="values">
             <HighlightsItem title="Transparencia">
@@ -136,7 +136,7 @@ export default function About() {
             </HighlightsItem>
           </Highlights>
 
-          <Divider my="16" />
+          <Separator my="16" />
 
           <Features
             id="platform"
@@ -170,7 +170,7 @@ export default function About() {
             ]}
           />
 
-          <Divider my="16" />
+          <Separator my="16" />
 
           <Box
             p={{ base: 8, md: 14 }}
@@ -186,12 +186,12 @@ export default function About() {
               contratar servicios con una experiencia moderna y profesional.
             </Text>
 
-            <HStack justify="center" mt="8" spacing="4" flexWrap="wrap">
+            <HStack justify="center" mt="8" gap="4" flexWrap="wrap">
               <ButtonLink href="/signup" colorScheme="primary">
                 Crear cuenta
               </ButtonLink>
-              <Button variant="outline" as="a" href="/#pricing">
-                Ver planes
+              <Button variant="outline" asChild>
+                <a href="/#pricing">Ver planes</a>
               </Button>
             </HStack>
           </Box>

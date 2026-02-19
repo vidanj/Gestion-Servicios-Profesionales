@@ -1,21 +1,9 @@
 import { usePathname } from 'next/navigation'
+import { useEffect } from 'react'
 
-import { useEffect, useRef } from 'react'
-
-const useRouteChanged = (fn: () => void) => {
+export default function useRouteChanged(callback: () => void) {
   const pathname = usePathname()
-
-  const lastPathname = useRef(pathname)
-
   useEffect(() => {
-    if (lastPathname.current === null) {
-      return
-    }
-
-    if (pathname !== lastPathname.current) {
-      fn()
-    }
-  }, [pathname, fn])
+    callback()
+  }, [pathname])
 }
-
-export default useRouteChanged

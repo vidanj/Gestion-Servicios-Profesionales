@@ -2,24 +2,24 @@
 
 import { Box, Button, HStack, Stack, Text } from "@chakra-ui/react";
 
-import { ButtonLink } from "#components/button-link/button-link";
-import { Features } from "#components/features";
+import { ButtonLink } from "@/components/button-link/button-link";
+import { Features } from "@/components/features";
 import {
   Highlights,
   HighlightsItem,
   HighlightsTestimonialItem,
-} from "#components/highlights";
-import { Hero } from "#components/hero";
-import { MarketingLayout } from "#components/layout";
-import { ChakraLogo, NextjsLogo, ReactLogo } from "#components/logos";
-import { Pricing } from "#components/pricing/pricing";
-import { Faq } from "#components/faq";
-import { Testimonial, Testimonials } from "#components/testimonials";
+} from "@/components/highlights";
+import { Hero } from "@/components/hero";
+import { MarketingLayout } from "@/components/layout";
+import { ChakraLogo, NextjsLogo, ReactLogo } from "@/components/logos";
+import { Pricing } from "@/components/pricing/pricing";
+import { Faq } from "@/components/faq";
+import { Testimonial, Testimonials } from "@/components/testimonials";
 
-import faq from "#data/faq";
-import pricing from "#data/pricing";
-import siteConfig from "#data/config";
-import testimonials from "#data/testimonials";
+import faq from "@/data/faq";
+import pricing from "@/data/pricing";
+import siteConfig from "@/data/config";
+import testimonials from "@/data/testimonials";
 
 export default function LandingPage() {
   return (
@@ -36,25 +36,25 @@ export default function LandingPage() {
           title="Gestiona tus servicios profesionales"
           description="Una base moderna para tu sitio, con secciones listas para personalizar."
         >
-          <HStack spacing="4" mt="8" flexWrap="wrap">
+          <HStack gap="4" mt="8" flexWrap="wrap">
             <ButtonLink href="#pricing" colorScheme="primary">
               Ver planes
             </ButtonLink>
-            <Button variant="outline" as="a" href="#features">
-              Ver funciones
+            <Button variant="outline" asChild>
+              <a href="#features">Ver funciones</a>
             </Button>
           </HStack>
 
           <Stack
             mt="10"
-            spacing="4"
+            gap="4"
             direction={{ base: "column", md: "row" }}
             align={{ base: "flex-start", md: "center" }}
           >
             <Text fontSize="sm" color="muted">
               Construido con
             </Text>
-            <HStack spacing="6">
+            <HStack gap="6">
               <ChakraLogo height="28px" />
               <NextjsLogo height="28px" />
               <ReactLogo height="28px" />
@@ -90,7 +90,7 @@ export default function LandingPage() {
           </HighlightsItem>
         </Highlights>
 
-        <Testimonials title={testimonials.title}>
+        <Testimonials title={testimonials.title} description="">
           {testimonials.items.map((item) => (
             <Testimonial
               key={item.name}
@@ -107,7 +107,9 @@ export default function LandingPage() {
           title={pricing.title}
           description={pricing.description}
           plans={pricing.plans}
-        />
+        >
+          {null}
+        </Pricing>
 
         <Faq title={faq.title} items={faq.items} />
       </Box>

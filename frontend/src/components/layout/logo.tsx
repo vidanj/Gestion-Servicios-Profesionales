@@ -1,5 +1,5 @@
 import { Box, Flex, Heading, VisuallyHidden } from '@chakra-ui/react'
-import { Link } from '@saas-ui/react'
+import NextLink from 'next/link'
 
 import * as React from 'react'
 
@@ -24,16 +24,14 @@ export const Logo = ({ href = '/', onClick }: LogoProps) => {
 
   return (
     <Flex h="8" flexShrink="0" alignItems="flex-start">
-      <Link
+      <NextLink
         href={href}
-        display="flex"
-        p="1"
-        borderRadius="sm"
+        style={{ display: 'flex', padding: '4px', borderRadius: '4px' }}
         onClick={onClick}
       >
         {logo}
         <VisuallyHidden>{siteConfig.seo?.title}</VisuallyHidden>
-      </Link>
+      </NextLink>
     </Flex>
   )
 }

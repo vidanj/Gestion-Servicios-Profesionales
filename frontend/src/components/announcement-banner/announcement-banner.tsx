@@ -1,3 +1,5 @@
+"use client";
+
 import NextLink from "next/link";
 import {
   Box,
@@ -5,18 +7,8 @@ import {
   Flex,
   HStack,
   Icon,
-  LinkBox,
-  LinkOverlay,
-  useColorModeValue,
-  Button,
+  Text,
 } from "@chakra-ui/react";
-import {
-  Banner,
-  BannerActions,
-  BannerContent,
-  BannerDescription,
-  BannerTitle,
-} from "@saas-ui/react";
 import { FiArrowRight } from "react-icons/fi";
 import { FallInPlace } from "../motion/fall-in-place";
 
@@ -39,13 +31,12 @@ export const AnnouncementBanner: React.FC<AnnouncementBannerProps> = (
     <Flex position="absolute" zIndex="10" top="100px" width="100%">
       <Container maxW="container.2xl" px="8">
         <FallInPlace delay={1.4} translateY="-100px">
-          <NextLink href={href} legacyBehavior>
-            <Banner
+          <NextLink href={href} style={{ textDecoration: "none" }}>
+            <Box
               display="flex"
               bg="white"
               fontSize="sm"
               justifyContent="center"
-              colorScheme="purple"
               backgroundClip="padding-box"
               borderRadius="full"
               maxW="400px"
@@ -57,7 +48,7 @@ export const AnnouncementBanner: React.FC<AnnouncementBannerProps> = (
               overflow="visible"
               cursor="pointer"
               transition="all .2s ease-out"
-              _dark={{ bg: "gray.900", borderColor: "transparent" }}
+              _dark={{ bg: "gray.900" }}
               _before={{
                 content: `""`,
                 position: "absolute",
@@ -68,52 +59,32 @@ export const AnnouncementBanner: React.FC<AnnouncementBannerProps> = (
                 left: 0,
                 borderRadius: "inherit",
                 margin: "-2px",
-                bgGradient: "linear(to-r, purple.500, cyan.500)",
+                backgroundImage:
+                  "linear-gradient(to right, var(--chakra-colors-purple-500), var(--chakra-colors-cyan-500))",
                 transition: "background .2s ease-out",
-                _dark: {
-                  bgGradient: "linear(to-r, purple.500, cyan.500)",
-                },
               }}
-              _hover={{
-                "& .chakra-icon": {
-                  transform: "translate(0)",
-                },
-                boxShadow: "md",
-              }}
+              _hover={{ boxShadow: "md" }}
             >
               <HStack zIndex="2">
-                <BannerTitle fontWeight="semibold" noOfLines={1}>
+                <Text fontWeight="semibold" lineClamp={1} whiteSpace="nowrap">
                   {title}
-                </BannerTitle>
-                <BannerDescription
+                </Text>
+                <Text
                   display={{ base: "none", md: "block" }}
                   dangerouslySetInnerHTML={{ __html: description }}
                 />
-
                 {action && (
-                  <BannerActions>
-                    <Button
-                      size="xs"
-                      variant="link"
-                      color="muted"
-                      _hover={{
-                        textDecoration: "none",
-                      }}
-                      rightIcon={
-                        <Icon
-                          as={FiArrowRight}
-                          transform="translate(-5px)"
-                          transitionProperty="common"
-                          transitionDuration="normal"
-                        />
-                      }
-                    >
-                      Read more
-                    </Button>
-                  </BannerActions>
+                  <HStack gap="1" color="gray.500">
+                    <Text fontSize="xs">{action}</Text>
+                    <Icon
+                      as={FiArrowRight}
+                      transitionProperty="common"
+                      transitionDuration="normal"
+                    />
+                  </HStack>
                 )}
               </HStack>
-            </Banner>
+            </Box>
           </NextLink>
         </FallInPlace>
       </Container>

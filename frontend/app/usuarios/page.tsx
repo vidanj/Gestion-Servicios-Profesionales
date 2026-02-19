@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 // Navegacion y componentes UI de Next/Chakra usados en la vista.
 import NextLink from "next/link";
 import {
@@ -8,27 +9,19 @@ import {
   Button,
   ButtonGroup,
   Card,
-  CardBody,
-  CardHeader,
   Container,
-  Divider,
-  FormControl,
-  FormLabel,
+  Field,
   HStack,
   Heading,
   IconButton,
   Input,
-  Select,
+  NativeSelect,
+  Separator,
   SimpleGrid,
   Stack,
   Switch,
   Table,
-  Tbody,
-  Td,
   Text,
-  Th,
-  Thead,
-  Tr,
 } from "@chakra-ui/react";
 import { FiEdit2, FiLock, FiPlus, FiTrash2 } from "react-icons/fi";
 
@@ -89,187 +82,188 @@ const statusColor: Record<string, string> = {
 
 // Pagina de ejemplo para CRUD de usuarios.
 export default function UsersCrudPage() {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  if (!mounted) return null;
+
   return (
     <Box py={{ base: 10, md: 16 }}>
       <Container maxW="container.xl">
-        <Stack spacing="6">
+        <Stack gap="6">
           {/* Encabezado de la pagina y navegacion entre vistas */}
-          <Stack spacing="2">
+          <Stack gap="2">
             <Heading size="lg">CRUD de usuarios</Heading>
             <Text color="muted">
               Crea, edita y administra usuarios. Vista solamente visual.
             </Text>
-            <HStack spacing="4" flexWrap="wrap">
-              <Button as={NextLink} href="/usuarios" colorScheme="purple">
-                CRUD
+            <HStack gap="4" flexWrap="wrap">
+              <Button asChild colorScheme="purple">
+                <NextLink href="/usuarios">CRUD</NextLink>
               </Button>
-              <Button as={NextLink} href="/usuarios/registrados" variant="ghost">
-                Usuarios registrados
+              <Button asChild variant="ghost">
+                <NextLink href="/usuarios/registrados">Usuarios registrados</NextLink>
               </Button>
-              <Button as={NextLink} href="/usuarios/logs" variant="ghost">
-                Logs de usuarios
+              <Button asChild variant="ghost">
+                <NextLink href="/usuarios/logs">Logs de usuarios</NextLink>
               </Button>
             </HStack>
           </Stack>
 
           {/* Layout principal: formulario + tabla */}
-          <SimpleGrid columns={{ base: 1, lg: 3 }} spacing="6">
+          <SimpleGrid columns={{ base: 1, lg: 3 }} gap="6">
             {/* Card con formulario para crear usuarios (solo visual) */}
-            <Card>
-              <CardHeader>
+            <Card.Root>
+              <Card.Header>
                 <Heading size="md">Nuevo usuario</Heading>
-              </CardHeader>
-              <CardBody>
-                <Stack spacing="4">
+              </Card.Header>
+              <Card.Body>
+                <Stack gap="4">
                   {/* Campo: nombre */}
-                  <FormControl>
-                    <FormLabel>Nombre completo</FormLabel>
+                  <Field.Root>
+                    <Field.Label>Nombre completo</Field.Label>
                     <Input placeholder="Ej. Andrea Torres" />
-                  </FormControl>
+                  </Field.Root>
                   {/* Campo: correo */}
-                  <FormControl>
-                    <FormLabel>Correo</FormLabel>
+                  <Field.Root>
+                    <Field.Label>Correo</Field.Label>
                     <Input type="email" placeholder="correo@empresa.com" />
-                  </FormControl>
+                  </Field.Root>
                   {/* Campo: username */}
-                  <FormControl>
-                    <FormLabel>Usuario</FormLabel>
+                  <Field.Root>
+                    <Field.Label>Usuario</Field.Label>
                     <Input placeholder="usuario" />
-                  </FormControl>
+                  </Field.Root>
                   {/* Campo: rol */}
-                  <FormControl>
-                    <FormLabel>Rol</FormLabel>
-                    <Select placeholder="Selecciona un rol">
-                      <option>admin</option>
-                      <option>manager</option>
-                      <option>usuario</option>
-                      <option>soporte</option>
-                    </Select>
-                  </FormControl>
+                  <Field.Root>
+                    <Field.Label>Rol</Field.Label>
+                    <NativeSelect.Root>
+                      <NativeSelect.Field placeholder="Selecciona un rol">
+                        <option>admin</option>
+                        <option>manager</option>
+                        <option>usuario</option>
+                        <option>soporte</option>
+                      </NativeSelect.Field>
+                    </NativeSelect.Root>
+                  </Field.Root>
                   {/* Toggle: estado activo */}
                   <HStack justify="space-between">
-                    <FormLabel mb="0">Activo</FormLabel>
-                    <Switch defaultChecked />
+                    <Text>Activo</Text>
+                    <Switch.Root defaultChecked>
+                      <Switch.HiddenInput />
+                      <Switch.Control>
+                        <Switch.Thumb />
+                      </Switch.Control>
+                    </Switch.Root>
                   </HStack>
                   {/* Acciones principales del formulario */}
                   <ButtonGroup>
-                    <Button leftIcon={<FiPlus />} colorScheme="purple">
-                      Crear usuario
+                    <Button colorScheme="purple">
+                      <FiPlus /> Crear usuario
                     </Button>
                     <Button variant="outline">Limpiar</Button>
                   </ButtonGroup>
                 </Stack>
-              </CardBody>
-            </Card>
+              </Card.Body>
+            </Card.Root>
 
             {/* Card con tabla de usuarios existentes */}
-            <Card gridColumn={{ lg: "span 2" }}>
-              <CardHeader>
+            <Card.Root gridColumn={{ lg: "span 2" }}>
+              <Card.Header>
                 <HStack justify="space-between">
                   <Heading size="md">Usuarios existentes</Heading>
                   <Button variant="outline" size="sm">
                     Exportar
                   </Button>
                 </HStack>
-              </CardHeader>
-              <CardBody>
+              </Card.Header>
+              <Card.Body>
                 {/* Tabla de usuarios mock */}
-                <Table variant="simple" size="sm">
-                  <Thead>
-                    <Tr>
-                      <Th>Usuario</Th>
-                      <Th>Rol</Th>
-                      <Th>Estado</Th>
-                      <Th>Ultimo acceso</Th>
-                      <Th textAlign="right">Acciones</Th>
-                    </Tr>
-                  </Thead>
-                  <Tbody>
+                <Table.Root variant="outline" size="sm">
+                  <Table.Header>
+                    <Table.Row>
+                      <Table.ColumnHeader>Usuario</Table.ColumnHeader>
+                      <Table.ColumnHeader>Rol</Table.ColumnHeader>
+                      <Table.ColumnHeader>Estado</Table.ColumnHeader>
+                      <Table.ColumnHeader>Ultimo acceso</Table.ColumnHeader>
+                      <Table.ColumnHeader textAlign="right">Acciones</Table.ColumnHeader>
+                    </Table.Row>
+                  </Table.Header>
+                  <Table.Body>
                     {/* Renderizado por cada usuario */}
                     {users.map((user) => (
-                      <Tr key={user.id}>
-                        <Td>
-                          <Stack spacing="0">
+                      <Table.Row key={user.id}>
+                        <Table.Cell>
+                          <Stack gap="0">
                             <Text fontWeight="semibold">{user.name}</Text>
                             <Text fontSize="sm" color="muted">
                               {user.email}
                             </Text>
                           </Stack>
-                        </Td>
-                        <Td>
+                        </Table.Cell>
+                        <Table.Cell>
                           {/* Badge de rol */}
                           <Badge colorScheme={roleColor[user.role]}>
                             {user.role}
                           </Badge>
-                        </Td>
-                        <Td>
+                        </Table.Cell>
+                        <Table.Cell>
                           {/* Badge de estado */}
                           <Badge colorScheme={statusColor[user.status]}>
                             {user.status}
                           </Badge>
-                        </Td>
-                        <Td>{user.lastLogin}</Td>
-                        <Td textAlign="right">
+                        </Table.Cell>
+                        <Table.Cell>{user.lastLogin}</Table.Cell>
+                        <Table.Cell textAlign="right">
                           {/* Acciones rapidas (solo visuales) */}
                           <HStack justify="flex-end">
-                            <IconButton
-                              aria-label="Editar"
-                              icon={<FiEdit2 />}
-                              size="sm"
-                              variant="ghost"
-                            />
-                            <IconButton
-                              aria-label="Reset"
-                              icon={<FiLock />}
-                              size="sm"
-                              variant="ghost"
-                            />
-                            <IconButton
-                              aria-label="Eliminar"
-                              icon={<FiTrash2 />}
-                              size="sm"
-                              colorScheme="red"
-                              variant="ghost"
-                            />
+                            <IconButton aria-label="Editar" size="sm" variant="ghost">
+                              <FiEdit2 />
+                            </IconButton>
+                            <IconButton aria-label="Reset" size="sm" variant="ghost">
+                              <FiLock />
+                            </IconButton>
+                            <IconButton aria-label="Eliminar" size="sm" colorScheme="red" variant="ghost">
+                              <FiTrash2 />
+                            </IconButton>
                           </HStack>
-                        </Td>
-                      </Tr>
+                        </Table.Cell>
+                      </Table.Row>
                     ))}
-                  </Tbody>
-                </Table>
+                  </Table.Body>
+                </Table.Root>
 
                 {/* Separador entre tabla y metricas */}
-                <Divider my="6" />
+                <Separator my="6" />
 
                 {/* Tarjetas de resumen rapido */}
-                <SimpleGrid columns={{ base: 1, md: 3 }} spacing="4">
-                  <Card variant="outline">
-                    <CardBody>
+                <SimpleGrid columns={{ base: 1, md: 3 }} gap="4">
+                  <Card.Root variant="outline">
+                    <Card.Body>
                       <Text fontSize="sm" color="muted">
                         Usuarios activos
                       </Text>
                       <Heading size="md">18</Heading>
-                    </CardBody>
-                  </Card>
-                  <Card variant="outline">
-                    <CardBody>
+                    </Card.Body>
+                  </Card.Root>
+                  <Card.Root variant="outline">
+                    <Card.Body>
                       <Text fontSize="sm" color="muted">
                         Invitaciones pendientes
                       </Text>
                       <Heading size="md">4</Heading>
-                    </CardBody>
-                  </Card>
-                  <Card variant="outline">
-                    <CardBody>
+                    </Card.Body>
+                  </Card.Root>
+                  <Card.Root variant="outline">
+                    <Card.Body>
                       <Text fontSize="sm" color="muted">
                         Roles personalizados
                       </Text>
                       <Heading size="md">3</Heading>
-                    </CardBody>
-                  </Card>
+                    </Card.Body>
+                  </Card.Root>
                 </SimpleGrid>
-              </CardBody>
-            </Card>
+              </Card.Body>
+            </Card.Root>
           </SimpleGrid>
         </Stack>
       </Container>

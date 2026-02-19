@@ -1,28 +1,24 @@
 import * as React from 'react'
 import {
   Box,
+  BoxProps,
   Stack,
   VStack,
   SimpleGrid,
   Heading,
   Text,
   Icon,
-  Circle,
   ResponsiveValue,
-  useMultiStyleConfig,
-  ThemingProps,
-  SystemProps,
 } from '@chakra-ui/react'
 
-import { Section, SectionTitle, SectionTitleProps } from 'components/section'
+import { Section, SectionTitle, SectionTitleProps } from '#components/section'
 
 const Revealer = ({ children }: any) => {
   return children
 }
 
 export interface FeaturesProps
-  extends Omit<SectionTitleProps, 'title' | 'variant'>,
-    ThemingProps<'Features'> {
+  extends Omit<SectionTitleProps, 'title' | 'variant'> {
   title?: React.ReactNode
   description?: React.ReactNode
   features: Array<FeatureProps>
@@ -30,8 +26,8 @@ export interface FeaturesProps
   spacing?: string | number
   aside?: React.ReactChild
   reveal?: React.FC<any>
-  iconSize?: SystemProps['boxSize']
-  innerWidth?: SystemProps['maxW']
+  iconSize?: BoxProps['boxSize']
+  innerWidth?: BoxProps['maxW']
 }
 
 export interface FeatureProps {
@@ -39,7 +35,7 @@ export interface FeatureProps {
   description?: React.ReactNode
   icon?: any
   iconPosition?: 'left' | 'top'
-  iconSize?: SystemProps['boxSize']
+  iconSize?: BoxProps['boxSize']
   ip?: 'left' | 'top'
   variant?: string
   delay?: number
@@ -55,21 +51,29 @@ export const Feature: React.FC<FeatureProps> = (props) => {
     ip,
     variant,
   } = props
-  const styles = useMultiStyleConfig('Feature', { variant })
 
   const pos = iconPosition || ip
   const direction = pos === 'left' ? 'row' : 'column'
 
   return (
-    <Stack sx={styles.container} direction={direction}>
+    <Stack direction={direction}>
       {icon && (
-        <Circle sx={styles.icon}>
+        <Box
+          display="flex"
+          alignItems="center"
+          justifyContent="center"
+          borderRadius="full"
+          boxSize="10"
+          bg="primary.500"
+          color="white"
+          flexShrink={0}
+        >
           <Icon as={icon} boxSize={iconSize} />
-        </Circle>
+        </Box>
       )}
       <Box>
-        <Heading sx={styles.title}>{title}</Heading>
-        <Text sx={styles.description}>{description}</Text>
+        <Heading fontSize="md" mb="1">{title}</Heading>
+        <Text color="muted">{description}</Text>
       </Box>
     </Stack>
   )
@@ -96,7 +100,7 @@ export const Features: React.FC<FeaturesProps> = (props) => {
   return (
     <Section {...rest}>
       <Stack direction="row" height="full" align="flex-start">
-        <VStack flex="1" spacing={[4, null, 8]} alignItems="stretch">
+        <VStack flex="1" gap={[4, null, 8]} alignItems="stretch">
           {(title || description) && (
             <Wrap>
               <SectionTitle
@@ -106,7 +110,7 @@ export const Features: React.FC<FeaturesProps> = (props) => {
               />
             </Wrap>
           )}
-          <SimpleGrid columns={columns} spacing={spacing}>
+          <SimpleGrid columns={columns} gap={spacing}>
             {features.map((feature, i) => {
               return (
                 <Wrap key={i} delay={feature.delay}>

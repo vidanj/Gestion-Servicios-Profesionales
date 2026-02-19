@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 // Navegacion y componentes UI usados por la vista.
 import NextLink from "next/link";
 import {
@@ -7,12 +8,10 @@ import {
   Box,
   Button,
   Card,
-  CardBody,
-  CardHeader,
   Container,
   HStack,
   Heading,
-  Select,
+  NativeSelect,
   Stack,
   Text,
 } from "@chakra-ui/react";
@@ -78,58 +77,68 @@ const statusColor: Record<string, string> = {
 
 // Pagina de logs de usuarios (solo visual).
 export default function UserLogsPage() {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  if (!mounted) return null;
+
   return (
     <Box py={{ base: 10, md: 16 }}>
       <Container maxW="container.xl">
-        <Stack spacing="6">
+        <Stack gap="6">
           {/* Encabezado de la pagina y navegacion entre vistas */}
-          <Stack spacing="2">
+          <Stack gap="2">
             <Heading size="lg">Logs de usuarios</Heading>
             <Text color="muted">
               Historial visual de actividades y cambios recientes.
             </Text>
-            <HStack spacing="4" flexWrap="wrap">
-              <Button as={NextLink} href="/usuarios" variant="ghost">
-                CRUD
+            <HStack gap="4" flexWrap="wrap">
+              <Button asChild variant="ghost">
+                <NextLink href="/usuarios">CRUD</NextLink>
               </Button>
-              <Button as={NextLink} href="/usuarios/registrados" variant="ghost">
-                Usuarios registrados
+              <Button asChild variant="ghost">
+                <NextLink href="/usuarios/registrados">Usuarios registrados</NextLink>
               </Button>
-              <Button as={NextLink} href="/usuarios/logs" colorScheme="purple">
-                Logs de usuarios
+              <Button asChild colorScheme="purple">
+                <NextLink href="/usuarios/logs">Logs de usuarios</NextLink>
               </Button>
             </HStack>
           </Stack>
 
           {/* Card con filtros simulados y listado de eventos */}
-          <Card variant="outline">
-            <CardHeader>
-              <HStack spacing="4" justify="space-between" flexWrap="wrap">
+          <Card.Root variant="outline">
+            <Card.Header>
+              <HStack gap="4" justify="space-between" flexWrap="wrap">
                 <Heading size="md">Filtros</Heading>
                 {/* Selects de ejemplo para filtrar logs */}
-                <HStack spacing="3">
-                  <Select placeholder="Estado">
-                    <option>exitoso</option>
-                    <option>alerta</option>
-                    <option>error</option>
-                  </Select>
-                  <Select placeholder="Usuario">
-                    <option>Andrea Torres</option>
-                    <option>Bruno Castillo</option>
-                    <option>Camila Diaz</option>
-                    <option>Diego Ruiz</option>
-                  </Select>
-                  <Select placeholder="Tipo de evento">
-                    <option>Cambio de contrasenia</option>
-                    <option>Actualizacion de rol</option>
-                    <option>Actualizacion de perfil</option>
-                    <option>Suspension</option>
-                  </Select>
+                <HStack gap="3">
+                  <NativeSelect.Root>
+                    <NativeSelect.Field placeholder="Estado">
+                      <option>exitoso</option>
+                      <option>alerta</option>
+                      <option>error</option>
+                    </NativeSelect.Field>
+                  </NativeSelect.Root>
+                  <NativeSelect.Root>
+                    <NativeSelect.Field placeholder="Usuario">
+                      <option>Andrea Torres</option>
+                      <option>Bruno Castillo</option>
+                      <option>Camila Diaz</option>
+                      <option>Diego Ruiz</option>
+                    </NativeSelect.Field>
+                  </NativeSelect.Root>
+                  <NativeSelect.Root>
+                    <NativeSelect.Field placeholder="Tipo de evento">
+                      <option>Cambio de contrasenia</option>
+                      <option>Actualizacion de rol</option>
+                      <option>Actualizacion de perfil</option>
+                      <option>Suspension</option>
+                    </NativeSelect.Field>
+                  </NativeSelect.Root>
                 </HStack>
               </HStack>
-            </CardHeader>
-            <CardBody>
-              <Stack spacing="4">
+            </Card.Header>
+            <Card.Body>
+              <Stack gap="4">
                 {/* Renderizado de cada log */}
                 {logs.map((log) => (
                   <Box
@@ -139,8 +148,8 @@ export default function UserLogsPage() {
                     p="4"
                   >
                     <HStack justify="space-between" align="flex-start">
-                      <Stack spacing="1">
-                        <HStack spacing="3" flexWrap="wrap">
+                      <Stack gap="1">
+                        <HStack gap="3" flexWrap="wrap">
                           {/* Badge con severidad del evento */}
                           <Badge colorScheme={statusColor[log.status]}>
                             {log.status}
@@ -159,8 +168,8 @@ export default function UserLogsPage() {
                   </Box>
                 ))}
               </Stack>
-            </CardBody>
-          </Card>
+            </Card.Body>
+          </Card.Root>
         </Stack>
       </Container>
     </Box>

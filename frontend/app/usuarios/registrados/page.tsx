@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 // Navegacion y componentes UI usados por la vista.
 import NextLink from "next/link";
 import {
@@ -8,15 +9,12 @@ import {
   Box,
   Button,
   Card,
-  CardBody,
-  CardHeader,
   Container,
   HStack,
   Heading,
   SimpleGrid,
   Stack,
   Tag,
-  TagLabel,
   Text,
 } from "@chakra-ui/react";
 
@@ -75,38 +73,44 @@ const roleColor: Record<string, string> = {
 
 // Pagina de listado de usuarios con permisos.
 export default function RegisteredUsersPage() {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  if (!mounted) return null;
+
   return (
     <Box py={{ base: 10, md: 16 }}>
       <Container maxW="container.xl">
-        <Stack spacing="6">
+        <Stack gap="6">
           {/* Encabezado de la pagina y navegacion entre vistas */}
-          <Stack spacing="2">
+          <Stack gap="2">
             <Heading size="lg">Usuarios registrados</Heading>
             <Text color="muted">
               Lista visual de usuarios con roles y permisos.
             </Text>
-            <HStack spacing="4" flexWrap="wrap">
-              <Button as={NextLink} href="/usuarios" variant="ghost">
-                CRUD
+            <HStack gap="4" flexWrap="wrap">
+              <Button asChild variant="ghost">
+                <NextLink href="/usuarios">CRUD</NextLink>
               </Button>
-              <Button as={NextLink} href="/usuarios/registrados" colorScheme="purple">
-                Usuarios registrados
+              <Button asChild colorScheme="purple">
+                <NextLink href="/usuarios/registrados">Usuarios registrados</NextLink>
               </Button>
-              <Button as={NextLink} href="/usuarios/logs" variant="ghost">
-                Logs de usuarios
+              <Button asChild variant="ghost">
+                <NextLink href="/usuarios/logs">Logs de usuarios</NextLink>
               </Button>
             </HStack>
           </Stack>
 
           {/* Grid de tarjetas por usuario */}
-          <SimpleGrid columns={{ base: 1, md: 2, xl: 3 }} spacing="6">
+          <SimpleGrid columns={{ base: 1, md: 2, xl: 3 }} gap="6">
             {/* Renderizado de cada card con datos mock */}
             {users.map((user) => (
-              <Card key={user.id} variant="outline">
-                <CardHeader>
-                  <HStack spacing="4">
-                    <Avatar name={user.name} />
-                    <Stack spacing="1">
+              <Card.Root key={user.id} variant="outline">
+                <Card.Header>
+                  <HStack gap="4">
+                    <Avatar.Root>
+                      <Avatar.Fallback name={user.name} />
+                    </Avatar.Root>
+                    <Stack gap="1">
                       <Heading size="sm">{user.name}</Heading>
                       <Text fontSize="sm" color="muted">
                         {user.email}
@@ -117,28 +121,28 @@ export default function RegisteredUsersPage() {
                       {user.role}
                     </Badge>
                   </HStack>
-                </CardHeader>
-                <CardBody>
-                  <Stack spacing="3">
+                </Card.Header>
+                <Card.Body>
+                  <Stack gap="3">
                     <Text fontSize="sm" color="muted">
                       Equipo: {user.team}
                     </Text>
-                    <Stack spacing="2">
+                    <Stack gap="2">
                       <Text fontSize="sm" fontWeight="semibold">
                         Permisos
                       </Text>
                       {/* Lista visual de permisos */}
-                      <HStack spacing="2" flexWrap="wrap">
+                      <HStack gap="2" flexWrap="wrap">
                         {user.permissions.map((permission) => (
-                          <Tag key={permission} size="sm" variant="subtle" colorScheme="purple">
-                            <TagLabel>{permission}</TagLabel>
-                          </Tag>
+                          <Tag.Root key={permission} size="sm" variant="subtle" colorScheme="purple">
+                            <Tag.Label>{permission}</Tag.Label>
+                          </Tag.Root>
                         ))}
                       </HStack>
                     </Stack>
                   </Stack>
-                </CardBody>
-              </Card>
+                </Card.Body>
+              </Card.Root>
             ))}
           </SimpleGrid>
         </Stack>

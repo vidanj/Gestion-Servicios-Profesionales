@@ -3,9 +3,7 @@ import {
   BoxProps,
   Container,
   Flex,
-  useColorModeValue,
 } from '@chakra-ui/react'
-import { useScroll } from 'framer-motion'
 
 import * as React from 'react'
 
@@ -16,15 +14,13 @@ export interface HeaderProps extends Omit<BoxProps, 'children'> {}
 
 export const Header = (props: HeaderProps) => {
   const ref = React.useRef<HTMLHeadingElement>(null)
-  const [y, setY] = React.useState(0)
-  const { height = 0 } = ref.current?.getBoundingClientRect() ?? {}
+  const [scrolled, setScrolled] = React.useState(false)
 
-  const { scrollY } = useScroll()
   React.useEffect(() => {
-    return scrollY.on('change', () => setY(scrollY.get()))
-  }, [scrollY])
-
-  const bg = useColorModeValue('whiteAlpha.700', 'rgba(29, 32, 37, 0.7)')
+    const handleScroll = () => setScrolled(window.scrollY > 10)
+    window.addEventListener('scroll', handleScroll)
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
 
   return (
     <Box
@@ -38,9 +34,10 @@ export const Header = (props: HeaderProps) => {
       borderColor="whiteAlpha.100"
       transitionProperty="common"
       transitionDuration="normal"
-      bg={y > height ? bg : ''}
-      boxShadow={y > height ? 'md' : ''}
-      borderBottomWidth={y > height ? '1px' : ''}
+      bg={scrolled ? 'whiteAlpha.700' : ''}
+      _dark={{ bg: scrolled ? 'rgba(29, 32, 37, 0.7)' : '' }}
+      boxShadow={scrolled ? 'md' : ''}
+      borderBottomWidth={scrolled ? '1px' : ''}
       {...props}
     >
       <Container maxW="container.2xl" px="8" py="4">
@@ -49,11 +46,7 @@ export const Header = (props: HeaderProps) => {
             onClick={(e) => {
               if (window.location.pathname === '/') {
                 e.preventDefault()
-
-                window.scrollTo({
-                  top: 0,
-                  behavior: 'smooth',
-                })
+                window.scrollTo({ top: 0, behavior: 'smooth' })
               }
             }}
           />

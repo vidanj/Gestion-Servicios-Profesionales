@@ -1,16 +1,31 @@
-import { IconButton, useColorMode } from '@chakra-ui/react'
+'use client'
+import { IconButton } from '@chakra-ui/react'
 import { FiMoon, FiSun } from 'react-icons/fi'
+import { useEffect, useState } from 'react'
 
 const ThemeToggle = () => {
-  const { colorMode, toggleColorMode } = useColorMode()
+  const [isDark, setIsDark] = useState(false)
+
+  useEffect(() => {
+    const theme = document.documentElement.getAttribute('data-theme')
+    setIsDark(theme === 'dark')
+  }, [])
+
+  const toggle = () => {
+    const newTheme = isDark ? 'light' : 'dark'
+    document.documentElement.setAttribute('data-theme', newTheme)
+    setIsDark(!isDark)
+  }
+
   return (
     <IconButton
       variant="ghost"
       aria-label="theme toggle"
-      icon={colorMode === 'light' ? <FiMoon size="14" /> : <FiSun size="14" />}
       borderRadius="md"
-      onClick={toggleColorMode}
-    />
+      onClick={toggle}
+    >
+      {isDark ? <FiSun size="14" /> : <FiMoon size="14" />}
+    </IconButton>
   )
 }
 

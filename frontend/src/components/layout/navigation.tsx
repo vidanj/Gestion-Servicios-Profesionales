@@ -29,10 +29,10 @@ const Navigation: React.FC = () => {
 
   useUpdateEffect(() => {
     mobileNavBtnRef.current?.focus()
-  }, [mobileNav.isOpen])
+  }, [mobileNav.open])
 
   return (
-    <HStack spacing="2" flexShrink={0}>
+    <HStack gap="2" flexShrink={0}>
       {siteConfig.header.links.map(({ href, id, ...props }, i) => {
         return (
           <NavLink
@@ -60,7 +60,7 @@ const Navigation: React.FC = () => {
         onClick={mobileNav.onOpen}
       />
 
-      <MobileNavContent isOpen={mobileNav.isOpen} onClose={mobileNav.onClose} />
+      <MobileNavContent isOpen={mobileNav.open} onClose={mobileNav.onClose} />
     </HStack>
   )
 }
