@@ -1,6 +1,7 @@
 using DotNetEnv;
 using Microsoft.EntityFrameworkCore;
 using SistemaServicios.API.Data;
+using SistemaServicios.API.Services;
 
 namespace SistemaServicios.API.Extensions
 {
@@ -23,6 +24,8 @@ namespace SistemaServicios.API.Extensions
 
             services.AddDbContext<AppDbContext>(options =>
                 options.UseNpgsql(connectionString));
+
+            services.AddScoped<ProfessionalService>();
 
             return services;
         }
