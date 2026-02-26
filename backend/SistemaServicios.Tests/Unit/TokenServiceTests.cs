@@ -230,4 +230,31 @@ public class TokenServiceTests
         act.Should().Throw<InvalidOperationException>()
            .WithMessage("JWT Key no configurado.");
     }
+
+    [Fact]
+    public void CreateToken_SinExpiresInMinutes_UsaDefault60Minutos()
+    {
+        // Arrange: JwtSettings:ExpiresInMinutes omitido → debe usar el valor por defecto "60"
+        var config = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["JwtSettings:Key"]      = TestKey,
+                ["JwtSettings:Issuer"]   = TestIssuer,
+                ["JwtSettings:Audience"] = TestAudience,
+                // ExpiresInMinutes intencionalmente omitido
+            })
+            .Build();
+
+        var service = new TokenService(config);
+        var antes   = DateTime.UtcNow;
+
+        // Act
+        var token = service.CreateToken(CrearUsuarioDePrueba());
+
+        // Assert: el token se generó y expira en ~60 minutos (valor por defecto)
+        var jwt = new JwtSecurityTokenHandler().ReadJwtToken(token);
+        jwt.ValidTo.Should().BeCloseTo(
+            antes.AddMinutes(60),
+            precision: TimeSpan.FromSeconds(10));
+    }
 }

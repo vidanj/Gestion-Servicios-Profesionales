@@ -21,8 +21,12 @@ namespace SistemaServicios.API.Extensions
             while (directory != null && !File.Exists(Path.Combine(directory.FullName, ".env")))
                 directory = directory.Parent;
 
+            // clobberExistingVars: false → las variables ya fijadas en el entorno
+            // (sistema operativo, Docker, CI, o la factory de tests) tienen prioridad
+            // sobre las del archivo .env. Sigue el estándar de prioridad de env vars.
             if (directory != null)
-                Env.Load(Path.Combine(directory.FullName, ".env"));
+                Env.Load(Path.Combine(directory.FullName, ".env"),
+                    new LoadOptions(clobberExistingVars: false));
 
             // Inyecta las variables del .env en el sistema de configuración de ASP.NET Core
             // Así config["JwtSettings:Key"] se resuelve desde JWT_KEY del .env
@@ -34,7 +38,17 @@ namespace SistemaServicios.API.Extensions
                 ["JwtSettings:ExpiresInMinutes"] = Environment.GetEnvironmentVariable("JWT_EXPIRES_MINUTES"),
             });
 
-            var connectionString = Environment.GetEnvironmentVariable("DB_CONNECTION");
+            var dbHost = Environment.GetEnvironmentVariable("DB_HOST")
+                ?? throw new InvalidOperationException("DB_HOST no definido en el archivo .env");
+            var dbPort = Environment.GetEnvironmentVariable("DB_PORT") ?? "5432";
+            var dbName = Environment.GetEnvironmentVariable("DB_NAME")
+                ?? throw new InvalidOperationException("DB_NAME no definido en el archivo .env");
+            var dbUser = Environment.GetEnvironmentVariable("DB_USER")
+                ?? throw new InvalidOperationException("DB_USER no definido en el archivo .env");
+            var dbPassword = Environment.GetEnvironmentVariable("DB_PASSWORD")
+                ?? throw new InvalidOperationException("DB_PASSWORD no definido en el archivo .env");
+
+            var connectionString = $"Host={dbHost};Port={dbPort};Database={dbName};Username={dbUser};Password={dbPassword}";
 
             services.AddDbContext<AppDbContext>(options =>
                 options.UseNpgsql(connectionString));
@@ -45,6 +59,7 @@ namespace SistemaServicios.API.Extensions
             // Services
             services.AddScoped<ITokenService, TokenService>();
             services.AddScoped<IAuthService, AuthService>();
+            services.AddScoped<IBackupService, BackupService>();
 
             // JWT Authentication
             var jwtKey = config["JwtSettings:Key"]

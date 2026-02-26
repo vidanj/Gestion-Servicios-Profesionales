@@ -42,7 +42,7 @@ namespace SistemaServicios.API.Services
                 PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password),
                 FirstName = dto.FirstName.Trim(),
                 LastName = dto.LastName.Trim(),
-                Role = dto.Role,
+                Role = UserRole.Client,
                 PhoneNumber = dto.PhoneNumber?.Trim(),
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow,

@@ -158,7 +158,6 @@ public class AuthServiceTests
             Password = "Password123!",
             FirstName = "Carlos",
             LastName = "García",
-            Role = UserRole.Client,
         };
 
         // Act
@@ -280,5 +279,34 @@ public class AuthServiceTests
         usuarioGuardado!.Id.Should().NotBe(Guid.Empty);
         usuarioGuardado.CreatedAt.Should().BeOnOrAfter(antes);
         usuarioGuardado.UpdatedAt.Should().BeOnOrAfter(antes);
+    }
+
+    [Fact]
+    public async Task RegisterAsync_ConPhoneNumber_GuardaPhoneNumberTrimmeado()
+    {
+        // Arrange: PhoneNumber con espacios al inicio y al final
+        User? usuarioGuardado = null;
+
+        _mockRepo.Setup(r => r.EmailExistsAsync(It.IsAny<string>())).ReturnsAsync(false);
+        _mockRepo.Setup(r => r.CreateAsync(It.IsAny<User>()))
+                 .Callback<User>(u => usuarioGuardado = u)
+                 .ReturnsAsync((User u) => u);
+        _mockToken.Setup(t => t.CreateToken(It.IsAny<User>())).Returns("token");
+
+        var dto = new RegisterRequestDto
+        {
+            Email       = "telefono@test.com",
+            Password    = "Password123!",
+            FirstName   = "Ana",
+            LastName    = "Gómez",
+            PhoneNumber = "  +504 9999-8888  ",   // con espacios al inicio y al final
+        };
+
+        // Act
+        await _authService.RegisterAsync(dto);
+
+        // Assert: PhoneNumber guardado sin espacios extra
+        usuarioGuardado.Should().NotBeNull();
+        usuarioGuardado!.PhoneNumber.Should().Be("+504 9999-8888");
     }
 }
