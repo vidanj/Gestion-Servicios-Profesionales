@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Providers from "./providers";
 import EmotionRegistry from "./emotion-registry";
+import { MSWProvider } from "@/mocks/MSWProvider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -31,7 +32,9 @@ export default function RootLayout({
         suppressHydrationWarning
       >
         <EmotionRegistry>
-          <Providers>{children}</Providers>
+          <Providers>
+              {children}
+            </Providers>
         </EmotionRegistry>
       </body>
     </html>
