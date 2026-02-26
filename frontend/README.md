@@ -20,7 +20,7 @@ yarn dev
 pnpm dev
 # or
 bun dev
-# or
+# in second terminal
 npx playwright test
 ```
 
