@@ -11,10 +11,7 @@ const siteConfig = {
     links: [
       { label: 'Inicio', href: '/' },
       { label: 'Acerca de', href: '/about' },
-<<<<<<< HEAD
-=======
       { label: 'Solicitudes', href: '/solicitudes' },
->>>>>>> 38fc090 (interfaz solicitudes - issue 22)
       { label: 'Servicios', id: 'features', href: '/#features' },
       { label: 'Precios', id: 'pricing', href: '/#pricing' },
       { label: 'Ingresar', href: '/login' },
