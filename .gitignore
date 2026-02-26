@@ -81,6 +81,11 @@ publish/
 # (No ignorar Migrations/ — deben versionarse)
 
 # ========================
+# Code Coverage
+# ========================
+coverage/
+
+# ========================
 # Proyecto específico
 # ========================
 PULL_REQUEST_TEMPLATE.md
