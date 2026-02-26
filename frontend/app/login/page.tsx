@@ -78,6 +78,7 @@ export default function LoginPage() {
             <form style={{ display: "flex", flexDirection: "column", gap: "1.75rem" }}>
               {/* Username */}
               <input
+                data-testid="username-input"
                 type="text"
                 placeholder="username"
                 style={{
@@ -97,6 +98,7 @@ export default function LoginPage() {
 
               {/* Password */}
               <input
+                data-testid="password-input"
                 type="password"
                 placeholder="password"
                 style={{
@@ -127,6 +129,7 @@ export default function LoginPage() {
 
               {/* Login button */}
               <button
+                data-testid="login-button"
                 type="button"
                 onClick={() => router.push("/dashboard")}
                 style={{
