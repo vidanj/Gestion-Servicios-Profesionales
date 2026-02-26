@@ -140,6 +140,7 @@ export default function LoginPage() {
             <form style={{ display: "flex", flexDirection: "column", gap: "1.75rem" }}>
               {/* Username */}
               <input
+                data-testid="username-input"
                 type="email"
                 placeholder="correo electrónico"
                 value={email}
@@ -161,6 +162,7 @@ export default function LoginPage() {
 
               {/* Password */}
               <input
+                data-testid="password-input"
                 type="password"
                 placeholder="contraseña"
                 value={password}
@@ -193,6 +195,7 @@ export default function LoginPage() {
 
               {/* Login button */}
               <button
+                data-testid="login-button"
                 type="button"
                 onClick={handleLogin}
                 style={{
