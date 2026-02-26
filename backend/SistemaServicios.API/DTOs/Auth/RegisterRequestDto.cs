@@ -1,5 +1,4 @@
 using System.ComponentModel.DataAnnotations;
-using SistemaServicios.API.Models;
 
 namespace SistemaServicios.API.DTOs.Auth
 {
@@ -23,7 +22,5 @@ namespace SistemaServicios.API.DTOs.Auth
 
         [MaxLength(20)]
         public string? PhoneNumber { get; set; }
-
-        public UserRole Role { get; set; } = UserRole.Client;
     }
 }

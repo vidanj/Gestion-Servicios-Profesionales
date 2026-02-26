@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using SistemaServicios.API.Data;
 
 namespace SistemaServicios.Tests.Integration;
@@ -21,14 +22,18 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
     {
         // Establecer variables de entorno antes de que AddApplicationServices las lea.
         // ApplicationServiceExtensions llama a Environment.GetEnvironmentVariable(...)
-        // para poblar la configuración de JWT y la cadena de conexión.
+        // para poblar la configuración de JWT y las credenciales de BD.
         Environment.SetEnvironmentVariable("JWT_KEY", "ClaveSecretaParaIntegracionTests_32Ch!");
         Environment.SetEnvironmentVariable("JWT_ISSUER", "TestIssuer");
         Environment.SetEnvironmentVariable("JWT_AUDIENCE", "TestAudience");
         Environment.SetEnvironmentVariable("JWT_EXPIRES_MINUTES", "60");
-        // DB_CONNECTION se establece para que AddApplicationServices no lance excepción,
-        // pero el DbContext será reemplazado abajo por InMemory.
-        Environment.SetEnvironmentVariable("DB_CONNECTION", "Host=localhost;Database=fake");
+        // Variables individuales de BD: evitan la excepción en AddApplicationServices.
+        // El DbContext será reemplazado abajo por InMemory, por lo que estos valores no se usan.
+        Environment.SetEnvironmentVariable("DB_HOST", "localhost");
+        Environment.SetEnvironmentVariable("DB_PORT", "5432");
+        Environment.SetEnvironmentVariable("DB_NAME", "fake");
+        Environment.SetEnvironmentVariable("DB_USER", "fake");
+        Environment.SetEnvironmentVariable("DB_PASSWORD", "fake");
 
         builder.ConfigureServices(services =>
         {
@@ -52,6 +57,10 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
             services.AddDbContext<AppDbContext>(options =>
                 options.UseInMemoryDatabase(_dbName));
         });
+
+        // Suprimir warnings de HTTPS del test server (no tiene puerto HTTPS configurado)
+        builder.ConfigureLogging(logging =>
+            logging.AddFilter("Microsoft.AspNetCore.HttpsPolicy", LogLevel.None));
 
         // Ambiente explícito para pruebas
         builder.UseEnvironment("Testing");

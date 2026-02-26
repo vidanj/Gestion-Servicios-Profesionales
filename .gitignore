@@ -92,3 +92,10 @@ PULL_REQUEST_TEMPLATE.md
 
 .github/DRAFTS/
 .claude/
+
+# ========================
+# Respaldos de base de datos
+# ========================
+backups/*
+!backups/.gitkeep
+*.sql
