@@ -1,8 +1,9 @@
 "use client";
-
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 
 export default function LoginPage() {
+  const router = useRouter();
   return (
     <div style={{
       minHeight: "100vh",
@@ -127,6 +128,7 @@ export default function LoginPage() {
               {/* Login button */}
               <button
                 type="button"
+                onClick={() => router.push("/dashboard")}
                 style={{
                   display: "block", width: "100%", boxSizing: "border-box",
                   padding: "1rem",
