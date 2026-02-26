@@ -141,6 +141,7 @@ export default function RecoveryPage() {
             >
               {/* Email */}
               <input
+                data-testid="email-input"
                 type="email"
                 placeholder="Enter your email"
                 style={{
@@ -170,6 +171,7 @@ export default function RecoveryPage() {
 
               {/* Submit button */}
               <button
+                data-testid="submit-button"
                 type="button"
                 style={{
                   display: "block",
@@ -209,6 +211,7 @@ export default function RecoveryPage() {
                 }}
               >
                 <Link
+                  data-testid="back-to-login"
                   href="/login"
                   style={{
                     color: "rgba(255,255,255,0.8)",
