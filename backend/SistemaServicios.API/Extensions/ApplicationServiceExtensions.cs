@@ -24,8 +24,6 @@ namespace SistemaServicios.API.Extensions
             if (directory != null)
                 Env.Load(Path.Combine(directory.FullName, ".env"));
 
-            // Inyecta las variables del .env en el sistema de configuración de ASP.NET Core
-            // Así config["JwtSettings:Key"] se resuelve desde JWT_KEY del .env
             ((IConfigurationBuilder)config).AddInMemoryCollection(new Dictionary<string, string?>
             {
                 ["JwtSettings:Key"]              = Environment.GetEnvironmentVariable("JWT_KEY"),
@@ -45,6 +43,7 @@ namespace SistemaServicios.API.Extensions
             // Services
             services.AddScoped<ITokenService, TokenService>();
             services.AddScoped<IAuthService, AuthService>();
+            services.AddScoped<RequestService>();
 
             // JWT Authentication
             var jwtKey = config["JwtSettings:Key"]
@@ -57,9 +56,9 @@ namespace SistemaServicios.API.Extensions
                     {
                         ValidateIssuerSigningKey = true,
                         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
-                        ValidateIssuer = true,
+                        ValidateIssuer = false,
                         ValidIssuer = config["JwtSettings:Issuer"],
-                        ValidateAudience = true,
+                        ValidateAudience = false,
                         ValidAudience = config["JwtSettings:Audience"],
                         ValidateLifetime = true,
                         ClockSkew = TimeSpan.Zero,

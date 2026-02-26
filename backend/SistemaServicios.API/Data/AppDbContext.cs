@@ -11,10 +11,13 @@ namespace SistemaServicios.API.Data
         public DbSet<User> Users { get; set; }
         public DbSet<Category> Categories { get; set; }
         public DbSet<Service> Services { get; set; }
-        public DbSet<Request> Requests { get; set; }
+
         public DbSet<Rating> Ratings { get; set; }
         public DbSet<Quote> Quotes { get; set; }
         public DbSet<Verification> Verifications { get; set; }
+        
+        // Esta es la nueva tabla correcta:
+        public DbSet<ServiceRequest> ServiceRequests { get; set; }
 
         // Configuración especial de relaciones (Fluent API)
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -26,21 +29,11 @@ namespace SistemaServicios.API.Data
                 .Property(s => s.BasePrice)
                 .HasPrecision(18, 2);
 
-            // Regla: Una Solicitud tiene 2 Usuarios (Cliente y Profesional)
+            // NOTA: Borramos la configuración de "Request" porque esa clase ya no existe.
+            // ServiceRequest se configura automáticamente con los atributos [ForeignKey] que pusimos en el modelo.
+
+            // Regla: Configuración para Calificaciones (Ratings)
             // Evitamos que al borrar un usuario se rompa todo en cadena (Restrict)
-            modelBuilder.Entity<Request>()
-                .HasOne(r => r.Client)
-                .WithMany()
-                .HasForeignKey(r => r.ClientId)
-                .OnDelete(DeleteBehavior.Restrict);
-
-            modelBuilder.Entity<Request>()
-                .HasOne(r => r.Professional)
-                .WithMany()
-                .HasForeignKey(r => r.ProfessionalId)
-                .OnDelete(DeleteBehavior.Restrict);
-
-            // Lo mismo para las Calificaciones (Ratings)
             modelBuilder.Entity<Rating>()
                 .HasOne(r => r.Client)
                 .WithMany()

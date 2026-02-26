@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using SistemaServicios.API.Data;
@@ -11,9 +12,11 @@ using SistemaServicios.API.Data;
 namespace SistemaServicios.API.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260226014726_CreateServiceRequestsTable")]
+    partial class CreateServiceRequestsTable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -111,15 +114,19 @@ namespace SistemaServicios.API.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<string>("Comment")
-                        .HasColumnType("text");
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<Guid>("ProfessionalId")
                         .HasColumnType("uuid");
 
-                    b.Property<int>("Score")
+                    b.Property<int>("RequestId")
                         .HasColumnType("integer");
 
-                    b.Property<int>("ServiceRequestId")
+                    b.Property<int>("Score")
                         .HasColumnType("integer");
 
                     b.HasKey("Id");
@@ -128,9 +135,56 @@ namespace SistemaServicios.API.Migrations
 
                     b.HasIndex("ProfessionalId");
 
-                    b.HasIndex("ServiceRequestId");
+                    b.HasIndex("RequestId");
 
                     b.ToTable("Ratings");
+                });
+
+            modelBuilder.Entity("SistemaServicios.API.Models.Request", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<Guid>("ClientId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("CompletionDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<Guid>("ProfessionalId")
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("QuotedPrice")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime>("RequestDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("ScheduledDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("ServiceId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ClientId");
+
+                    b.HasIndex("ProfessionalId");
+
+                    b.HasIndex("ServiceId");
+
+                    b.ToTable("Requests");
                 });
 
             modelBuilder.Entity("SistemaServicios.API.Models.Service", b =>
@@ -348,9 +402,9 @@ namespace SistemaServicios.API.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("SistemaServicios.API.Models.ServiceRequest", "ServiceRequest")
+                    b.HasOne("SistemaServicios.API.Models.Request", "Request")
                         .WithMany()
-                        .HasForeignKey("ServiceRequestId")
+                        .HasForeignKey("RequestId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -358,7 +412,34 @@ namespace SistemaServicios.API.Migrations
 
                     b.Navigation("Professional");
 
-                    b.Navigation("ServiceRequest");
+                    b.Navigation("Request");
+                });
+
+            modelBuilder.Entity("SistemaServicios.API.Models.Request", b =>
+                {
+                    b.HasOne("SistemaServicios.API.Models.User", "Client")
+                        .WithMany()
+                        .HasForeignKey("ClientId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SistemaServicios.API.Models.User", "Professional")
+                        .WithMany()
+                        .HasForeignKey("ProfessionalId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SistemaServicios.API.Models.Service", "Service")
+                        .WithMany()
+                        .HasForeignKey("ServiceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Client");
+
+                    b.Navigation("Professional");
+
+                    b.Navigation("Service");
                 });
 
             modelBuilder.Entity("SistemaServicios.API.Models.Service", b =>

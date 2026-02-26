@@ -1,11 +1,19 @@
 using SistemaServicios.API.Extensions; 
+using DotNetEnv;
+
+Env.Load();
 
 var builder = WebApplication.CreateBuilder(args);
 
-// --- 1. CONFIGURACIÓN LIMPIA (Aquí llamamos a tu clase nueva) ---
+// --- 1. CONFIGURACIÓN LIMPIA 
 builder.Services.AddApplicationServices(builder.Configuration);
 
-builder.Services.AddControllers();
+// MODIFICACIÓN AQUÍ: Agregamos la regla para evitar ciclos infinitos en JSON
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
+    });
 
 // --- 2. CONFIGURACIÓN OPENAPI (.NET 9 NATIVO) ---
 builder.Services.AddOpenApi();
