@@ -28,3 +28,6 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
+
+// Necesario para que WebApplicationFactory<Program> pueda acceder a este ensamblado en los tests
+public partial class Program { }

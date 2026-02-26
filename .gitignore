@@ -84,3 +84,6 @@ publish/
 # Proyecto específico
 # ========================
 PULL_REQUEST_TEMPLATE.md
+
+.github/DRAFTS/
+.claude/
