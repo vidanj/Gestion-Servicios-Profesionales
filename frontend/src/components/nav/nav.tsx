@@ -23,9 +23,22 @@ export default function Nav() {
       </Link>
 
       <div style={{ display: "flex", gap: "1.5rem" }}>
+      <Link href="/solicitudes" style={{ color: "rgba(255,255,255,0.7)", textDecoration: "none" }}>
+        Solicitudes
+      </Link>
+
+      <Link href="/usuarios" style={{ color: "rgba(255,255,255,0.7)", textDecoration: "none" }}>
+        Administración
+      </Link>
+
         <Link href="/dashboard" style={{ color: "rgba(255,255,255,0.7)", textDecoration: "none" }}>
           Catálogos
         </Link>
+
+        <Link href="/about" style={{ color: "rgba(255,255,255,0.7)", textDecoration: "none" }}>
+        Acerca de
+      </Link>
+
         <Link href="/login" style={{ color: "rgba(255,255,255,0.7)", textDecoration: "none" }}>
           Logout
         </Link>
