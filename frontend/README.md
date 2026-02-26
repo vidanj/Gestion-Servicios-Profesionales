@@ -13,6 +13,10 @@ npm intall -D @playwright/test
 # and
 npx playwright install
 # and
+npm install msw --save-dev
+# and
+npx msw init public/
+# and
 npm run dev
 # or
 yarn dev
