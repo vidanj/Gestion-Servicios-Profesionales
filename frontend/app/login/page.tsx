@@ -1,8 +1,9 @@
 "use client";
-
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 
 export default function LoginPage() {
+  const router = useRouter();
   return (
     <div style={{
       minHeight: "100vh",
@@ -119,7 +120,7 @@ export default function LoginPage() {
                   <input type="checkbox" style={{ accentColor: "#7c3aed", width: "1rem", height: "1rem", cursor: "pointer" }} />
                   Remember me
                 </label>
-                <Link href="#" style={{ color: "rgba(255,255,255,0.8)", textDecoration: "none", fontWeight: 500 }}>
+                <Link href="/recovery" style={{ color: "rgba(255,255,255,0.8)", textDecoration: "none", fontWeight: 500 }}>
                   Forgot your password?
                 </Link>
               </div>
@@ -127,6 +128,7 @@ export default function LoginPage() {
               {/* Login button */}
               <button
                 type="button"
+                onClick={() => router.push("/dashboard")}
                 style={{
                   display: "block", width: "100%", boxSizing: "border-box",
                   padding: "1rem",
