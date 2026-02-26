@@ -1,8 +1,71 @@
 "use client";
-
+import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useState } from "react";
 
 export default function LoginPage() {
+
+  const router = useRouter();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+
+  const validateForm = () => {
+    if (!email.trim()) {
+      setError("El email es obligatorio");
+      return false;
+    }
+
+    if (!email.includes("@")) {
+      setError("El email no es válido");
+      return false;
+    }
+
+    if (!password.trim()) {
+      setError("La contraseña es obligatoria");
+      return false;
+    }
+
+    if (password.length < 6) {
+      setError("La contraseña debe tener al menos 6 caracteres");
+      return false;
+    }
+
+    setError("");
+    return true;
+  };
+
+  const handleLogin = async () => {
+    setError("");
+    if (!validateForm()) return;
+
+    try {
+      const res = await fetch("http://localhost:5000/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email,
+          password,
+        }),
+      });
+
+      if (!res.ok) {
+        setError("Credenciales inválidas");
+        return;
+      }
+
+      const data = await res.json();
+      localStorage.setItem("token", data.token);
+
+      router.push("/dashboard");
+    } catch (error) {
+      console.error(error);
+      setError("Error de conexión");
+    }
+  };
+
   return (
     <div style={{
       minHeight: "100vh",
@@ -77,8 +140,11 @@ export default function LoginPage() {
             <form style={{ display: "flex", flexDirection: "column", gap: "1.75rem" }}>
               {/* Username */}
               <input
-                type="text"
-                placeholder="username"
+                data-testid="username-input"
+                type="email"
+                placeholder="correo electrónico"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 style={{
                   display: "block", width: "100%", boxSizing: "border-box",
                   padding: "1.25rem 1.5rem",
@@ -96,8 +162,11 @@ export default function LoginPage() {
 
               {/* Password */}
               <input
+                data-testid="password-input"
                 type="password"
-                placeholder="password"
+                placeholder="contraseña"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
                 style={{
                   display: "block", width: "100%", boxSizing: "border-box",
                   padding: "1.25rem 1.5rem",
@@ -119,14 +188,16 @@ export default function LoginPage() {
                   <input type="checkbox" style={{ accentColor: "#7c3aed", width: "1rem", height: "1rem", cursor: "pointer" }} />
                   Remember me
                 </label>
-                <Link href="#" style={{ color: "rgba(255,255,255,0.8)", textDecoration: "none", fontWeight: 500 }}>
+                <Link href="/recovery" style={{ color: "rgba(255,255,255,0.8)", textDecoration: "none", fontWeight: 500 }}>
                   Forgot your password?
                 </Link>
               </div>
 
               {/* Login button */}
               <button
+                data-testid="login-button"
                 type="button"
+                onClick={handleLogin}
                 style={{
                   display: "block", width: "100%", boxSizing: "border-box",
                   padding: "1rem",
@@ -146,6 +217,7 @@ export default function LoginPage() {
               >
                 LOGIN
               </button>
+              {error && <p style={{ color: "red" }}>{error}</p>}
             </form>
           </div>
 

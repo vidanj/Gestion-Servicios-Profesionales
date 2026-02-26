@@ -2,9 +2,21 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 ## Getting Started
 
-First, run the development server:
+First, download and then run the development server:
 
 ```bash
+npm install
+# and
+npm install next-themes
+# and
+npm intall -D @playwright/test
+# and
+npx playwright install
+# and
+npm install msw --save-dev
+# and
+npx msw init public/
+# and
 npm run dev
 # or
 yarn dev
@@ -12,6 +24,8 @@ yarn dev
 pnpm dev
 # or
 bun dev
+# in second terminal
+npx playwright test
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
