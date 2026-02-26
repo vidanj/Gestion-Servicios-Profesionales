@@ -15,16 +15,19 @@ var app = builder.Build();
 // --- 3. PIPELINE ---
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi(); // Genera el JSON de la API
-    
+    app.UseSwagger();
     app.UseSwaggerUI(options =>
     {
-        options.SwaggerEndpoint("/openapi/v1.json", "Sistema Servicios API");
+        options.SwaggerEndpoint("/swagger/v1/swagger.json", "Sistema Servicios API v1");
     });
 }
 
 app.UseHttpsRedirection();
+app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
+
+// Necesario para que WebApplicationFactory<Program> pueda acceder a este ensamblado en los tests
+public partial class Program { }
