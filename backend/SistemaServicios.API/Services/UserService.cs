@@ -22,7 +22,7 @@ namespace SistemaServicios.API.Services
 
         public async Task<UserDto?> GetUserByIdAsync(Guid id)
         {
-            var user = await _userRepository.GetUserByIdAsync(id);
+            var user = await _userRepository.GetByIdAsync(id);
             return user == null ? null : MapToDto(user);
         }
 
@@ -52,7 +52,7 @@ namespace SistemaServicios.API.Services
 
         public async Task<bool> UpdateUserAsync(Guid id, UpdateUserDto dto)
         {
-            var user = await _userRepository.GetUserByIdAsync(id);
+            var user = await _userRepository.GetByIdAsync(id);
             if (user == null) return false;
 
             user.FirstName = dto.FirstName;
@@ -68,7 +68,7 @@ namespace SistemaServicios.API.Services
 
         public async Task<bool> SoftDeleteUserAsync(Guid id)
         {
-            var user = await _userRepository.GetUserByIdAsync(id);
+            var user = await _userRepository.GetByIdAsync(id);
             if (user == null) return false;
 
             // Borrado lógico

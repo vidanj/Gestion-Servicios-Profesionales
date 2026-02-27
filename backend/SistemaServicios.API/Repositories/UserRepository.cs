@@ -23,7 +23,7 @@ namespace SistemaServicios.API.Repositories
             return (users, totalCount);
         }
 
-        public async Task<User?> GetUserByIdAsync(Guid id) => await _context.Users.FirstOrDefaultAsync(u => u.Id == id && u.Status == true);
+        public async Task<User?> GetByIdAsync(Guid id) => await _context.Users.FirstOrDefaultAsync(u => u.Id == id && u.Status == true);
         public async Task<User?> GetUserByEmailAsync(string email) => await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
         public async Task<User> AddUserAsync(User user) { _context.Users.Add(user); await _context.SaveChangesAsync(); return user; }
         public async Task UpdateUserAsync(User user) { _context.Users.Update(user); await _context.SaveChangesAsync(); }
