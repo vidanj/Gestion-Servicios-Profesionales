@@ -13,6 +13,13 @@
 # testing
 /coverage
 
+
+#public/mockServiceWorker.js
+
+#*/mocks/*
+
+
+
 # next.js
 /.next/
 /out/

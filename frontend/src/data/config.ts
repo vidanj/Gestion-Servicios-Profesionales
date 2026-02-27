@@ -11,6 +11,7 @@ const siteConfig = {
     links: [
       { label: 'Inicio', href: '/' },
       { label: 'Acerca de', href: '/about' },
+      { label: 'Solicitudes', href: '/solicitudes' },
       { label: 'Servicios', id: 'features', href: '/#features' },
       { label: 'Precios', id: 'pricing', href: '/#pricing' },
       { label: 'Ingresar', href: '/login' },

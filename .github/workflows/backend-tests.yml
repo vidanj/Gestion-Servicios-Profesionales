@@ -1,0 +1,96 @@
+name: Backend — Pruebas y Cobertura
+
+on:
+  push:
+    branches:
+      - main
+      - feat/**
+    paths:
+      - 'backend/**'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'backend/**'
+
+jobs:
+  test-and-coverage:
+    name: Pruebas .NET + Code Coverage
+    runs-on: ubuntu-latest
+
+    steps:
+      # ── 1. Checkout ──────────────────────────────────────────────
+      - name: Checkout del repositorio
+        uses: actions/checkout@v4
+
+      # ── 2. .NET 9 SDK ─────────────────────────────────────────────
+      - name: Configurar .NET 9
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      # ── 3. Restaurar dependencias ──────────────────────────────────
+      - name: Restaurar paquetes NuGet
+        run: dotnet restore backend/SistemaServicios.Tests
+
+      # ── 4. Build ───────────────────────────────────────────────────
+      - name: Compilar solución
+        run: dotnet build backend/SistemaServicios.Tests --no-restore --configuration Release
+
+      # ── 5. Pruebas + cobertura ─────────────────────────────────────
+      - name: Ejecutar pruebas con recolección de cobertura
+        env:
+          JWT_KEY: "CIKeyParaGithubActionsTestingPurposesOnly!"
+          JWT_ISSUER: "TestIssuer"
+          JWT_AUDIENCE: "TestAudience"
+          JWT_EXPIRES_MINUTES: "60"
+          DB_HOST: "localhost"
+          DB_PORT: "5432"
+          DB_NAME: "fake"
+          DB_USER: "fake"
+          DB_PASSWORD: "fake"
+          ALLOWED_ORIGINS: "http://localhost:3000"
+        run: |
+          dotnet test backend/SistemaServicios.Tests \
+            --no-build \
+            --configuration Release \
+            --collect:"XPlat Code Coverage" \
+            --settings backend/SistemaServicios.Tests/coverlet.runsettings \
+            --results-directory ./coverage \
+            --logger "trx;LogFileName=test-results.trx"
+
+      # ── 6. Restaurar herramientas locales (incluye ReportGenerator) ──
+      - name: Restaurar herramientas dotnet
+        run: dotnet tool restore
+
+      # ── 7. Generar reporte HTML ────────────────────────────────────
+      - name: Generar reporte HTML de cobertura
+        run: |
+          dotnet tool run reportgenerator \
+            -reports:"./coverage/**/coverage.cobertura.xml" \
+            -targetdir:"./coverage/report" \
+            -reporttypes:"Html;TextSummary;Cobertura" \
+            -assemblyfilters:"+SistemaServicios.API" \
+            -classfilters:"-*Migrations*;-*AppDbContext*;-*Program*"
+
+      # ── 8. Mostrar resumen en el log ───────────────────────────────
+      - name: Mostrar resumen de cobertura
+        run: cat ./coverage/report/Summary.txt
+
+      # ── 9. Publicar reporte como artefacto ─────────────────────────
+      - name: Publicar reporte HTML como artefacto
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-report-${{ github.run_number }}
+          path: ./coverage/report
+          retention-days: 30
+
+      # ── 10. Publicar resultados de pruebas ─────────────────────────
+      - name: Publicar resultados .trx como artefacto
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results-${{ github.run_number }}
+          path: ./coverage/**/*.trx
+          retention-days: 14

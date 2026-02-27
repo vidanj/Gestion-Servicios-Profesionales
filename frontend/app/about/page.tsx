@@ -1,202 +1,186 @@
 "use client";
+import Link from "next/link";
 
-import {
-  Box,
-  Button,
-  Container,
-  Separator,
-  Heading,
-  HStack,
-  SimpleGrid,
-  Stack,
-  Text,
-} from "@chakra-ui/react";
-
-import { MarketingLayout } from "@/components/layout";
-import { Hero } from "@/components/hero";
-import { ButtonLink } from "@/components/button-link/button-link";
-import {
-  Highlights,
-  HighlightsItem,
-  HighlightsTestimonialItem,
-} from "@/components/highlights";
-
-import { Features } from "@/components/features";
-import testimonials from "@/data/testimonials";
-
-export default function About() {
+export default function AboutPage() {
   return (
-    <MarketingLayout
-      announcementProps={{
-        title: "Sobre nosotros",
-        description: "Conoce más sobre Gestión de Servicios Profesionales",
-        href: "#about",
-        action: "Ver",
-      }}
-    >
-      <Box pt={{ base: 24, md: 32 }} id="about">
-        <Hero
-          title="Conectamos talento con oportunidades reales"
-          description="Gestión de Servicios Profesionales es una plataforma inspirada en Fiverr, creada para facilitar la contratación y publicación de servicios profesionales de manera rápida, segura y organizada."
-        >
-          <HStack gap="4" mt="8" flexWrap="wrap">
-            <ButtonLink href="#mission" colorScheme="primary">
-              Nuestra misión
-            </ButtonLink>
-            <Button variant="outline" asChild>
-              <a href="#values">Nuestros valores</a>
-            </Button>
-          </HStack>
-        </Hero>
+    <div style={{
+      minHeight: "100vh",
+      width: "100%",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      background: "#070a0f",
+      padding: "0 1rem",
+      position: "relative",
+      overflow: "hidden",
+    }}>
+      {/* Gradient backgrounds */}
+      <div style={{
+        position: "absolute", inset: 0,
+        background: "linear-gradient(to bottom, rgba(43,19,95,0.7), #070a0f, #070a0f)",
+      }} />
+      <div style={{
+        position: "absolute", inset: 0, opacity: 0.4,
+        background: "radial-gradient(circle at top, #7c3aed, transparent 60%)",
+      }} />
 
-        <Container maxW="6xl" mt="20">
-          <SimpleGrid columns={{ base: 1, md: 2 }} gap="12">
-            <Stack gap="4">
-              <Heading fontSize="2xl">¿Qué es este sistema?</Heading>
-              <Text color="muted">
-                Gestión de Servicios Profesionales es un sistema diseñado para
-                conectar clientes con expertos en distintas áreas como diseño,
-                programación, marketing, consultoría y más.
-              </Text>
-              <Text color="muted">
-                Nuestro objetivo es que cualquier persona pueda ofrecer su
-                conocimiento como un servicio, y que los clientes puedan
-                contratar fácilmente con confianza y transparencia.
-              </Text>
-            </Stack>
+      <div style={{ position: "relative", width: "100%", maxWidth: "700px" }}>
+        {/* Card */}
+        <div style={{
+          position: "relative",
+          borderRadius: "2.5rem",
+          background: "rgba(13,19,27,0.95)",
+          border: "1px solid rgba(255,255,255,0.08)",
+          boxShadow: "0 25px 50px -12px rgba(0,0,0,0.8)",
+          overflow: "hidden",
+        }}>
+          {/* Top color section */}
+          <div style={{ position: "relative", height: "10rem", background: "#0b0f14" }}>
+            <div style={{
+              position: "absolute", inset: 0,
+              background: "linear-gradient(to bottom, rgba(109,40,217,0.5), rgba(109,40,217,0.1), transparent)",
+              filter: "blur(24px)", opacity: 0.9,
+            }} />
+            <div style={{
+              position: "absolute", inset: 0,
+              background: "linear-gradient(to bottom, rgba(11,15,20,0.3), rgba(11,15,20,0.7), #0d131b)",
+            }} />
+          </div>
 
-            <Stack gap="4">
-              <Heading fontSize="2xl">¿Por qué lo creamos?</Heading>
-              <Text color="muted">
-                Porque contratar servicios no debería ser complicado. Queremos
-                una plataforma clara, moderna y accesible, donde se puedan
-                gestionar solicitudes, entregas y pagos de forma eficiente.
-              </Text>
-              <Text color="muted">
-                Buscamos impulsar el trabajo independiente y dar herramientas
-                reales para crecer profesionalmente.
-              </Text>
-            </Stack>
-          </SimpleGrid>
+          {/* Avatar */}
+          <div style={{ display: "flex", justifyContent: "center", marginTop: "-3.5rem", position: "relative", zIndex: 10 }}>
+            <div style={{
+              width: "7rem", height: "7rem", borderRadius: "9999px",
+              background: "#070a0f", border: "4px solid #0d131b",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              boxShadow: "0 20px 25px -5px rgba(0,0,0,0.6)",
+            }}>
+              <div style={{
+                width: "4rem", height: "4rem", borderRadius: "9999px",
+                background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+              }}>
+                <svg xmlns="http://www.w3.org/2000/svg" width="34" height="34"
+                  viewBox="0 0 24 24" fill="none" stroke="white"
+                  strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"
+                  style={{ opacity: 0.7 }}>
+                  <path d="M20 21a8 8 0 0 0-16 0" />
+                  <circle cx="12" cy="7" r="4" />
+                </svg>
+              </div>
+            </div>
+          </div>
 
-          <Separator my="16" />
+          {/* Content */}
+          <div style={{ padding: "2.5rem 5rem 3.5rem", color: "white" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+              
+              {/* Title */}
+              <h1 
+                data-testid="about-title"
+                style={{
+                textAlign: "center",
+                fontSize: "1.8rem",
+                fontWeight: 700,
+                letterSpacing: "0.05em"
+              }}>
+                About Our Marketplace
+              </h1>
 
-          <Stack gap="10" id="mission">
-            <Heading fontSize="3xl">Misión y visión</Heading>
+              {/* Description */}
+              <p
+                data-testid="about-description"
+                style={{
+                textAlign: "center",
+                color: "rgba(255,255,255,0.65)",
+                lineHeight: 1.6,
+                fontSize: "0.95rem"
+              }}>
+                We connect businesses with talented professionals worldwide.
+                Our platform enables clients to discover, hire, and collaborate
+                with experts across design, development, marketing, and more.
+              </p>
 
-            <SimpleGrid columns={{ base: 1, md: 2 }} gap="10">
-              <Box p="8" borderRadius="2xl" borderWidth="1px">
-                <Heading fontSize="xl" mb="3">
-                  🎯 Misión
-                </Heading>
-                <Text color="muted">
-                  Facilitar la conexión entre profesionales y clientes mediante
-                  una plataforma intuitiva que permita contratar servicios con
-                  rapidez, confianza y calidad.
-                </Text>
-              </Box>
+              {/* Stats */}
+              <div style={{
+                display: "flex",
+                justifyContent: "space-between",
+                gap: "1rem",
+                marginTop: "0.5rem"
+              }}>
+                {[
+                  { label: "Freelancers", value: "12K+" },
+                  { label: "Projects", value: "48K+" },
+                  { label: "Clients", value: "9K+" }
+                ].map((s) => (
+                  <div key={s.label} data-testid={`stat-${s.label.toLowerCase()}`} style={{
+                    flex: 1,
+                    borderRadius: "1.25rem",
+                    background: "rgba(255,255,255,0.03)",
+                    border: "1px solid rgba(255,255,255,0.06)",
+                    padding: "1rem",
+                    textAlign: "center"
+                  }}>
+                    <div style={{ fontSize: "1.2rem", fontWeight: 700 }}>
+                      {s.value}
+                    </div>
+                    <div style={{
+                      fontSize: "0.75rem",
+                      color: "rgba(255,255,255,0.5)",
+                      marginTop: "0.25rem"
+                    }}>
+                      {s.label}
+                    </div>
+                  </div>
+                ))}
+              </div>
 
-              <Box p="8" borderRadius="2xl" borderWidth="1px">
-                <Heading fontSize="xl" mb="3">
-                  🚀 Visión
-                </Heading>
-                <Text color="muted">
-                  Convertirnos en una plataforma líder para la gestión de
-                  servicios profesionales, impulsando el talento independiente y
-                  fortaleciendo la economía digital.
-                </Text>
-              </Box>
-            </SimpleGrid>
-          </Stack>
+              {/* Mission */}
+              <p 
+                data-testid="about-mission"
+                style={{
+                textAlign: "center",
+                color: "rgba(255,255,255,0.6)",
+                fontSize: "0.9rem",
+                marginTop: "0.5rem"
+              }}>
+                Our mission is to empower independent professionals and help
+                companies scale faster through trusted digital services.
+              </p>
 
-          <Separator my="16" />
+              {/* CTA */}
+              <Link
+                data-testid="about-cta"
+                href="/login"
+                style={{
+                  display: "block",
+                  textAlign: "center",
+                  marginTop: "0.75rem",
+                  padding: "0.9rem",
+                  borderRadius: "9999px",
+                  background: "linear-gradient(to right, #6d28d9, #7c3aed)",
+                  color: "white",
+                  fontWeight: 600,
+                  letterSpacing: "0.05em",
+                  textDecoration: "none"
+                }}
+              >
+                GET STARTED
+              </Link>
 
-          <Highlights id="values">
-            <HighlightsItem title="Transparencia">
-              <Text color="muted">
-                Queremos que cada trato sea claro: precios, entregas y
-                expectativas desde el inicio.
-              </Text>
-            </HighlightsItem>
+            </div>
+          </div>
 
-            <HighlightsTestimonialItem
-              gradient={["primary.500", "secondary.500"]}
-              name={testimonials.items[1].name}
-              description={testimonials.items[1].description}
-              avatar={testimonials.items[1].avatar}
-            >
-              {testimonials.items[1].children}
-            </HighlightsTestimonialItem>
-
-            <HighlightsItem title="Calidad profesional">
-              <Text color="muted">
-                La plataforma está pensada para elevar el nivel de servicio y
-                garantizar una experiencia profesional.
-              </Text>
-            </HighlightsItem>
-          </Highlights>
-
-          <Separator my="16" />
-
-          <Features
-            id="platform"
-            title="¿Qué ofrece la plataforma?"
-            description="Herramientas pensadas para profesionales y clientes."
-            features={[
-              {
-                title: "Publicación de servicios",
-                description:
-                  "Crea y administra tus servicios con precios, descripciones y categorías.",
-                icon: "FiBriefcase",
-              },
-              {
-                title: "Gestión de pedidos",
-                description:
-                  "Controla solicitudes, avances y entregas desde un solo lugar.",
-                icon: "FiClipboard",
-              },
-              {
-                title: "Comunicación directa",
-                description:
-                  "Chat y seguimiento para que cliente y profesional estén alineados.",
-                icon: "FiMessageCircle",
-              },
-              {
-                title: "Sistema moderno y escalable",
-                description:
-                  "Diseñado para crecer y adaptarse a nuevas funciones en el futuro.",
-                icon: "FiTrendingUp",
-              },
-            ]}
-          />
-
-          <Separator my="16" />
-
-          <Box
-            p={{ base: 8, md: 14 }}
-            borderRadius="2xl"
-            borderWidth="1px"
-            textAlign="center"
-          >
-            <Heading fontSize={{ base: "2xl", md: "3xl" }}>
-              ¿Listo para comenzar?
-            </Heading>
-            <Text mt="4" color="muted" maxW="2xl" mx="auto">
-              Únete a Gestión de Servicios Profesionales y comienza a ofrecer o
-              contratar servicios con una experiencia moderna y profesional.
-            </Text>
-
-            <HStack justify="center" mt="8" gap="4" flexWrap="wrap">
-              <ButtonLink href="/signup" colorScheme="primary">
-                Crear cuenta
-              </ButtonLink>
-              <Button variant="outline" asChild>
-                <a href="/#pricing">Ver planes</a>
-              </Button>
-            </HStack>
-          </Box>
-        </Container>
-      </Box>
-    </MarketingLayout>
+          {/* Bottom glow line */}
+          <div 
+            data-testid="about-bottom-glow"
+            style={{
+            position: "absolute", bottom: 0, left: 0, width: "100%", height: "3px",
+            background: "linear-gradient(to right, transparent, #a855f7, transparent)",
+            opacity: 0.8,
+          }} />
+        </div>
+      </div>
+    </div>
   );
 }
