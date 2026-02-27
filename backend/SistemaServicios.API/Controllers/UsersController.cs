@@ -1,90 +1,61 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using SistemaServicios.API.Data;
-using SistemaServicios.API.Models;
+using SistemaServicios.API.DTOs;
+using SistemaServicios.API.Interfaces;
 
 namespace SistemaServicios.API.Controllers
 {
+    [Authorize] 
     [Route("api/[controller]")]
     [ApiController]
     public class UsersController : ControllerBase
     {
-        private readonly AppDbContext _context;
+        private readonly IUserService _userService;
 
-        public UsersController(AppDbContext context)
+        public UsersController(IUserService userService)
         {
-            _context = context;
+            _userService = userService;
         }
 
-        // 1. LISTAR USUARIOS (GET)
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<object>>> GetUsers()
+        public async Task<ActionResult> GetUsers([FromQuery] int page = 1, [FromQuery] int size = 10)
         {
-            var users = await _context.Users
-                .Select(u => new {
-                    u.Id, u.Email, u.FirstName, u.LastName, u.Role, u.PhoneNumber, u.Status, u.CreatedAt
-                }).ToListAsync();
-
-            return Ok(users);
+            var (users, total) = await _userService.GetAllUsersAsync(page, size);
+            return Ok(new { Total = total, Page = page, Size = size, Data = users });
         }
 
-        // 2. OBTENER UN USUARIO (GET por ID)
         [HttpGet("{id}")]
-        public async Task<ActionResult<object>> GetUser(Guid id)
+        public async Task<ActionResult<UserDto>> GetUser(Guid id)
         {
-            var user = await _context.Users
-                .Where(u => u.Id == id)
-                .Select(u => new {
-                    u.Id, u.Email, u.FirstName, u.LastName, u.Role, u.PhoneNumber, u.Status, u.CreatedAt
-                }).FirstOrDefaultAsync();
-
+            var user = await _userService.GetUserByIdAsync(id);
             if (user == null) return NotFound();
-
             return Ok(user);
         }
 
-        // 3. CREAR USUARIO (POST)
         [HttpPost]
-        public async Task<ActionResult<User>> CreateUser(User newUser)
+        public async Task<ActionResult<UserDto>> CreateUser(CreateUserDto createUserDto)
         {
-            newUser.Id = Guid.NewGuid();
-            newUser.CreatedAt = DateTime.UtcNow;
-            newUser.UpdatedAt = DateTime.UtcNow;
-            
-            _context.Users.Add(newUser);
-            await _context.SaveChangesAsync();
-
-            return CreatedAtAction(nameof(GetUser), new { id = newUser.Id }, newUser);
+            try {
+                var user = await _userService.CreateUserAsync(createUserDto);
+                return CreatedAtAction(nameof(GetUser), new { id = user.Id }, user);
+            } catch (Exception ex) {
+                return BadRequest(new { message = ex.Message });
+            }
         }
 
-        // 4. EDITAR USUARIO (PUT)
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateUser(Guid id, User userUpdate)
+        public async Task<IActionResult> UpdateUser(Guid id, UpdateUserDto updateUserDto)
         {
-            var user = await _context.Users.FindAsync(id);
-            if (user == null) return NotFound();
-
-            user.FirstName = userUpdate.FirstName;
-            user.LastName = userUpdate.LastName;
-            user.PhoneNumber = userUpdate.PhoneNumber;
-            user.Role = userUpdate.Role;
-            user.Status = userUpdate.Status;
-            user.UpdatedAt = DateTime.UtcNow;
-
-            await _context.SaveChangesAsync();
+            var result = await _userService.UpdateUserAsync(id, updateUserDto);
+            if (!result) return NotFound();
             return NoContent();
         }
 
-        // 5. ELIMINAR USUARIO (DELETE)
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteUser(Guid id)
         {
-            var user = await _context.Users.FindAsync(id);
-            if (user == null) return NotFound();
-
-            _context.Users.Remove(user);
-            await _context.SaveChangesAsync();
-
+            var result = await _userService.SoftDeleteUserAsync(id);
+            if (!result) return NotFound();
             return NoContent();
         }
     }
