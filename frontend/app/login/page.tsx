@@ -184,12 +184,11 @@ export default function LoginPage() {
 
               {/* Remember + Forgot */}
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: "0.875rem" }}>
-                <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", color: "rgba(255,255,255,0.5)", cursor: "pointer" }}>
-                  <input type="checkbox" style={{ accentColor: "#7c3aed", width: "1rem", height: "1rem", cursor: "pointer" }} />
-                  Remember me
-                </label>
+                  <Link href="/register" style={{ accentColor: "#7c3aed", height: "1rem", cursor: "pointer" }}>
+                  Crear Cuenta
+                  </Link>
                 <Link href="/recovery" style={{ color: "rgba(255,255,255,0.8)", textDecoration: "none", fontWeight: 500 }}>
-                  Forgot your password?
+                  ¿Olvidaste tu contraseña?
                 </Link>
               </div>
 
