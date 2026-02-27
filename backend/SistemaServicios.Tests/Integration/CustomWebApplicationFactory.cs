@@ -18,17 +18,20 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
     // Nombre único por instancia para aislar las pruebas entre sí
     private readonly string _dbName = $"TestDb_{Guid.NewGuid()}";
 
-    protected override void ConfigureWebHost(IWebHostBuilder builder)
+    public CustomWebApplicationFactory()
     {
-        // Establecer variables de entorno antes de que AddApplicationServices las lea.
-        // ApplicationServiceExtensions llama a Environment.GetEnvironmentVariable(...)
-        // para poblar la configuración de JWT y las credenciales de BD.
+        // Las variables de entorno se establecen en el constructor para garantizar
+        // que estén disponibles ANTES de que WebApplicationFactory comience a construir
+        // el host. Program.cs llama a AddApplicationServices() durante la fase de
+        // configuración del builder, que puede ocurrir antes de que ConfigureWebHost
+        // sea invocado como callback post-configuración.
+        // En CI no existe archivo .env, por lo que estas variables son la única fuente.
         Environment.SetEnvironmentVariable("JWT_KEY", "ClaveSecretaParaIntegracionTests_32Ch!");
         Environment.SetEnvironmentVariable("JWT_ISSUER", "TestIssuer");
         Environment.SetEnvironmentVariable("JWT_AUDIENCE", "TestAudience");
         Environment.SetEnvironmentVariable("JWT_EXPIRES_MINUTES", "60");
         // Variables individuales de BD: evitan la excepción en AddApplicationServices.
-        // El DbContext será reemplazado abajo por InMemory, por lo que estos valores no se usan.
+        // El DbContext será reemplazado en ConfigureWebHost por InMemory.
         Environment.SetEnvironmentVariable("DB_HOST", "localhost");
         Environment.SetEnvironmentVariable("DB_PORT", "5432");
         Environment.SetEnvironmentVariable("DB_NAME", "fake");
@@ -36,7 +39,10 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
         Environment.SetEnvironmentVariable("DB_PASSWORD", "fake");
         // CORS: origen de prueba que CorsTests utilizará para verificar la política FrontendPolicy.
         Environment.SetEnvironmentVariable("ALLOWED_ORIGINS", "http://localhost:3000");
+    }
 
+    protected override void ConfigureWebHost(IWebHostBuilder builder)
+    {
         builder.ConfigureServices(services =>
         {
             // EF Core 9 registra la configuración del provider en IDbContextOptionsConfiguration<T>.
