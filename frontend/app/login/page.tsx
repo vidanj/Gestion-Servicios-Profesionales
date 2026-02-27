@@ -217,7 +217,7 @@ export default function LoginPage() {
               >
                 LOGIN
               </button>
-              {error && <p style={{ color: "red" }}>{error}</p>}
+              {error && <p data-testid="error-message" style={{ color: "red" }}>{error}</p>}
             </form>
           </div>
 

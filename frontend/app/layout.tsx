@@ -33,7 +33,9 @@ export default function RootLayout({
       >
         <EmotionRegistry>
           <Providers>
+            <MSWProvider>
               {children}
+            </MSWProvider>
             </Providers>
         </EmotionRegistry>
       </body>
