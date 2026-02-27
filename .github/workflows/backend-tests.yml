@@ -44,7 +44,12 @@ jobs:
           JWT_ISSUER: "TestIssuer"
           JWT_AUDIENCE: "TestAudience"
           JWT_EXPIRES_MINUTES: "60"
-          DB_CONNECTION: "Host=localhost;Database=fake"
+          DB_HOST: "localhost"
+          DB_PORT: "5432"
+          DB_NAME: "fake"
+          DB_USER: "fake"
+          DB_PASSWORD: "fake"
+          ALLOWED_ORIGINS: "http://localhost:3000"
         run: |
           dotnet test backend/SistemaServicios.Tests \
             --no-build \

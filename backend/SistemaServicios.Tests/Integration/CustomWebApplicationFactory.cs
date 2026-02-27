@@ -34,6 +34,8 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
         Environment.SetEnvironmentVariable("DB_NAME", "fake");
         Environment.SetEnvironmentVariable("DB_USER", "fake");
         Environment.SetEnvironmentVariable("DB_PASSWORD", "fake");
+        // CORS: origen de prueba que CorsTests utilizará para verificar la política FrontendPolicy.
+        Environment.SetEnvironmentVariable("ALLOWED_ORIGINS", "http://localhost:3000");
 
         builder.ConfigureServices(services =>
         {

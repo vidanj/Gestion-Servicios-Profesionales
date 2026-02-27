@@ -9,7 +9,7 @@ npm install
 # and
 npm install next-themes
 # and
-npm intall -D @playwright/test
+npm install -D @playwright/test
 # and
 npm install playwright@1.58.2
 # and
