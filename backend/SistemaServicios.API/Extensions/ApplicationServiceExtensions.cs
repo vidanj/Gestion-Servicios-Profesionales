@@ -36,6 +36,7 @@ namespace SistemaServicios.API.Extensions
                 ["JwtSettings:Issuer"]           = Environment.GetEnvironmentVariable("JWT_ISSUER"),
                 ["JwtSettings:Audience"]         = Environment.GetEnvironmentVariable("JWT_AUDIENCE"),
                 ["JwtSettings:ExpiresInMinutes"] = Environment.GetEnvironmentVariable("JWT_EXPIRES_MINUTES"),
+                ["CorsSettings:AllowedOrigins"]  = Environment.GetEnvironmentVariable("ALLOWED_ORIGINS"),
             });
 
             var dbHost = Environment.GetEnvironmentVariable("DB_HOST")
@@ -82,6 +83,23 @@ namespace SistemaServicios.API.Extensions
                 });
 
             services.AddAuthorization();
+
+            // CORS — orígenes cargados desde ALLOWED_ORIGINS en .env (separados por coma)
+            var rawOrigins = config["CorsSettings:AllowedOrigins"]
+                ?? throw new InvalidOperationException("ALLOWED_ORIGINS no definido en el archivo .env");
+
+            var allowedOrigins = rawOrigins
+                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+            services.AddCors(options =>
+            {
+                options.AddPolicy("FrontendPolicy", policy =>
+                {
+                    policy.WithOrigins(allowedOrigins)
+                          .AllowAnyHeader()
+                          .AllowAnyMethod();
+                });
+            });
 
             // Swagger con soporte para JWT Bearer
             services.AddSwaggerGen(c =>
