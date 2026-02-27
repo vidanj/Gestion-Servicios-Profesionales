@@ -76,7 +76,9 @@ export default function AboutPage() {
             <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
               
               {/* Title */}
-              <h1 style={{
+              <h1 
+                data-testid="about-title"
+                style={{
                 textAlign: "center",
                 fontSize: "1.8rem",
                 fontWeight: 700,
@@ -86,7 +88,9 @@ export default function AboutPage() {
               </h1>
 
               {/* Description */}
-              <p style={{
+              <p
+                data-testid="about-description"
+                style={{
                 textAlign: "center",
                 color: "rgba(255,255,255,0.65)",
                 lineHeight: 1.6,
@@ -109,7 +113,7 @@ export default function AboutPage() {
                   { label: "Projects", value: "48K+" },
                   { label: "Clients", value: "9K+" }
                 ].map((s) => (
-                  <div key={s.label} style={{
+                  <div key={s.label} data-testid={`stat-${s.label.toLowerCase()}`} style={{
                     flex: 1,
                     borderRadius: "1.25rem",
                     background: "rgba(255,255,255,0.03)",
@@ -132,7 +136,9 @@ export default function AboutPage() {
               </div>
 
               {/* Mission */}
-              <p style={{
+              <p 
+                data-testid="about-mission"
+                style={{
                 textAlign: "center",
                 color: "rgba(255,255,255,0.6)",
                 fontSize: "0.9rem",
@@ -144,6 +150,7 @@ export default function AboutPage() {
 
               {/* CTA */}
               <Link
+                data-testid="about-cta"
                 href="/login"
                 style={{
                   display: "block",
@@ -165,7 +172,9 @@ export default function AboutPage() {
           </div>
 
           {/* Bottom glow line */}
-          <div style={{
+          <div 
+            data-testid="about-bottom-glow"
+            style={{
             position: "absolute", bottom: 0, left: 0, width: "100%", height: "3px",
             background: "linear-gradient(to right, transparent, #a855f7, transparent)",
             opacity: 0.8,
