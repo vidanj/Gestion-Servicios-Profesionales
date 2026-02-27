@@ -7,57 +7,50 @@ import {
   SimpleGrid,
   Heading,
   Text,
-  Icon,
-  ResponsiveValue,
 } from '@chakra-ui/react'
 
 import { Section, SectionTitle, SectionTitleProps } from '#components/section'
 
-const Revealer = ({ children }: any) => {
-  return children
-}
+const Revealer = ({ children }: any) => children
 
 export interface FeaturesProps
   extends Omit<SectionTitleProps, 'title' | 'variant'> {
   title?: React.ReactNode
   description?: React.ReactNode
   features: Array<FeatureProps>
-  columns?: ResponsiveValue<number>
+  columns?: number | number[]
   spacing?: string | number
-  aside?: React.ReactChild
+  aside?: React.ReactNode
   reveal?: React.FC<any>
-  iconSize?: BoxProps['boxSize']
-  innerWidth?: BoxProps['maxW']
+  iconSize?: number
+  innerWidth?: string
 }
 
 export interface FeatureProps {
   title?: React.ReactNode
   description?: React.ReactNode
-  icon?: any
+  icon?: React.ElementType
   iconPosition?: 'left' | 'top'
-  iconSize?: BoxProps['boxSize']
+  iconSize?: number
   ip?: 'left' | 'top'
   variant?: string
   delay?: number
 }
 
-export const Feature: React.FC<FeatureProps> = (props) => {
-  const {
-    title,
-    description,
-    icon,
-    iconPosition,
-    iconSize = 8,
-    ip,
-    variant,
-  } = props
-
+export const Feature: React.FC<FeatureProps> = ({
+  title,
+  description,
+  icon: IconComponent,
+  iconPosition,
+  iconSize = 20,
+  ip,
+}) => {
   const pos = iconPosition || ip
   const direction = pos === 'left' ? 'row' : 'column'
 
   return (
     <Stack direction={direction}>
-      {icon && (
+      {IconComponent && (
         <Box
           display="flex"
           alignItems="center"
@@ -68,38 +61,40 @@ export const Feature: React.FC<FeatureProps> = (props) => {
           color="white"
           flexShrink={0}
         >
-          <Icon as={icon} boxSize={iconSize} />
+          <IconComponent size={iconSize} />
         </Box>
       )}
+
       <Box>
-        <Heading fontSize="md" mb="1">{title}</Heading>
-        <Text color="muted">{description}</Text>
+        <Heading fontSize="md" mb="1">
+          {title}
+        </Heading>
+        <Text color="muted">
+          {description}
+        </Text>
       </Box>
     </Stack>
   )
 }
 
-export const Features: React.FC<FeaturesProps> = (props) => {
-  const {
-    title,
-    description,
-    features,
-    columns = [1, 2, 3],
-    spacing = 8,
-    align: alignProp = 'center',
-    iconSize = 8,
-    aside,
-    reveal: Wrap = Revealer,
-    ...rest
-  } = props
-
-  const align = !!aside ? 'left' : alignProp
-
+export const Features: React.FC<FeaturesProps> = ({
+  title,
+  description,
+  features,
+  columns = [1, 2, 3],
+  spacing = 8,
+  align: alignProp = 'center',
+  iconSize = 20,
+  aside,
+  reveal: Wrap = Revealer,
+  ...rest
+}) => {
+  const align = aside ? 'left' : alignProp
   const ip = align === 'left' ? 'left' : 'top'
 
   return (
     <Section {...rest}>
-      <Stack direction="row" height="full" align="flex-start">
+      <Stack direction="row" align="flex-start">
         <VStack flex="1" gap={[4, null, 8]} alignItems="stretch">
           {(title || description) && (
             <Wrap>
@@ -110,16 +105,20 @@ export const Features: React.FC<FeaturesProps> = (props) => {
               />
             </Wrap>
           )}
+
           <SimpleGrid columns={columns} gap={spacing}>
-            {features.map((feature, i) => {
-              return (
-                <Wrap key={i} delay={feature.delay}>
-                  <Feature iconSize={iconSize} {...feature} ip={ip} />
-                </Wrap>
-              )
-            })}
+            {features.map((feature, i) => (
+              <Wrap key={i} delay={feature.delay}>
+                <Feature
+                  {...feature}
+                  iconSize={iconSize}
+                  ip={ip}
+                />
+              </Wrap>
+            ))}
           </SimpleGrid>
         </VStack>
+
         {aside && (
           <Box flex="1" p="8">
             {aside}
