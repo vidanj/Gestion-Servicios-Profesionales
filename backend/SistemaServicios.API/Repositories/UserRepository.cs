@@ -14,20 +14,23 @@ namespace SistemaServicios.API.Repositories
             _context = context;
         }
 
-        public async Task<User?> GetByEmailAsync(string email)
-            => await _context.Users.FirstOrDefaultAsync(u => u.Email == email.ToLower().Trim());
-
-        public async Task<User?> GetByIdAsync(Guid id)
-            => await _context.Users.FindAsync(id);
-
-        public async Task<bool> EmailExistsAsync(string email)
-            => await _context.Users.AnyAsync(u => u.Email == email.ToLower().Trim());
-
-        public async Task<User> CreateAsync(User user)
+        // --- TUS MÉTODOS DEL CRUD ---
+        public async Task<(IEnumerable<User> Users, int TotalCount)> GetUsersAsync(int pageNumber, int pageSize)
         {
-            _context.Users.Add(user);
-            await _context.SaveChangesAsync();
-            return user;
+            var query = _context.Users.Where(u => u.Status == true);
+            int totalCount = await query.CountAsync();
+            var users = await query.OrderByDescending(u => u.CreatedAt).Skip((pageNumber - 1) * pageSize).Take(pageSize).ToListAsync();
+            return (users, totalCount);
         }
+
+        public async Task<User?> GetByIdAsync(Guid id) => await _context.Users.FirstOrDefaultAsync(u => u.Id == id && u.Status == true);
+        public async Task<User?> GetUserByEmailAsync(string email) => await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
+        public async Task<User> AddUserAsync(User user) { _context.Users.Add(user); await _context.SaveChangesAsync(); return user; }
+        public async Task UpdateUserAsync(User user) { _context.Users.Update(user); await _context.SaveChangesAsync(); }
+
+        // --- MÉTODOS RECUPERADOS PARA EL AUTHSERVICE ---
+        public async Task<User?> GetByEmailAsync(string email) => await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
+        public async Task<bool> EmailExistsAsync(string email) => await _context.Users.AnyAsync(u => u.Email == email);
+        public async Task<User> CreateAsync(User user) { _context.Users.Add(user); await _context.SaveChangesAsync(); return user; }
     }
 }

@@ -10,6 +10,8 @@ builder.Services.AddControllers();
 // --- 2. CONFIGURACIÓN OPENAPI (.NET 9 NATIVO) ---
 builder.Services.AddOpenApi();
 
+
+
 var app = builder.Build();
 
 // --- 3. PIPELINE ---

@@ -61,6 +61,8 @@ namespace SistemaServicios.API.Extensions
             services.AddScoped<ITokenService, TokenService>();
             services.AddScoped<IAuthService, AuthService>();
             services.AddScoped<IBackupService, BackupService>();
+            services.AddScoped<IUserRepository, UserRepository>();
+            services.AddScoped<IUserService, UserService>();
 
             // JWT Authentication
             var jwtKey = config["JwtSettings:Key"]
