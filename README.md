@@ -243,6 +243,34 @@ chmod +x scripts/backup.sh
 #    SELECT * FROM "Users" WHERE "Email" = 'usuario@ejemplo.com';
 ```
 
+
+## 🔌 Documentación de la API (Endpoints)
+
+La API REST está documentada de forma interactiva a través de **Swagger / OpenAPI**.
+Para visualizar la interfaz gráfica y probar las rutas en tu máquina, levanta el proyecto backend (`dotnet run`) y navega a la ruta `/swagger`.
+
+### Módulo de Autenticación (`/api/Auth`)
+| Método | Endpoint | Descripción | Acceso |
+|---|---|---|---|
+| `POST` | `/api/Auth/login` | Inicia sesión y devuelve un token JWT | Público |
+| `POST` | `/api/Auth/register` | Registra un nuevo usuario en la plataforma | Público |
+| `GET`  | `/api/Auth/me` | Obtiene los claims y datos del usuario actual | Autenticado |
+
+### Módulo de Usuarios (`/api/Users`)
+| Método | Endpoint | Descripción | Acceso |
+|---|---|---|---|
+| `GET`  | `/api/Users` | Lista todos los usuarios activos (con paginación) | Autenticado |
+| `GET`  | `/api/Users/{id}` | Obtiene los detalles de un usuario por su UUID | Autenticado |
+| `POST` | `/api/Users` | Crea un usuario internamente (validando unicidad) | Autenticado |
+| `PUT`  | `/api/Users/{id}` | Actualiza la información básica y rol de un usuario | Autenticado |
+| `DELETE`| `/api/Users/{id}` | Realiza un borrado lógico (Soft Delete) del usuario | Autenticado |
+
+### Módulo de Administración (`/api/Admin`)
+| Método | Endpoint | Descripción | Acceso |
+|---|---|---|---|
+| `POST` | `/api/Admin/backup` | Ejecuta un volcado SQL para el respaldo de base de datos | Admin |
+
+
 > Los archivos `.sql` y el contenido de `backups/` están en `.gitignore` y no se suben al repositorio.
 
 ---
