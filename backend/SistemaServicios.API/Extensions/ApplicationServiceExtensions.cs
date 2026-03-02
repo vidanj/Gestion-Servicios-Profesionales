@@ -63,6 +63,8 @@ namespace SistemaServicios.API.Extensions
             services.AddScoped<IBackupService, BackupService>();
             services.AddScoped<IUserRepository, UserRepository>();
             services.AddScoped<IUserService, UserService>();
+            services.AddScoped<IRatingRepository, RatingRepository>();
+            services.AddScoped<IRatingService, RatingService>();
 
             // JWT Authentication
             var jwtKey = config["JwtSettings:Key"]
@@ -98,8 +100,8 @@ namespace SistemaServicios.API.Extensions
                 options.AddPolicy("FrontendPolicy", policy =>
                 {
                     policy.WithOrigins(allowedOrigins)
-                          .AllowAnyHeader()
-                          .AllowAnyMethod();
+                        .AllowAnyHeader()
+                        .AllowAnyMethod();
                 });
             });
 
