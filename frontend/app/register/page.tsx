@@ -63,7 +63,7 @@ export default function RegisterPage() {
 
             const data = await res.json();
             localStorage.setItem("token", data.token);
-            router.push("/dashboard");
+            router.push("/login");
         } catch (error) {
             console.error(error);
             setError("Error de conexión");
@@ -181,9 +181,9 @@ export default function RegisterPage() {
                                 <Link href="/login" style={{ color: "rgba(255,255,255,0.8)", textDecoration: "none", fontWeight: 500 }}>
                                     ¿Ya tienes cuenta?
                                 </Link>
-                                <Link href="/recovery" style={{ color: "rgba(255,255,255,0.8)", textDecoration: "none", fontWeight: 500 }}>
+                                {/* <Link href="/recovery" style={{ color: "rgba(255,255,255,0.8)", textDecoration: "none", fontWeight: 500 }}>
                                     ¿Olvidaste tu contraseña?
-                                </Link>
+                                </Link> */}
                             </div>
 
                             <button
