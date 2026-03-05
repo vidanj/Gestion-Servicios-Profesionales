@@ -17,7 +17,7 @@ public class AuthController : ControllerBase
         _authService = authService;
     }
 
-    /// <summary>Inicia sesiÃ³n y devuelve un JWT.</summary>
+    /// <summary>Inicia sesión y devuelve un JWT.</summary>
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] LoginRequestDto dto)
     {
@@ -66,7 +66,6 @@ public class AuthController : ControllerBase
                 role,
                 firstName,
                 lastName,
-            }
-        );
+            });
     }
 }

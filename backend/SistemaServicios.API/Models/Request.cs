@@ -18,14 +18,17 @@ public class Request
 
     [Required]
     public Guid ClientId { get; set; }
+
     public User? Client { get; set; }
 
     [Required]
     public Guid ProfessionalId { get; set; }
+
     public User? Professional { get; set; }
 
     [Required]
     public int ServiceId { get; set; }
+
     public Service? Service { get; set; }
 
     public RequestStatus Status { get; set; } = RequestStatus.Pending;
@@ -37,6 +40,8 @@ public class Request
     public string? Description { get; set; }
 
     public DateTime RequestDate { get; set; } = DateTime.UtcNow;
+
     public DateTime? ScheduledDate { get; set; }
+
     public DateTime? CompletionDate { get; set; }
 }

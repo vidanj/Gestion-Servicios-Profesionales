@@ -4,5 +4,5 @@ namespace SistemaServicios.API.Interfaces;
 
 public interface IBackupService
 {
-    Task<BackupResponseDto> GenerateBackupAsync();
+    public Task<BackupResponseDto> GenerateBackupAsync();
 }

@@ -4,9 +4,13 @@ namespace SistemaServicios.API.Interfaces;
 
 public interface IUserService
 {
-    Task<(IEnumerable<UserDto> Users, int TotalCount)> GetAllUsersAsync(int page, int size);
-    Task<UserDto?> GetUserByIdAsync(Guid id);
-    Task<UserDto> CreateUserAsync(CreateUserDto createUserDto);
-    Task<bool> UpdateUserAsync(Guid id, UpdateUserDto updateUserDto);
-    Task<bool> SoftDeleteUserAsync(Guid id);
+    public Task<(IEnumerable<UserDto> users, int totalCount)> GetAllUsersAsync(int page, int size);
+
+    public Task<UserDto?> GetUserByIdAsync(Guid id);
+
+    public Task<UserDto> CreateUserAsync(CreateUserDto createUserDto);
+
+    public Task<bool> UpdateUserAsync(Guid id, UpdateUserDto updateUserDto);
+
+    public Task<bool> SoftDeleteUserAsync(Guid id);
 }

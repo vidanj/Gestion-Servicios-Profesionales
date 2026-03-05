@@ -31,6 +31,7 @@ public class Verification
 
     [Required]
     public Guid ProfessionalId { get; set; }
+
     public User? Professional { get; set; }
 
     [Required]
@@ -39,11 +40,15 @@ public class Verification
     [Required]
     [MaxLength(2048)]
     public string DocumentUrl { get; set; } = string.Empty;
+
     public VerificationStatus Status { get; set; } = VerificationStatus.Pending;
 
     [MaxLength(2048)]
     public string ExternalReference { get; set; } = string.Empty;
+
     public DateTime SubmittedAt { get; set; } = DateTime.UtcNow;
+
     public DateTime? VerifiedAt { get; set; }
+
     public DateTime? ExpiresAt { get; set; }
 }

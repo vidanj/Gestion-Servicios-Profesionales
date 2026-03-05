@@ -15,26 +15,28 @@ public static class ApplicationServiceExtensions
 {
     public static IServiceCollection AddApplicationServices(
         this IServiceCollection services,
-        IConfiguration config
-    )
+        IConfiguration config)
     {
         // Busca el .env subiendo desde el directorio actual hasta encontrarlo
         var directory = new DirectoryInfo(Directory.GetCurrentDirectory());
 
         while (directory != null && !File.Exists(Path.Combine(directory.FullName, ".env")))
+        {
             directory = directory.Parent;
+        }
 
-        // clobberExistingVars: false â†’ las variables ya fijadas en el entorno
+        // clobberExistingVars: false → las variables ya fijadas en el entorno
         // (sistema operativo, Docker, CI, o la factory de tests) tienen prioridad
-        // sobre las del archivo .env. Sigue el estÃ¡ndar de prioridad de env vars.
+        // sobre las del archivo .env. Sigue el estándar de prioridad de env vars.
         if (directory != null)
+        {
             Env.Load(
                 Path.Combine(directory.FullName, ".env"),
-                new LoadOptions(clobberExistingVars: false)
-            );
+                new LoadOptions(clobberExistingVars: false));
+        }
 
-        // Inyecta las variables del .env en el sistema de configuraciÃ³n de ASP.NET Core
-        // AsÃ­ config["JwtSettings:Key"] se resuelve desde JWT_KEY del .env
+        // Inyecta las variables del .env en el sistema de configuración de ASP.NET Core
+        // Así config["JwtSettings:Key"] se resuelve desde JWT_KEY del .env
         ((IConfigurationBuilder)config).AddInMemoryCollection(
             new Dictionary<string, string?>
             {
@@ -42,13 +44,10 @@ public static class ApplicationServiceExtensions
                 ["JwtSettings:Issuer"] = Environment.GetEnvironmentVariable("JWT_ISSUER"),
                 ["JwtSettings:Audience"] = Environment.GetEnvironmentVariable("JWT_AUDIENCE"),
                 ["JwtSettings:ExpiresInMinutes"] = Environment.GetEnvironmentVariable(
-                    "JWT_EXPIRES_MINUTES"
-                ),
+                    "JWT_EXPIRES_MINUTES"),
                 ["CorsSettings:AllowedOrigins"] = Environment.GetEnvironmentVariable(
-                    "ALLOWED_ORIGINS"
-                ),
-            }
-        );
+                    "ALLOWED_ORIGINS"),
+            });
 
         var dbHost =
             Environment.GetEnvironmentVariable("DB_HOST")
@@ -103,17 +102,15 @@ public static class ApplicationServiceExtensions
 
         services.AddAuthorization();
 
-        // CORS â€” orÃ­genes cargados desde ALLOWED_ORIGINS en .env (separados por coma)
+        // CORS — orígenes cargados desde ALLOWED_ORIGINS en .env (separados por coma)
         var rawOrigins =
             config["CorsSettings:AllowedOrigins"]
             ?? throw new InvalidOperationException(
-                "ALLOWED_ORIGINS no definido en el archivo .env"
-            );
+                "ALLOWED_ORIGINS no definido en el archivo .env");
 
         var allowedOrigins = rawOrigins.Split(
             ',',
-            StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries
-        );
+            StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 
         services.AddCors(options =>
         {
@@ -122,8 +119,7 @@ public static class ApplicationServiceExtensions
                 policy =>
                 {
                     policy.WithOrigins(allowedOrigins).AllowAnyHeader().AllowAnyMethod();
-                }
-            );
+                });
         });
 
         // Swagger con soporte para JWT Bearer
@@ -140,9 +136,8 @@ public static class ApplicationServiceExtensions
                     Scheme = "Bearer",
                     BearerFormat = "JWT",
                     In = ParameterLocation.Header,
-                    Description = "Ingresa el token asÃ­: Bearer {tu_token}",
-                }
-            );
+                    Description = "Ingresa el token así: Bearer {tu_token}",
+                });
 
             c.AddSecurityRequirement(
                 new OpenApiSecurityRequirement
@@ -158,8 +153,7 @@ public static class ApplicationServiceExtensions
                         },
                         Array.Empty<string>()
                     },
-                }
-            );
+                });
         });
 
         return services;

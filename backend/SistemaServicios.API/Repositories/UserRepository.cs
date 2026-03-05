@@ -15,10 +15,9 @@ public class UserRepository : IUserRepository
     }
 
     // --- TUS MÃ‰TODOS DEL CRUD ---
-    public async Task<(IEnumerable<User> Users, int TotalCount)> GetUsersAsync(
+    public async Task<(IEnumerable<User> users, int totalCount)> GetUsersAsync(
         int pageNumber,
-        int pageSize
-    )
+        int pageSize)
     {
         var query = _context.Users.Where(u => u.Status == true);
         int totalCount = await query.CountAsync();

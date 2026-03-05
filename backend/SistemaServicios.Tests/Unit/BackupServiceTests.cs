@@ -27,13 +27,18 @@ public class BackupServiceTests : IDisposable
     public BackupServiceTests()
     {
         foreach (var key in EnvKeys)
+        {
             _valoresOriginales[key] = Environment.GetEnvironmentVariable(key);
+        }
     }
 
     public void Dispose()
     {
         foreach (var (key, value) in _valoresOriginales)
+        {
             Environment.SetEnvironmentVariable(key, value);
+        }
+        GC.SuppressFinalize(this);
     }
 
     /// <summary>Establece las cinco variables con valores sintéticos válidos.</summary>
@@ -51,7 +56,7 @@ public class BackupServiceTests : IDisposable
     // ─────────────────────────────────────────────────────────────
 
     [Fact]
-    public async Task GenerateBackupAsync_SinDbHost_LanzaInvalidOperationException()
+    public async Task GenerateBackupAsyncSinDbHostLanzaInvalidOperationException()
     {
         // Arrange
         SetVariablesValidas();
@@ -63,11 +68,11 @@ public class BackupServiceTests : IDisposable
             service.GenerateBackupAsync()
         );
 
-        ex.Message.Should().Contain("DB_HOST no definido");
+        _ = ex.Message.Should().Contain("DB_HOST no definido");
     }
 
     [Fact]
-    public async Task GenerateBackupAsync_SinDbName_LanzaInvalidOperationException()
+    public async Task GenerateBackupAsyncSinDbNameLanzaInvalidOperationException()
     {
         // Arrange
         SetVariablesValidas();
@@ -79,11 +84,11 @@ public class BackupServiceTests : IDisposable
             service.GenerateBackupAsync()
         );
 
-        ex.Message.Should().Contain("DB_NAME no definido");
+        _ = ex.Message.Should().Contain("DB_NAME no definido");
     }
 
     [Fact]
-    public async Task GenerateBackupAsync_SinDbUser_LanzaInvalidOperationException()
+    public async Task GenerateBackupAsyncSinDbUserLanzaInvalidOperationException()
     {
         // Arrange
         SetVariablesValidas();
@@ -95,11 +100,11 @@ public class BackupServiceTests : IDisposable
             service.GenerateBackupAsync()
         );
 
-        ex.Message.Should().Contain("DB_USER no definido");
+        _ = ex.Message.Should().Contain("DB_USER no definido");
     }
 
     [Fact]
-    public async Task GenerateBackupAsync_SinDbPassword_LanzaInvalidOperationException()
+    public async Task GenerateBackupAsyncSinDbPasswordLanzaInvalidOperationException()
     {
         // Arrange
         SetVariablesValidas();
@@ -111,7 +116,7 @@ public class BackupServiceTests : IDisposable
             service.GenerateBackupAsync()
         );
 
-        ex.Message.Should().Contain("DB_PASSWORD no definido");
+        _ = ex.Message.Should().Contain("DB_PASSWORD no definido");
     }
 
     // ─────────────────────────────────────────────────────────────
@@ -119,7 +124,7 @@ public class BackupServiceTests : IDisposable
     // ─────────────────────────────────────────────────────────────
 
     [Fact]
-    public async Task GenerateBackupAsync_SinDbPort_UsaElPuerto5432PorDefecto()
+    public async Task GenerateBackupAsyncSinDbPortUsaElPuerto5432PorDefecto()
     {
         // Arrange: DB_PORT ausente — pg_dump debe intentar conectar al puerto 5432.
         // El proceso fallará porque no hay PostgreSQL real, pero queremos confirmar que
@@ -135,8 +140,8 @@ public class BackupServiceTests : IDisposable
         // Puede ser InvalidOperationException (pg_dump no encontrado o falla) u otra excepción
         // del sistema de procesos — en cualquier caso, no es un error de validación de variables.
         var ex = await Record.ExceptionAsync(act);
-        ex.Should().NotBeNull();
-        ex!.Message.Should().NotContain("DB_PORT no definido");
+        _ = ex.Should().NotBeNull();
+        _ = ex!.Message.Should().NotContain("DB_PORT no definido");
     }
 
     // ─────────────────────────────────────────────────────────────
@@ -144,15 +149,17 @@ public class BackupServiceTests : IDisposable
     // ─────────────────────────────────────────────────────────────
 
     [Fact]
-    public void Constructor_SinVariablesDeEntorno_NoCrash()
+    public void ConstructorSinVariablesDeEntornoNoCrash()
     {
         // Arrange: incluso sin variables configuradas, el constructor debe completarse.
         // Las variables se leen solo al llamar GenerateBackupAsync.
         foreach (var key in EnvKeys)
+        {
             Environment.SetEnvironmentVariable(key, null);
+        }
 
         // Act & Assert: no debe lanzar excepción
         var act = () => new BackupService();
-        act.Should().NotThrow();
+        _ = act.Should().NotThrow();
     }
 }

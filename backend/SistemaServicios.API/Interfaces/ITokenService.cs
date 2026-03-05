@@ -4,5 +4,5 @@ namespace SistemaServicios.API.Interfaces;
 
 public interface ITokenService
 {
-    string CreateToken(User user);
+    public string CreateToken(User user);
 }

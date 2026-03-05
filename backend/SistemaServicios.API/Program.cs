@@ -30,8 +30,7 @@ app.Use(
         context.Response.Headers.Append("X-Content-Type-Options", "nosniff");
         context.Response.Headers.Append("Referrer-Policy", "strict-origin-when-cross-origin");
         await next();
-    }
-);
+    });
 
 app.UseHttpsRedirection();
 app.UseCors("FrontendPolicy");
@@ -42,4 +41,6 @@ app.MapControllers();
 app.Run();
 
 // Necesario para que WebApplicationFactory<Program> pueda acceder a este ensamblado en los tests
-public partial class Program { }
+public partial class Program
+{
+}

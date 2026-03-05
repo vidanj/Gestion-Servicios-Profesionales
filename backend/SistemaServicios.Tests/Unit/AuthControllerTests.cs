@@ -60,10 +60,10 @@ public class AuthControllerTests
     // ─────────────────────────────────────────────────────────────
 
     [Fact]
-    public async Task Login_Exitoso_Retorna200()
+    public async Task LoginExitosoRetorna200()
     {
         // Arrange
-        _mockAuthService
+        _ = _mockAuthService
             .Setup(s => s.LoginAsync(It.IsAny<LoginRequestDto>()))
             .ReturnsAsync(new AuthResponseDto { Token = "jwt", Email = "u@test.com" });
 
@@ -73,14 +73,14 @@ public class AuthControllerTests
         );
 
         // Assert
-        result.Should().BeOfType<OkObjectResult>().Which.StatusCode.Should().Be(200);
+        _ = result.Should().BeOfType<OkObjectResult>().Which.StatusCode.Should().Be(200);
     }
 
     [Fact]
-    public async Task Login_CredencialesInvalidas_Retorna401ConMensaje()
+    public async Task LoginCredencialesInvalidasRetorna401ConMensaje()
     {
         // Arrange
-        _mockAuthService
+        _ = _mockAuthService
             .Setup(s => s.LoginAsync(It.IsAny<LoginRequestDto>()))
             .ThrowsAsync(new UnauthorizedAccessException("Credenciales inválidas."));
 
@@ -91,9 +91,9 @@ public class AuthControllerTests
 
         // Assert
         var objectResult = result.Should().BeOfType<UnauthorizedObjectResult>().Subject;
-        objectResult.StatusCode.Should().Be(401);
+        _ = objectResult.StatusCode.Should().Be(401);
         var json = ToJson(objectResult.Value);
-        json.Should().Contain("Credenciales inválidas.");
+        _ = json.Should().Contain("Credenciales inválidas.");
     }
 
     // ─────────────────────────────────────────────────────────────
@@ -101,10 +101,10 @@ public class AuthControllerTests
     // ─────────────────────────────────────────────────────────────
 
     [Fact]
-    public async Task Register_Exitoso_Retorna201()
+    public async Task RegisterExitosoRetorna201()
     {
         // Arrange
-        _mockAuthService
+        _ = _mockAuthService
             .Setup(s => s.RegisterAsync(It.IsAny<RegisterRequestDto>()))
             .ReturnsAsync(new AuthResponseDto { Token = "jwt", Email = "nuevo@test.com" });
 
@@ -120,14 +120,14 @@ public class AuthControllerTests
         );
 
         // Assert
-        result.Should().BeOfType<ObjectResult>().Which.StatusCode.Should().Be(201);
+        _ = result.Should().BeOfType<ObjectResult>().Which.StatusCode.Should().Be(201);
     }
 
     [Fact]
-    public async Task Register_EmailDuplicado_Retorna400ConMensaje()
+    public async Task RegisterEmailDuplicadoRetorna400ConMensaje()
     {
         // Arrange
-        _mockAuthService
+        _ = _mockAuthService
             .Setup(s => s.RegisterAsync(It.IsAny<RegisterRequestDto>()))
             .ThrowsAsync(new InvalidOperationException("El correo ya está registrado."));
 
@@ -144,9 +144,9 @@ public class AuthControllerTests
 
         // Assert
         var objectResult = result.Should().BeOfType<BadRequestObjectResult>().Subject;
-        objectResult.StatusCode.Should().Be(400);
+        _ = objectResult.StatusCode.Should().Be(400);
         var json = ToJson(objectResult.Value);
-        json.Should().Contain("El correo ya está registrado.");
+        _ = json.Should().Contain("El correo ya está registrado.");
     }
 
     // ─────────────────────────────────────────────────────────────
@@ -154,7 +154,7 @@ public class AuthControllerTests
     // ─────────────────────────────────────────────────────────────
 
     [Fact]
-    public void Me_ConTodosLosClaims_RetornaOkConLosDatos()
+    public void MeConTodosLosClaimsRetornaOkConLosDatos()
     {
         // Arrange: ClaimsPrincipal con los cinco claims que lee el método.
         // Cubre la rama "claim presente" (no-null) de cada operador ?. en Me().
@@ -172,14 +172,14 @@ public class AuthControllerTests
         // Assert
         var ok = result.Should().BeOfType<OkObjectResult>().Subject;
         var json = ToJson(ok.Value);
-        json.Should().Contain("test@test.com");
-        json.Should().Contain("Juan");
-        json.Should().Contain("Pérez");
-        json.Should().Contain("Client");
+        _ = json.Should().Contain("test@test.com");
+        _ = json.Should().Contain("Juan");
+        _ = json.Should().Contain("Pérez");
+        _ = json.Should().Contain("Client");
     }
 
     [Fact]
-    public void Me_SinNingunClaim_RetornaOkConValoresNulos()
+    public void MeSinNingunClaimRetornaOkConValoresNulos()
     {
         // Arrange: ClaimsPrincipal vacío → cada FindFirst devuelve null.
         // Cubre la rama "claim ausente" (null) de cada operador ?. en Me().
@@ -196,8 +196,8 @@ public class AuthControllerTests
 
         // Assert: el método devuelve 200 incluso sin claims (valores null en el body)
         var ok = result.Should().BeOfType<OkObjectResult>().Subject;
-        ok.StatusCode.Should().Be(200);
+        _ = ok.StatusCode.Should().Be(200);
         var json = ToJson(ok.Value);
-        json.Should().Contain("null");
+        _ = json.Should().Contain("null");
     }
 }

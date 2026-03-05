@@ -9,14 +9,17 @@ public class Rating
 
     [Required]
     public int RequestId { get; set; }
+
     public Request? Request { get; set; }
 
     [Required]
     public Guid ClientId { get; set; }
+
     public User? Client { get; set; }
 
     [Required]
     public Guid ProfessionalId { get; set; }
+
     public User? Professional { get; set; }
 
     [Range(1, 5)]

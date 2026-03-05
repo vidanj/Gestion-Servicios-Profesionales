@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
@@ -33,15 +34,14 @@ public class TokenService : ITokenService
 
         var symmetricKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key));
         var credentials = new SigningCredentials(symmetricKey, SecurityAlgorithms.HmacSha256);
-        var expiresMinutes = int.Parse(_config["JwtSettings:ExpiresInMinutes"] ?? "60");
+        var expiresMinutes = int.Parse(_config["JwtSettings:ExpiresInMinutes"] ?? "60", CultureInfo.InvariantCulture);
 
         var token = new JwtSecurityToken(
             issuer: _config["JwtSettings:Issuer"],
             audience: _config["JwtSettings:Audience"],
             claims: claims,
             expires: DateTime.UtcNow.AddMinutes(expiresMinutes),
-            signingCredentials: credentials
-        );
+            signingCredentials: credentials);
 
         return new JwtSecurityTokenHandler().WriteToken(token);
     }

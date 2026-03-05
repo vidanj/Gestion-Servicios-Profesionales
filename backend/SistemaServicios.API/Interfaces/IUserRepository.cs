@@ -4,13 +4,19 @@ namespace SistemaServicios.API.Interfaces;
 
 public interface IUserRepository
 {
-    Task<(IEnumerable<User> Users, int TotalCount)> GetUsersAsync(int pageNumber, int pageSize);
-    Task<User?> GetByIdAsync(Guid id);
-    Task<User?> GetUserByEmailAsync(string email);
-    Task<User> AddUserAsync(User user);
-    Task UpdateUserAsync(User user);
+    public Task<(IEnumerable<User> users, int totalCount)> GetUsersAsync(int pageNumber, int pageSize);
 
-    Task<User?> GetByEmailAsync(string email);
-    Task<bool> EmailExistsAsync(string email);
-    Task<User> CreateAsync(User user);
+    public Task<User?> GetByIdAsync(Guid id);
+
+    public Task<User?> GetUserByEmailAsync(string email);
+
+    public Task<User> AddUserAsync(User user);
+
+    public Task UpdateUserAsync(User user);
+
+    public Task<User?> GetByEmailAsync(string email);
+
+    public Task<bool> EmailExistsAsync(string email);
+
+    public Task<User> CreateAsync(User user);
 }
