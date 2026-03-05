@@ -1,11 +1,14 @@
 name: Backend — Pruebas y Cobertura
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - main
-      - feat/**
       - dev
+      - feat/**
+      - chore/**
+      - fix/**
     paths:
       - 'backend/**'
   pull_request:
