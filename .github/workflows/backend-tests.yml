@@ -9,8 +9,6 @@ on:
       - feat/**
       - chore/**
       - fix/**
-    paths:
-      - 'backend/**'
   pull_request:
     branches:
       - main
