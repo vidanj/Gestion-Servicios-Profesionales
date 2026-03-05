@@ -12,10 +12,7 @@ RUN dotnet restore backend/SistemaServicios.API/SistemaServicios.API.csproj
 # Copiar el resto del codigo fuente
 COPY backend/ ./backend/
 
-RUN dotnet publish backend/SistemaServicios.API/SistemaServicios.API.csproj 
-    -c Release 
-    -o /app/publish 
-    --no-restore
+RUN dotnet publish backend/SistemaServicios.API/SistemaServicios.API.csproj -c Release -o /app/publish --no-restore
 
 # ── Stage 2: Runtime ─────────────────────────────────────────────────────────
 FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS final
