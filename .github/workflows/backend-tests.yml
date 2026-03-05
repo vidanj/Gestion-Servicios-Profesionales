@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - feat/**
+      - dev
     paths:
       - 'backend/**'
   pull_request:
