@@ -1,4 +1,4 @@
-using SistemaServicios.API.Extensions; 
+using SistemaServicios.API.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -22,6 +22,17 @@ if (app.Environment.IsDevelopment())
     });
 }
 
+app.Use(
+    async (context, next) =>
+    {
+        context.Response.Headers.Append("Content-Security-Policy", "default-src 'self'");
+        context.Response.Headers.Append("X-Frame-Options", "DENY");
+        context.Response.Headers.Append("X-Content-Type-Options", "nosniff");
+        context.Response.Headers.Append("Referrer-Policy", "strict-origin-when-cross-origin");
+        await next();
+    }
+);
+
 app.UseHttpsRedirection();
 app.UseCors("FrontendPolicy");
 app.UseAuthentication();
@@ -31,4 +42,4 @@ app.MapControllers();
 app.Run();
 
 // Necesario para que WebApplicationFactory<Program> pueda acceder a este ensamblado en los tests
-public partial class Program { }
+public partial class Program;

@@ -28,15 +28,16 @@ public class AdminWebApplicationFactory : CustomWebApplicationFactory
         // Configura InMemory DB y variables de entorno (heredado)
         base.ConfigureWebHost(builder);
 
-        builder.ConfigureServices(services =>
+        _ = builder.ConfigureServices(services =>
         {
             // Reemplaza el BackupService real con el mock
-            var descriptor = services.SingleOrDefault(
-                d => d.ServiceType == typeof(IBackupService));
+            var descriptor = services.SingleOrDefault(d => d.ServiceType == typeof(IBackupService));
             if (descriptor != null)
-                services.Remove(descriptor);
+            {
+                _ = services.Remove(descriptor);
+            }
 
-            services.AddScoped<IBackupService>(_ => BackupServiceMock.Object);
+            _ = services.AddScoped<IBackupService>(_ => BackupServiceMock.Object);
         });
     }
 }
@@ -51,13 +52,13 @@ public class AdminControllerTests : IClassFixture<AdminWebApplicationFactory>
     private readonly Mock<IBackupService> _backupMock;
 
     // Clave JWT idéntica a la configurada en CustomWebApplicationFactory
-    private const string TestJwtKey    = "ClaveSecretaParaIntegracionTests_32Ch!";
-    private const string TestIssuer    = "TestIssuer";
-    private const string TestAudience  = "TestAudience";
+    private const string TestJwtKey = "ClaveSecretaParaIntegracionTests_32Ch!";
+    private const string TestIssuer = "TestIssuer";
+    private const string TestAudience = "TestAudience";
 
     public AdminControllerTests(AdminWebApplicationFactory factory)
     {
-        _client     = factory.CreateClient();
+        _client = factory.CreateClient();
         _backupMock = factory.BackupServiceMock;
     }
 
@@ -66,26 +67,29 @@ public class AdminControllerTests : IClassFixture<AdminWebApplicationFactory>
     private static string GenerarToken(UserRole rol)
     {
         var config = new ConfigurationBuilder()
-            .AddInMemoryCollection(new Dictionary<string, string?>
-            {
-                ["JwtSettings:Key"]              = TestJwtKey,
-                ["JwtSettings:Issuer"]           = TestIssuer,
-                ["JwtSettings:Audience"]         = TestAudience,
-                ["JwtSettings:ExpiresInMinutes"] = "60",
-            })
+            .AddInMemoryCollection(
+                new Dictionary<string, string?>
+                {
+                    ["JwtSettings:Key"] = TestJwtKey,
+                    ["JwtSettings:Issuer"] = TestIssuer,
+                    ["JwtSettings:Audience"] = TestAudience,
+                    ["JwtSettings:ExpiresInMinutes"] = "60",
+                }
+            )
             .Build();
 
         var tokenService = new TokenService(config);
 
         var user = new User
         {
-            Id           = Guid.NewGuid(),
-            Email        = $"{rol.ToString().ToLower()}@test.com",
+            Id = Guid.NewGuid(),
+            Email =
+                $"{rol.ToString().ToLower(System.Globalization.CultureInfo.CurrentCulture)}@test.com",
             PasswordHash = "hash-no-relevante",
-            FirstName    = rol.ToString(),
-            LastName     = "Test",
-            Role         = rol,
-            Status       = true,
+            FirstName = rol.ToString(),
+            LastName = "Test",
+            Role = rol,
+            Status = true,
         };
 
         return tokenService.CreateToken(user);
@@ -95,7 +99,10 @@ public class AdminControllerTests : IClassFixture<AdminWebApplicationFactory>
     {
         var request = new HttpRequestMessage(new HttpMethod(method), url);
         if (token != null)
+        {
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        }
+
         return request;
     }
 
@@ -104,7 +111,7 @@ public class AdminControllerTests : IClassFixture<AdminWebApplicationFactory>
     // ─────────────────────────────────────────────────────────────
 
     [Fact]
-    public async Task CreateBackup_SinToken_Retorna401()
+    public async Task CreateBackupSinTokenRetorna401()
     {
         // Arrange
         var request = BuildRequest("POST", "/api/admin/backup");
@@ -113,11 +120,11 @@ public class AdminControllerTests : IClassFixture<AdminWebApplicationFactory>
         var response = await _client.SendAsync(request);
 
         // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+        _ = response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
     [Fact]
-    public async Task CreateBackup_ConTokenDeClient_Retorna403()
+    public async Task CreateBackupConTokenDeClientRetorna403()
     {
         // Arrange: usuario autenticado pero sin el rol requerido
         var token = GenerarToken(UserRole.Client);
@@ -127,11 +134,11 @@ public class AdminControllerTests : IClassFixture<AdminWebApplicationFactory>
         var response = await _client.SendAsync(request);
 
         // Assert: autorizado como usuario pero sin permisos de Admin
-        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        _ = response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
 
     [Fact]
-    public async Task CreateBackup_ConTokenDeProfessional_Retorna403()
+    public async Task CreateBackupConTokenDeProfessionalRetorna403()
     {
         // Arrange
         var token = GenerarToken(UserRole.Professional);
@@ -141,11 +148,11 @@ public class AdminControllerTests : IClassFixture<AdminWebApplicationFactory>
         var response = await _client.SendAsync(request);
 
         // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        _ = response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
 
     [Fact]
-    public async Task CreateBackup_ConTokenMalformado_Retorna401()
+    public async Task CreateBackupConTokenMalformadoRetorna401()
     {
         // Arrange
         var request = BuildRequest("POST", "/api/admin/backup", "esto.no.es.un.jwt");
@@ -154,7 +161,7 @@ public class AdminControllerTests : IClassFixture<AdminWebApplicationFactory>
         var response = await _client.SendAsync(request);
 
         // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+        _ = response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
     // ─────────────────────────────────────────────────────────────
@@ -162,45 +169,47 @@ public class AdminControllerTests : IClassFixture<AdminWebApplicationFactory>
     // ─────────────────────────────────────────────────────────────
 
     [Fact]
-    public async Task CreateBackup_ConTokenDeAdmin_BackupExitoso_Retorna201()
+    public async Task CreateBackupConTokenDeAdminBackupExitosoRetorna201()
     {
         // Arrange
         var backupEsperado = new BackupResponseDto
         {
-            FileName      = "backup_20260226_1200.sql",
-            CreatedAt     = new DateTime(2026, 2, 26, 12, 0, 0, DateTimeKind.Utc),
+            FileName = "backup_20260226_1200.sql",
+            CreatedAt = new DateTime(2026, 2, 26, 12, 0, 0, DateTimeKind.Utc),
             FileSizeBytes = 20480,
         };
 
-        _backupMock.Setup(s => s.GenerateBackupAsync())
-            .ReturnsAsync(backupEsperado);
+        _ = _backupMock.Setup(s => s.GenerateBackupAsync()).ReturnsAsync(backupEsperado);
 
-        var token   = GenerarToken(UserRole.Admin);
+        var token = GenerarToken(UserRole.Admin);
         var request = BuildRequest("POST", "/api/admin/backup", token);
 
         // Act
         var response = await _client.SendAsync(request);
 
         // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        _ = response.StatusCode.Should().Be(HttpStatusCode.Created);
         var body = await response.Content.ReadFromJsonAsync<BackupResponseDto>();
-        body!.FileName.Should().Be("backup_20260226_1200.sql");
-        body.FileSizeBytes.Should().Be(20480);
+        _ = body!.FileName.Should().Be("backup_20260226_1200.sql");
+        _ = body.FileSizeBytes.Should().Be(20480);
     }
 
     [Fact]
-    public async Task CreateBackup_ConTokenDeAdmin_BackupExitoso_RetornaJsonConFileName()
+    public async Task CreateBackupConTokenDeAdminBackupExitosoRetornaJsonConFileName()
     {
         // Arrange
-        _backupMock.Setup(s => s.GenerateBackupAsync())
-            .ReturnsAsync(new BackupResponseDto
-            {
-                FileName      = "backup_20260226_1430.sql",
-                CreatedAt     = DateTime.UtcNow,
-                FileSizeBytes = 1024,
-            });
+        _ = _backupMock
+            .Setup(s => s.GenerateBackupAsync())
+            .ReturnsAsync(
+                new BackupResponseDto
+                {
+                    FileName = "backup_20260226_1430.sql",
+                    CreatedAt = DateTime.UtcNow,
+                    FileSizeBytes = 1024,
+                }
+            );
 
-        var token   = GenerarToken(UserRole.Admin);
+        var token = GenerarToken(UserRole.Admin);
         var request = BuildRequest("POST", "/api/admin/backup", token);
 
         // Act
@@ -208,45 +217,49 @@ public class AdminControllerTests : IClassFixture<AdminWebApplicationFactory>
         var contenido = await response.Content.ReadAsStringAsync();
 
         // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.Created);
-        contenido.Should().Contain("backup_20260226_1430.sql");
-        contenido.Should().Contain("fileSizeBytes");
-        contenido.Should().Contain("createdAt");
+        _ = response.StatusCode.Should().Be(HttpStatusCode.Created);
+        _ = contenido.Should().Contain("backup_20260226_1430.sql");
+        _ = contenido.Should().Contain("fileSizeBytes");
+        _ = contenido.Should().Contain("createdAt");
     }
 
     [Fact]
-    public async Task CreateBackup_ConTokenDeAdmin_BackupFalla_Retorna500()
+    public async Task CreateBackupConTokenDeAdminBackupFallaRetorna500()
     {
         // Arrange: el servicio lanza una excepción de operación inválida (pg_dump falló)
-        _backupMock.Setup(s => s.GenerateBackupAsync())
-            .ThrowsAsync(new InvalidOperationException("pg_dump falló (código 1): autenticación fallida"));
+        _ = _backupMock
+            .Setup(s => s.GenerateBackupAsync())
+            .ThrowsAsync(
+                new InvalidOperationException("pg_dump falló (código 1): autenticación fallida")
+            );
 
-        var token   = GenerarToken(UserRole.Admin);
+        var token = GenerarToken(UserRole.Admin);
         var request = BuildRequest("POST", "/api/admin/backup", token);
 
         // Act
         var response = await _client.SendAsync(request);
 
         // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.InternalServerError);
+        _ = response.StatusCode.Should().Be(HttpStatusCode.InternalServerError);
         var contenido = await response.Content.ReadAsStringAsync();
-        contenido.Should().Contain("pg_dump falló");
+        _ = contenido.Should().Contain("pg_dump falló");
     }
 
     [Fact]
-    public async Task CreateBackup_ConTokenDeAdmin_LlamaAlServicioUnaVez()
+    public async Task CreateBackupConTokenDeAdminLlamaAlServicioUnaVez()
     {
         // Arrange: el mock es compartido por IClassFixture; se limpian las invocaciones
         // previas para que Times.Once solo cuente la llamada de este test.
         _backupMock.Invocations.Clear();
-        _backupMock.Setup(s => s.GenerateBackupAsync())
+        _ = _backupMock
+            .Setup(s => s.GenerateBackupAsync())
             .ReturnsAsync(new BackupResponseDto { FileName = "backup.sql" });
 
-        var token   = GenerarToken(UserRole.Admin);
+        var token = GenerarToken(UserRole.Admin);
         var request = BuildRequest("POST", "/api/admin/backup", token);
 
         // Act
-        await _client.SendAsync(request);
+        _ = await _client.SendAsync(request);
 
         // Assert: el pipeline no genera llamadas duplicadas al servicio
         _backupMock.Verify(s => s.GenerateBackupAsync(), Times.Once);

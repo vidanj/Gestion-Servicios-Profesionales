@@ -43,34 +43,41 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
-        builder.ConfigureServices(services =>
+        _ = builder.ConfigureServices(services =>
         {
             // EF Core 9 registra la configuración del provider en IDbContextOptionsConfiguration<T>.
             // Si no se remueve antes de agregar InMemory, ambos providers quedan activos y EF
             // lanza InvalidOperationException al detectar dos providers en el mismo service provider.
 
             // 1. Remover DbContextOptions<AppDbContext>
-            var optionsDescriptor = services.SingleOrDefault(
-                d => d.ServiceType == typeof(DbContextOptions<AppDbContext>));
+            var optionsDescriptor = services.SingleOrDefault(d =>
+                d.ServiceType == typeof(DbContextOptions<AppDbContext>)
+            );
             if (optionsDescriptor != null)
-                services.Remove(optionsDescriptor);
+            {
+                _ = services.Remove(optionsDescriptor);
+            }
 
             // 2. Remover IDbContextOptionsConfiguration<AppDbContext> (configuración de Npgsql)
             var configType = typeof(IDbContextOptionsConfiguration<AppDbContext>);
             var configDescriptors = services.Where(d => d.ServiceType == configType).ToList();
             foreach (var d in configDescriptors)
-                services.Remove(d);
+            {
+                _ = services.Remove(d);
+            }
 
             // 3. Registrar DbContext fresco con base de datos en memoria
-            services.AddDbContext<AppDbContext>(options =>
-                options.UseInMemoryDatabase(_dbName));
+            _ = services.AddDbContext<AppDbContext>(options =>
+                options.UseInMemoryDatabase(_dbName)
+            );
         });
 
         // Suprimir warnings de HTTPS del test server (no tiene puerto HTTPS configurado)
-        builder.ConfigureLogging(logging =>
-            logging.AddFilter("Microsoft.AspNetCore.HttpsPolicy", LogLevel.None));
+        _ = builder.ConfigureLogging(logging =>
+            logging.AddFilter("Microsoft.AspNetCore.HttpsPolicy", LogLevel.None)
+        );
 
         // Ambiente explícito para pruebas
-        builder.UseEnvironment("Testing");
+        _ = builder.UseEnvironment("Testing");
     }
 }

@@ -17,7 +17,7 @@ export const Faq: React.FC<FaqProps> = (props) => {
     <Section id="faq">
       <SectionTitle title={title} description={description} />
 
-      <SimpleGrid columns={[1, null, 2]} spacingY={10} spacingX="20">
+      <SimpleGrid columns={[1, null, 2]} rowGap={10} columnGap="20">
         {items?.map(({ q, a }, i) => {
           return <FaqItem key={i} question={q} answer={a} />
         })}

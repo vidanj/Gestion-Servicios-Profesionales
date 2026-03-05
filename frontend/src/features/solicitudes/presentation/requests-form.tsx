@@ -152,7 +152,7 @@ export function RequestsForm({ draft, editingId, onSelectService, onChangeField,
 
           {/* Bloque: acciones del formulario */}
           <ButtonGroup>
-            <Button colorScheme="purple" onClick={onSave}>
+            <Button colorPalette="purple" onClick={onSave}>
               {editingId ? "Guardar cambios" : "Publicar vacante"}
             </Button>
             <Button variant="outline" onClick={onReset}>
