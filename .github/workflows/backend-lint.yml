@@ -1,0 +1,73 @@
+name: Backend — Formato y Linting
+
+on:
+  push:
+    branches:
+      - main
+      - feat/**
+    paths:
+      - 'backend/**'
+      - '.editorconfig'
+      - '.csharpierrc.json'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'backend/**'
+      - '.editorconfig'
+      - '.csharpierrc.json'
+
+jobs:
+  format-and-lint:
+    name: CSharpier + Analyzers
+    runs-on: ubuntu-latest
+
+    steps:
+      # ── 1. Checkout ──────────────────────────────────────────────
+      - name: Checkout del repositorio
+        uses: actions/checkout@v4
+
+      # ── 2. .NET 9 SDK ─────────────────────────────────────────────
+      - name: Configurar .NET 9
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      # ── 3. Restaurar herramientas locales (incluye CSharpier) ─────
+      - name: Restaurar herramientas dotnet
+        run: dotnet tool restore
+
+      # ── 4. Verificar formato con CSharpier ────────────────────────
+      - name: Verificar formato (CSharpier)
+        run: dotnet tool run csharpier check backend/
+
+      # ── 5. Restaurar dependencias NuGet ───────────────────────────
+      - name: Restaurar paquetes NuGet
+        run: dotnet restore backend/SistemaServicios.sln
+
+      # ── 6. Compilar con analizadores habilitados ───────────────────
+      - name: Compilar y ejecutar analizadores
+        run: |
+          dotnet build backend/SistemaServicios.sln \
+            --no-restore \
+            --configuration Release \
+            -p:EnforceCodeStyleInBuild=true \
+            -p:EnableNETAnalyzers=true \
+            -p:AnalysisLevel=latest-recommended \
+            --verbosity normal \
+            2>&1 | tee build-output.txt
+          # Falla el paso sólo si hay errores (no advertencias)
+          grep -qE "^.* Error\(s\)$" build-output.txt && \
+            grep -E "^\s+[1-9][0-9]* Error" build-output.txt && exit 1 || true
+
+      # ── 7. Publicar resumen de advertencias de analizadores ────────
+      - name: Contar advertencias de analizadores
+        if: always()
+        run: |
+          SA=$(grep -c " warning SA" build-output.txt || true)
+          RCS=$(grep -c " warning RCS" build-output.txt || true)
+          echo "### Advertencias de Linting" >> $GITHUB_STEP_SUMMARY
+          echo "| Categoría | Advertencias |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----------|-------------|" >> $GITHUB_STEP_SUMMARY
+          echo "| StyleCop (SA) | $SA |" >> $GITHUB_STEP_SUMMARY
+          echo "| Roslynator (RCS) | $RCS |" >> $GITHUB_STEP_SUMMARY

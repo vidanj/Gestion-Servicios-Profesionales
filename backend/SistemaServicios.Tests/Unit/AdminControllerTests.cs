@@ -32,13 +32,16 @@ public class AdminControllerTests
     public async Task CreateBackup_Exitoso_Retorna201()
     {
         // Arrange
-        _mockBackupService.Setup(s => s.GenerateBackupAsync())
-            .ReturnsAsync(new BackupResponseDto
-            {
-                FileName = "backup_20260226_1000.sql",
-                CreatedAt = DateTime.UtcNow,
-                FileSizeBytes = 4096,
-            });
+        _mockBackupService
+            .Setup(s => s.GenerateBackupAsync())
+            .ReturnsAsync(
+                new BackupResponseDto
+                {
+                    FileName = "backup_20260226_1000.sql",
+                    CreatedAt = DateTime.UtcNow,
+                    FileSizeBytes = 4096,
+                }
+            );
 
         // Act
         var result = await _controller.CreateBackup();
@@ -59,8 +62,7 @@ public class AdminControllerTests
             FileSizeBytes = 8192,
         };
 
-        _mockBackupService.Setup(s => s.GenerateBackupAsync())
-            .ReturnsAsync(expected);
+        _mockBackupService.Setup(s => s.GenerateBackupAsync()).ReturnsAsync(expected);
 
         // Act
         var result = await _controller.CreateBackup();
@@ -74,7 +76,8 @@ public class AdminControllerTests
     public async Task CreateBackup_Exitoso_LlamaAlServicioExactamenteUnaVez()
     {
         // Arrange
-        _mockBackupService.Setup(s => s.GenerateBackupAsync())
+        _mockBackupService
+            .Setup(s => s.GenerateBackupAsync())
             .ReturnsAsync(new BackupResponseDto { FileName = "backup.sql" });
 
         // Act
@@ -88,8 +91,11 @@ public class AdminControllerTests
     public async Task CreateBackup_ServicioLanzaInvalidOperationException_Retorna500()
     {
         // Arrange
-        _mockBackupService.Setup(s => s.GenerateBackupAsync())
-            .ThrowsAsync(new InvalidOperationException("pg_dump falló (código 1): conexión rechazada"));
+        _mockBackupService
+            .Setup(s => s.GenerateBackupAsync())
+            .ThrowsAsync(
+                new InvalidOperationException("pg_dump falló (código 1): conexión rechazada")
+            );
 
         // Act
         var result = await _controller.CreateBackup();
@@ -105,7 +111,8 @@ public class AdminControllerTests
         // Arrange
         const string mensajeEsperado = "pg_dump falló (código 1): conexión rechazada";
 
-        _mockBackupService.Setup(s => s.GenerateBackupAsync())
+        _mockBackupService
+            .Setup(s => s.GenerateBackupAsync())
             .ThrowsAsync(new InvalidOperationException(mensajeEsperado));
 
         // Act
@@ -121,11 +128,11 @@ public class AdminControllerTests
     {
         // Arrange: el controller solo captura InvalidOperationException.
         // Cualquier otra excepción debe burbujear para que el middleware la maneje.
-        _mockBackupService.Setup(s => s.GenerateBackupAsync())
+        _mockBackupService
+            .Setup(s => s.GenerateBackupAsync())
             .ThrowsAsync(new OutOfMemoryException("sin memoria"));
 
         // Act & Assert
-        await Assert.ThrowsAsync<OutOfMemoryException>(
-            () => _controller.CreateBackup());
+        await Assert.ThrowsAsync<OutOfMemoryException>(() => _controller.CreateBackup());
     }
 }

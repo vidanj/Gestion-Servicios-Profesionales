@@ -30,7 +30,9 @@ public class AuthControllerTests : IClassFixture<CustomWebApplicationFactory>
 
     /// <summary>Registra un usuario y devuelve su token JWT.</summary>
     private async Task<string> RegistrarYObtenerToken(
-        string email, string password = "Password123!")
+        string email,
+        string password = "Password123!"
+    )
     {
         var body = new
         {
@@ -75,7 +77,13 @@ public class AuthControllerTests : IClassFixture<CustomWebApplicationFactory>
     public async Task Register_EmailDuplicado_Retorna400ConMensaje()
     {
         var email = EmailUnico();
-        var body = new { email, password = "Password123!", firstName = "A", lastName = "B" };
+        var body = new
+        {
+            email,
+            password = "Password123!",
+            firstName = "A",
+            lastName = "B",
+        };
 
         // Primer registro: exitoso
         await _client.PostAsJsonAsync("/api/auth/register", body);
@@ -110,7 +118,7 @@ public class AuthControllerTests : IClassFixture<CustomWebApplicationFactory>
         var body = new
         {
             email = EmailUnico(),
-            password = "123",   // menos de 6 caracteres
+            password = "123", // menos de 6 caracteres
             firstName = "A",
             lastName = "B",
         };
@@ -147,7 +155,7 @@ public class AuthControllerTests : IClassFixture<CustomWebApplicationFactory>
             password = "Password123!",
             firstName = "Pro",
             lastName = "User",
-            role = 2,   // enviado pero ignorado por el servidor
+            role = 2, // enviado pero ignorado por el servidor
         };
 
         var response = await _client.PostAsJsonAsync("/api/auth/register", body);
@@ -239,8 +247,8 @@ public class AuthControllerTests : IClassFixture<CustomWebApplicationFactory>
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var contenido = await response.Content.ReadAsStringAsync();
         contenido.Should().Contain(email);
-        contenido.Should().Contain("Test");   // firstName
-        contenido.Should().Contain("User");   // lastName
+        contenido.Should().Contain("Test"); // firstName
+        contenido.Should().Contain("User"); // lastName
         contenido.Should().Contain("Client"); // role
     }
 
@@ -248,7 +256,10 @@ public class AuthControllerTests : IClassFixture<CustomWebApplicationFactory>
     public async Task Me_ConTokenMalformado_Retorna401()
     {
         var request = new HttpRequestMessage(HttpMethod.Get, "/api/auth/me");
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", "esto.no.es.un.jwt");
+        request.Headers.Authorization = new AuthenticationHeaderValue(
+            "Bearer",
+            "esto.no.es.un.jwt"
+        );
 
         var response = await _client.SendAsync(request);
 
@@ -266,7 +277,13 @@ public class AuthControllerTests : IClassFixture<CustomWebApplicationFactory>
         const string password = "Password123!";
 
         // 1. Registro
-        var registerBody = new { email, password, firstName = "María", lastName = "Torres" };
+        var registerBody = new
+        {
+            email,
+            password,
+            firstName = "María",
+            lastName = "Torres",
+        };
         var registerResponse = await _client.PostAsJsonAsync("/api/auth/register", registerBody);
         registerResponse.StatusCode.Should().Be(HttpStatusCode.Created);
         var registerAuth = await registerResponse.Content.ReadFromJsonAsync<AuthResponseDto>();

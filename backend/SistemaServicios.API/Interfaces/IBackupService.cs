@@ -1,9 +1,8 @@
 using SistemaServicios.API.DTOs.Admin;
 
-namespace SistemaServicios.API.Interfaces
+namespace SistemaServicios.API.Interfaces;
+
+public interface IBackupService
 {
-    public interface IBackupService
-    {
-        Task<BackupResponseDto> GenerateBackupAsync();
-    }
+    Task<BackupResponseDto> GenerateBackupAsync();
 }
