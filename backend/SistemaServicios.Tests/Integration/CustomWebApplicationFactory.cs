@@ -50,8 +50,9 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
             // lanza InvalidOperationException al detectar dos providers en el mismo service provider.
 
             // 1. Remover DbContextOptions<AppDbContext>
-            var optionsDescriptor = services.SingleOrDefault(
-                d => d.ServiceType == typeof(DbContextOptions<AppDbContext>));
+            var optionsDescriptor = services.SingleOrDefault(d =>
+                d.ServiceType == typeof(DbContextOptions<AppDbContext>)
+            );
             if (optionsDescriptor != null)
                 services.Remove(optionsDescriptor);
 
@@ -62,13 +63,13 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
                 services.Remove(d);
 
             // 3. Registrar DbContext fresco con base de datos en memoria
-            services.AddDbContext<AppDbContext>(options =>
-                options.UseInMemoryDatabase(_dbName));
+            services.AddDbContext<AppDbContext>(options => options.UseInMemoryDatabase(_dbName));
         });
 
         // Suprimir warnings de HTTPS del test server (no tiene puerto HTTPS configurado)
         builder.ConfigureLogging(logging =>
-            logging.AddFilter("Microsoft.AspNetCore.HttpsPolicy", LogLevel.None));
+            logging.AddFilter("Microsoft.AspNetCore.HttpsPolicy", LogLevel.None)
+        );
 
         // Ambiente explícito para pruebas
         builder.UseEnvironment("Testing");

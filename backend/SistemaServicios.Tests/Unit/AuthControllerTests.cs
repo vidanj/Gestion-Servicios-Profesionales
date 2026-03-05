@@ -25,7 +25,7 @@ public class AuthControllerTests
     public AuthControllerTests()
     {
         _mockAuthService = new Mock<IAuthService>();
-        _controller      = new AuthController(_mockAuthService.Object);
+        _controller = new AuthController(_mockAuthService.Object);
     }
 
     // JsonSerializer por defecto escapa caracteres no-ASCII (á → \u00E1).
@@ -44,7 +44,10 @@ public class AuthControllerTests
     /// </summary>
     private void SetUserContext(params (string type, string value)[] claims)
     {
-        var identity  = new ClaimsIdentity(claims.Select(c => new Claim(c.type, c.value)), "TestAuth");
+        var identity = new ClaimsIdentity(
+            claims.Select(c => new Claim(c.type, c.value)),
+            "TestAuth"
+        );
         var principal = new ClaimsPrincipal(identity);
         _controller.ControllerContext = new ControllerContext
         {
@@ -60,26 +63,31 @@ public class AuthControllerTests
     public async Task Login_Exitoso_Retorna200()
     {
         // Arrange
-        _mockAuthService.Setup(s => s.LoginAsync(It.IsAny<LoginRequestDto>()))
+        _mockAuthService
+            .Setup(s => s.LoginAsync(It.IsAny<LoginRequestDto>()))
             .ReturnsAsync(new AuthResponseDto { Token = "jwt", Email = "u@test.com" });
 
         // Act
-        var result = await _controller.Login(new LoginRequestDto { Email = "u@test.com", Password = "pass" });
+        var result = await _controller.Login(
+            new LoginRequestDto { Email = "u@test.com", Password = "pass" }
+        );
 
         // Assert
-        result.Should().BeOfType<OkObjectResult>()
-              .Which.StatusCode.Should().Be(200);
+        result.Should().BeOfType<OkObjectResult>().Which.StatusCode.Should().Be(200);
     }
 
     [Fact]
     public async Task Login_CredencialesInvalidas_Retorna401ConMensaje()
     {
         // Arrange
-        _mockAuthService.Setup(s => s.LoginAsync(It.IsAny<LoginRequestDto>()))
+        _mockAuthService
+            .Setup(s => s.LoginAsync(It.IsAny<LoginRequestDto>()))
             .ThrowsAsync(new UnauthorizedAccessException("Credenciales inválidas."));
 
         // Act
-        var result = await _controller.Login(new LoginRequestDto { Email = "x@test.com", Password = "mal" });
+        var result = await _controller.Login(
+            new LoginRequestDto { Email = "x@test.com", Password = "mal" }
+        );
 
         // Assert
         var objectResult = result.Should().BeOfType<UnauthorizedObjectResult>().Subject;
@@ -96,32 +104,43 @@ public class AuthControllerTests
     public async Task Register_Exitoso_Retorna201()
     {
         // Arrange
-        _mockAuthService.Setup(s => s.RegisterAsync(It.IsAny<RegisterRequestDto>()))
+        _mockAuthService
+            .Setup(s => s.RegisterAsync(It.IsAny<RegisterRequestDto>()))
             .ReturnsAsync(new AuthResponseDto { Token = "jwt", Email = "nuevo@test.com" });
 
         // Act
-        var result = await _controller.Register(new RegisterRequestDto
-        {
-            Email = "nuevo@test.com", Password = "pass", FirstName = "A", LastName = "B",
-        });
+        var result = await _controller.Register(
+            new RegisterRequestDto
+            {
+                Email = "nuevo@test.com",
+                Password = "pass",
+                FirstName = "A",
+                LastName = "B",
+            }
+        );
 
         // Assert
-        result.Should().BeOfType<ObjectResult>()
-              .Which.StatusCode.Should().Be(201);
+        result.Should().BeOfType<ObjectResult>().Which.StatusCode.Should().Be(201);
     }
 
     [Fact]
     public async Task Register_EmailDuplicado_Retorna400ConMensaje()
     {
         // Arrange
-        _mockAuthService.Setup(s => s.RegisterAsync(It.IsAny<RegisterRequestDto>()))
+        _mockAuthService
+            .Setup(s => s.RegisterAsync(It.IsAny<RegisterRequestDto>()))
             .ThrowsAsync(new InvalidOperationException("El correo ya está registrado."));
 
         // Act
-        var result = await _controller.Register(new RegisterRequestDto
-        {
-            Email = "dup@test.com", Password = "pass", FirstName = "A", LastName = "B",
-        });
+        var result = await _controller.Register(
+            new RegisterRequestDto
+            {
+                Email = "dup@test.com",
+                Password = "pass",
+                FirstName = "A",
+                LastName = "B",
+            }
+        );
 
         // Assert
         var objectResult = result.Should().BeOfType<BadRequestObjectResult>().Subject;
@@ -141,16 +160,17 @@ public class AuthControllerTests
         // Cubre la rama "claim presente" (no-null) de cada operador ?. en Me().
         SetUserContext(
             (ClaimTypes.NameIdentifier, "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
-            (ClaimTypes.Email,          "test@test.com"),
-            (ClaimTypes.Role,           "Client"),
-            ("firstName",               "Juan"),
-            ("lastName",                "Pérez"));
+            (ClaimTypes.Email, "test@test.com"),
+            (ClaimTypes.Role, "Client"),
+            ("firstName", "Juan"),
+            ("lastName", "Pérez")
+        );
 
         // Act
         var result = _controller.Me();
 
         // Assert
-        var ok   = result.Should().BeOfType<OkObjectResult>().Subject;
+        var ok = result.Should().BeOfType<OkObjectResult>().Subject;
         var json = ToJson(ok.Value);
         json.Should().Contain("test@test.com");
         json.Should().Contain("Juan");
@@ -175,7 +195,7 @@ public class AuthControllerTests
         var result = _controller.Me();
 
         // Assert: el método devuelve 200 incluso sin claims (valores null en el body)
-        var ok   = result.Should().BeOfType<OkObjectResult>().Subject;
+        var ok = result.Should().BeOfType<OkObjectResult>().Subject;
         ok.StatusCode.Should().Be(200);
         var json = ToJson(ok.Value);
         json.Should().Contain("null");

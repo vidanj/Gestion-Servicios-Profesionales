@@ -23,29 +23,28 @@ public class TokenServiceTests
     {
         var configValues = new Dictionary<string, string?>
         {
-            ["JwtSettings:Key"]              = TestKey,
-            ["JwtSettings:Issuer"]           = TestIssuer,
-            ["JwtSettings:Audience"]         = TestAudience,
+            ["JwtSettings:Key"] = TestKey,
+            ["JwtSettings:Issuer"] = TestIssuer,
+            ["JwtSettings:Audience"] = TestAudience,
             ["JwtSettings:ExpiresInMinutes"] = ExpiresMinutes.ToString(),
         };
 
-        _config = new ConfigurationBuilder()
-            .AddInMemoryCollection(configValues)
-            .Build();
+        _config = new ConfigurationBuilder().AddInMemoryCollection(configValues).Build();
 
         _tokenService = new TokenService(_config);
     }
 
-    private static User CrearUsuarioDePrueba() => new()
-    {
-        Id = Guid.Parse("11111111-1111-1111-1111-111111111111"),
-        Email = "usuario@test.com",
-        PasswordHash = "hash-no-relevante",
-        FirstName = "Juan",
-        LastName = "Pérez",
-        Role = UserRole.Client,
-        Status = true,
-    };
+    private static User CrearUsuarioDePrueba() =>
+        new()
+        {
+            Id = Guid.Parse("11111111-1111-1111-1111-111111111111"),
+            Email = "usuario@test.com",
+            PasswordHash = "hash-no-relevante",
+            FirstName = "Juan",
+            LastName = "Pérez",
+            Role = UserRole.Client,
+            Status = true,
+        };
 
     // ─────────────────────────────────────────────────────────────
     // Formato del token
@@ -182,9 +181,8 @@ public class TokenServiceTests
         var jwt = new JwtSecurityTokenHandler().ReadJwtToken(token);
 
         // El token debe expirar aproximadamente en ExpiresMinutes minutos
-        jwt.ValidTo.Should().BeCloseTo(
-            antes.AddMinutes(ExpiresMinutes),
-            precision: TimeSpan.FromSeconds(10));
+        jwt.ValidTo.Should()
+            .BeCloseTo(antes.AddMinutes(ExpiresMinutes), precision: TimeSpan.FromSeconds(10));
     }
 
     // ─────────────────────────────────────────────────────────────
@@ -215,20 +213,21 @@ public class TokenServiceTests
     public void CreateToken_SinJwtKey_LanzaInvalidOperationException()
     {
         var configSinKey = new ConfigurationBuilder()
-            .AddInMemoryCollection(new Dictionary<string, string?>
-            {
-                ["JwtSettings:Issuer"]           = TestIssuer,
-                ["JwtSettings:Audience"]         = TestAudience,
-                ["JwtSettings:ExpiresInMinutes"] = "60",
-                // JWT_KEY intencionalmente omitido
-            })
+            .AddInMemoryCollection(
+                new Dictionary<string, string?>
+                {
+                    ["JwtSettings:Issuer"] = TestIssuer,
+                    ["JwtSettings:Audience"] = TestAudience,
+                    ["JwtSettings:ExpiresInMinutes"] = "60",
+                    // JWT_KEY intencionalmente omitido
+                }
+            )
             .Build();
 
         var tokenServiceSinKey = new TokenService(configSinKey);
 
         var act = () => tokenServiceSinKey.CreateToken(CrearUsuarioDePrueba());
-        act.Should().Throw<InvalidOperationException>()
-           .WithMessage("JWT Key no configurado.");
+        act.Should().Throw<InvalidOperationException>().WithMessage("JWT Key no configurado.");
     }
 
     [Fact]
@@ -236,25 +235,25 @@ public class TokenServiceTests
     {
         // Arrange: JwtSettings:ExpiresInMinutes omitido → debe usar el valor por defecto "60"
         var config = new ConfigurationBuilder()
-            .AddInMemoryCollection(new Dictionary<string, string?>
-            {
-                ["JwtSettings:Key"]      = TestKey,
-                ["JwtSettings:Issuer"]   = TestIssuer,
-                ["JwtSettings:Audience"] = TestAudience,
-                // ExpiresInMinutes intencionalmente omitido
-            })
+            .AddInMemoryCollection(
+                new Dictionary<string, string?>
+                {
+                    ["JwtSettings:Key"] = TestKey,
+                    ["JwtSettings:Issuer"] = TestIssuer,
+                    ["JwtSettings:Audience"] = TestAudience,
+                    // ExpiresInMinutes intencionalmente omitido
+                }
+            )
             .Build();
 
         var service = new TokenService(config);
-        var antes   = DateTime.UtcNow;
+        var antes = DateTime.UtcNow;
 
         // Act
         var token = service.CreateToken(CrearUsuarioDePrueba());
 
         // Assert: el token se generó y expira en ~60 minutos (valor por defecto)
         var jwt = new JwtSecurityTokenHandler().ReadJwtToken(token);
-        jwt.ValidTo.Should().BeCloseTo(
-            antes.AddMinutes(60),
-            precision: TimeSpan.FromSeconds(10));
+        jwt.ValidTo.Should().BeCloseTo(antes.AddMinutes(60), precision: TimeSpan.FromSeconds(10));
     }
 }

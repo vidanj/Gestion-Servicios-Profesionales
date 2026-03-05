@@ -1,4 +1,4 @@
-using SistemaServicios.API.Extensions; 
+using SistemaServicios.API.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -9,8 +9,6 @@ builder.Services.AddControllers();
 
 // --- 2. CONFIGURACIÓN OPENAPI (.NET 9 NATIVO) ---
 builder.Services.AddOpenApi();
-
-
 
 var app = builder.Build();
 
@@ -24,14 +22,16 @@ if (app.Environment.IsDevelopment())
     });
 }
 
-app.Use(async (context, next) =>
-{
-    context.Response.Headers.Append("Content-Security-Policy", "default-src 'self'");
-    context.Response.Headers.Append("X-Frame-Options", "DENY");
-    context.Response.Headers.Append("X-Content-Type-Options", "nosniff");
-    context.Response.Headers.Append("Referrer-Policy", "strict-origin-when-cross-origin");
-    await next();
-});
+app.Use(
+    async (context, next) =>
+    {
+        context.Response.Headers.Append("Content-Security-Policy", "default-src 'self'");
+        context.Response.Headers.Append("X-Frame-Options", "DENY");
+        context.Response.Headers.Append("X-Content-Type-Options", "nosniff");
+        context.Response.Headers.Append("Referrer-Policy", "strict-origin-when-cross-origin");
+        await next();
+    }
+);
 
 app.UseHttpsRedirection();
 app.UseCors("FrontendPolicy");

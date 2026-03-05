@@ -13,7 +13,13 @@ public class BackupServiceTests : IDisposable
 {
     // Variables de entorno que gestiona este servicio
     private static readonly string[] EnvKeys =
-        ["DB_HOST", "DB_PORT", "DB_NAME", "DB_USER", "DB_PASSWORD"];
+    [
+        "DB_HOST",
+        "DB_PORT",
+        "DB_NAME",
+        "DB_USER",
+        "DB_PASSWORD",
+    ];
 
     // Guarda los valores originales para restaurarlos al terminar cada prueba
     private readonly Dictionary<string, string?> _valoresOriginales = new();
@@ -53,8 +59,9 @@ public class BackupServiceTests : IDisposable
         var service = new BackupService();
 
         // Act & Assert
-        var ex = await Assert.ThrowsAsync<InvalidOperationException>(
-            () => service.GenerateBackupAsync());
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            service.GenerateBackupAsync()
+        );
 
         ex.Message.Should().Contain("DB_HOST no definido");
     }
@@ -68,8 +75,9 @@ public class BackupServiceTests : IDisposable
         var service = new BackupService();
 
         // Act & Assert
-        var ex = await Assert.ThrowsAsync<InvalidOperationException>(
-            () => service.GenerateBackupAsync());
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            service.GenerateBackupAsync()
+        );
 
         ex.Message.Should().Contain("DB_NAME no definido");
     }
@@ -83,8 +91,9 @@ public class BackupServiceTests : IDisposable
         var service = new BackupService();
 
         // Act & Assert
-        var ex = await Assert.ThrowsAsync<InvalidOperationException>(
-            () => service.GenerateBackupAsync());
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            service.GenerateBackupAsync()
+        );
 
         ex.Message.Should().Contain("DB_USER no definido");
     }
@@ -98,8 +107,9 @@ public class BackupServiceTests : IDisposable
         var service = new BackupService();
 
         // Act & Assert
-        var ex = await Assert.ThrowsAsync<InvalidOperationException>(
-            () => service.GenerateBackupAsync());
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            service.GenerateBackupAsync()
+        );
 
         ex.Message.Should().Contain("DB_PASSWORD no definido");
     }

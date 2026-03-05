@@ -15,22 +15,25 @@ namespace SistemaServicios.Tests.Unit;
 public class UserRepositoryTests
 {
     private static AppDbContext CreateDbContext() =>
-        new(new DbContextOptionsBuilder<AppDbContext>()
-            .UseInMemoryDatabase($"UserRepo_{Guid.NewGuid()}")
-            .Options);
+        new(
+            new DbContextOptionsBuilder<AppDbContext>()
+                .UseInMemoryDatabase($"UserRepo_{Guid.NewGuid()}")
+                .Options
+        );
 
-    private static User CrearUsuario(string email = "test@test.com") => new()
-    {
-        Id           = Guid.NewGuid(),
-        Email        = email,
-        PasswordHash = "hash-de-prueba",
-        FirstName    = "Test",
-        LastName     = "User",
-        Role         = UserRole.Client,
-        Status       = true,
-        CreatedAt    = DateTime.UtcNow,
-        UpdatedAt    = DateTime.UtcNow,
-    };
+    private static User CrearUsuario(string email = "test@test.com") =>
+        new()
+        {
+            Id = Guid.NewGuid(),
+            Email = email,
+            PasswordHash = "hash-de-prueba",
+            FirstName = "Test",
+            LastName = "User",
+            Role = UserRole.Client,
+            Status = true,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow,
+        };
 
     // ─────────────────────────────────────────────────────────────
     // GetByIdAsync

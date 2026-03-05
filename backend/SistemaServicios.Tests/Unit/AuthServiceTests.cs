@@ -43,10 +43,8 @@ public class AuthServiceTests
     public async Task LoginAsync_CredencialesValidas_RetornaAuthResponse()
     {
         // Arrange
-        _mockRepo.Setup(r => r.GetByEmailAsync("juan@test.com"))
-                 .ReturnsAsync(_usuarioActivo);
-        _mockToken.Setup(t => t.CreateToken(_usuarioActivo))
-                  .Returns("token-jwt-falso");
+        _mockRepo.Setup(r => r.GetByEmailAsync("juan@test.com")).ReturnsAsync(_usuarioActivo);
+        _mockToken.Setup(t => t.CreateToken(_usuarioActivo)).Returns("token-jwt-falso");
 
         var dto = new LoginRequestDto { Email = "juan@test.com", Password = "Password123!" };
 
@@ -65,14 +63,14 @@ public class AuthServiceTests
     public async Task LoginAsync_EmailNoExiste_LanzaUnauthorizedAccessException()
     {
         // Arrange: el repositorio devuelve null (usuario no encontrado)
-        _mockRepo.Setup(r => r.GetByEmailAsync(It.IsAny<string>()))
-                 .ReturnsAsync((User?)null);
+        _mockRepo.Setup(r => r.GetByEmailAsync(It.IsAny<string>())).ReturnsAsync((User?)null);
 
         var dto = new LoginRequestDto { Email = "noexiste@test.com", Password = "cualquier" };
 
         // Act & Assert
-        var ex = await Assert.ThrowsAsync<UnauthorizedAccessException>(
-            () => _authService.LoginAsync(dto));
+        var ex = await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
+            _authService.LoginAsync(dto)
+        );
 
         ex.Message.Should().Be("Credenciales inválidas.");
     }
@@ -89,17 +87,17 @@ public class AuthServiceTests
             FirstName = "Ana",
             LastName = "López",
             Role = UserRole.Client,
-            Status = false,   // <-- cuenta desactivada
+            Status = false, // <-- cuenta desactivada
         };
 
-        _mockRepo.Setup(r => r.GetByEmailAsync("inactivo@test.com"))
-                 .ReturnsAsync(usuarioInactivo);
+        _mockRepo.Setup(r => r.GetByEmailAsync("inactivo@test.com")).ReturnsAsync(usuarioInactivo);
 
         var dto = new LoginRequestDto { Email = "inactivo@test.com", Password = "Password123!" };
 
         // Act & Assert
-        var ex = await Assert.ThrowsAsync<UnauthorizedAccessException>(
-            () => _authService.LoginAsync(dto));
+        var ex = await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
+            _authService.LoginAsync(dto)
+        );
 
         ex.Message.Should().Be("La cuenta está desactivada.");
     }
@@ -108,14 +106,14 @@ public class AuthServiceTests
     public async Task LoginAsync_PasswordIncorrecto_LanzaUnauthorizedAccessException()
     {
         // Arrange: el usuario existe pero la contraseña no coincide
-        _mockRepo.Setup(r => r.GetByEmailAsync("juan@test.com"))
-                 .ReturnsAsync(_usuarioActivo);
+        _mockRepo.Setup(r => r.GetByEmailAsync("juan@test.com")).ReturnsAsync(_usuarioActivo);
 
         var dto = new LoginRequestDto { Email = "juan@test.com", Password = "PasswordEquivocado!" };
 
         // Act & Assert
-        var ex = await Assert.ThrowsAsync<UnauthorizedAccessException>(
-            () => _authService.LoginAsync(dto));
+        var ex = await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
+            _authService.LoginAsync(dto)
+        );
 
         ex.Message.Should().Be("Credenciales inválidas.");
     }
@@ -124,8 +122,7 @@ public class AuthServiceTests
     public async Task LoginAsync_CredencialesValidas_LlamaCreateTokenUnaVez()
     {
         // Arrange
-        _mockRepo.Setup(r => r.GetByEmailAsync("juan@test.com"))
-                 .ReturnsAsync(_usuarioActivo);
+        _mockRepo.Setup(r => r.GetByEmailAsync("juan@test.com")).ReturnsAsync(_usuarioActivo);
         _mockToken.Setup(t => t.CreateToken(It.IsAny<User>())).Returns("token");
 
         var dto = new LoginRequestDto { Email = "juan@test.com", Password = "Password123!" };
@@ -145,12 +142,9 @@ public class AuthServiceTests
     public async Task RegisterAsync_DatosValidos_RetornaAuthResponse()
     {
         // Arrange
-        _mockRepo.Setup(r => r.EmailExistsAsync(It.IsAny<string>()))
-                 .ReturnsAsync(false);
-        _mockRepo.Setup(r => r.CreateAsync(It.IsAny<User>()))
-                 .ReturnsAsync((User u) => u);
-        _mockToken.Setup(t => t.CreateToken(It.IsAny<User>()))
-                  .Returns("token-registro");
+        _mockRepo.Setup(r => r.EmailExistsAsync(It.IsAny<string>())).ReturnsAsync(false);
+        _mockRepo.Setup(r => r.CreateAsync(It.IsAny<User>())).ReturnsAsync((User u) => u);
+        _mockToken.Setup(t => t.CreateToken(It.IsAny<User>())).Returns("token-registro");
 
         var dto = new RegisterRequestDto
         {
@@ -175,8 +169,7 @@ public class AuthServiceTests
     public async Task RegisterAsync_EmailDuplicado_LanzaInvalidOperationException()
     {
         // Arrange: el email ya existe en la base de datos
-        _mockRepo.Setup(r => r.EmailExistsAsync("duplicado@test.com"))
-                 .ReturnsAsync(true);
+        _mockRepo.Setup(r => r.EmailExistsAsync("duplicado@test.com")).ReturnsAsync(true);
 
         var dto = new RegisterRequestDto
         {
@@ -187,8 +180,9 @@ public class AuthServiceTests
         };
 
         // Act & Assert
-        var ex = await Assert.ThrowsAsync<InvalidOperationException>(
-            () => _authService.RegisterAsync(dto));
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            _authService.RegisterAsync(dto)
+        );
 
         ex.Message.Should().Be("El correo ya está registrado.");
     }
@@ -200,9 +194,10 @@ public class AuthServiceTests
         User? usuarioGuardado = null;
 
         _mockRepo.Setup(r => r.EmailExistsAsync(It.IsAny<string>())).ReturnsAsync(false);
-        _mockRepo.Setup(r => r.CreateAsync(It.IsAny<User>()))
-                 .Callback<User>(u => usuarioGuardado = u)
-                 .ReturnsAsync((User u) => u);
+        _mockRepo
+            .Setup(r => r.CreateAsync(It.IsAny<User>()))
+            .Callback<User>(u => usuarioGuardado = u)
+            .ReturnsAsync((User u) => u);
         _mockToken.Setup(t => t.CreateToken(It.IsAny<User>())).Returns("token");
 
         var dto = new RegisterRequestDto
@@ -229,14 +224,15 @@ public class AuthServiceTests
         User? usuarioGuardado = null;
 
         _mockRepo.Setup(r => r.EmailExistsAsync(It.IsAny<string>())).ReturnsAsync(false);
-        _mockRepo.Setup(r => r.CreateAsync(It.IsAny<User>()))
-                 .Callback<User>(u => usuarioGuardado = u)
-                 .ReturnsAsync((User u) => u);
+        _mockRepo
+            .Setup(r => r.CreateAsync(It.IsAny<User>()))
+            .Callback<User>(u => usuarioGuardado = u)
+            .ReturnsAsync((User u) => u);
         _mockToken.Setup(t => t.CreateToken(It.IsAny<User>())).Returns("token");
 
         var dto = new RegisterRequestDto
         {
-            Email = "  USUARIO@TEST.COM  ",   // con espacios y mayúsculas
+            Email = "  USUARIO@TEST.COM  ", // con espacios y mayúsculas
             Password = "Password123!",
             FirstName = "  Luis  ",
             LastName = "  Vega  ",
@@ -259,9 +255,10 @@ public class AuthServiceTests
         var antes = DateTime.UtcNow;
 
         _mockRepo.Setup(r => r.EmailExistsAsync(It.IsAny<string>())).ReturnsAsync(false);
-        _mockRepo.Setup(r => r.CreateAsync(It.IsAny<User>()))
-                 .Callback<User>(u => usuarioGuardado = u)
-                 .ReturnsAsync((User u) => u);
+        _mockRepo
+            .Setup(r => r.CreateAsync(It.IsAny<User>()))
+            .Callback<User>(u => usuarioGuardado = u)
+            .ReturnsAsync((User u) => u);
         _mockToken.Setup(t => t.CreateToken(It.IsAny<User>())).Returns("token");
 
         var dto = new RegisterRequestDto
@@ -288,18 +285,19 @@ public class AuthServiceTests
         User? usuarioGuardado = null;
 
         _mockRepo.Setup(r => r.EmailExistsAsync(It.IsAny<string>())).ReturnsAsync(false);
-        _mockRepo.Setup(r => r.CreateAsync(It.IsAny<User>()))
-                 .Callback<User>(u => usuarioGuardado = u)
-                 .ReturnsAsync((User u) => u);
+        _mockRepo
+            .Setup(r => r.CreateAsync(It.IsAny<User>()))
+            .Callback<User>(u => usuarioGuardado = u)
+            .ReturnsAsync((User u) => u);
         _mockToken.Setup(t => t.CreateToken(It.IsAny<User>())).Returns("token");
 
         var dto = new RegisterRequestDto
         {
-            Email       = "telefono@test.com",
-            Password    = "Password123!",
-            FirstName   = "Ana",
-            LastName    = "Gómez",
-            PhoneNumber = "  +504 9999-8888  ",   // con espacios al inicio y al final
+            Email = "telefono@test.com",
+            Password = "Password123!",
+            FirstName = "Ana",
+            LastName = "Gómez",
+            PhoneNumber = "  +504 9999-8888  ", // con espacios al inicio y al final
         };
 
         // Act
