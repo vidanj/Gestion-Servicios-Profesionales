@@ -10,22 +10,24 @@ export interface UserCardActionsProps {
 
 export const UserCardActions = ({ onEdit, onDelete }: UserCardActionsProps) => {
   return (
-    <HStack spacing="1">
+    <HStack gap="1">
       <IconButton
         aria-label="Editar usuario"
-        icon={<FiEdit2 />}
         size="sm"
         variant="ghost"
         onClick={onEdit}
-      />
+      >
+        <FiEdit2 />
+      </IconButton>
       <IconButton
         aria-label="Eliminar usuario"
-        icon={<FiTrash2 />}
         size="sm"
         variant="ghost"
-        colorScheme="red"
+        colorPalette="red"
         onClick={onDelete}
-      />
+      >
+        <FiTrash2 />
+      </IconButton>
     </HStack>
   );
 };

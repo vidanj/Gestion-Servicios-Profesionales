@@ -81,7 +81,7 @@ export function RequestsTable({ requests, onEdit, onDelete, onChangeStatus }: Re
                 <Table.Cell>
                   <Stack gap="2">
                     <Text fontSize="sm">{workModeLabel[request.workMode]}</Text>
-                    <Badge colorScheme={levelColor[request.level]}>
+                    <Badge colorPalette={levelColor[request.level]}>
                       {levelLabel[request.level]}
                     </Badge>
                   </Stack>
@@ -89,7 +89,7 @@ export function RequestsTable({ requests, onEdit, onDelete, onChangeStatus }: Re
                 <Table.Cell>{request.applicantsCount}</Table.Cell>
                 <Table.Cell>
                   <Stack gap="2">
-                    <Badge colorScheme={statusColor[request.status]}>
+                    <Badge colorPalette={statusColor[request.status]}>
                       {statusLabel[request.status]}
                     </Badge>
                     <NativeSelect.Root size="xs">
@@ -114,7 +114,7 @@ export function RequestsTable({ requests, onEdit, onDelete, onChangeStatus }: Re
                     <IconButton aria-label="Editar vacante" size="sm" variant="ghost" onClick={() => onEdit(request.id)}>
                       <FiEdit2 />
                     </IconButton>
-                    <IconButton aria-label="Eliminar vacante" size="sm" colorScheme="red" variant="ghost" onClick={() => onDelete(request.id)}>
+                    <IconButton aria-label="Eliminar vacante" size="sm" colorPalette="red" variant="ghost" onClick={() => onDelete(request.id)}>
                       <FiTrash2 />
                     </IconButton>
                   </HStack>
