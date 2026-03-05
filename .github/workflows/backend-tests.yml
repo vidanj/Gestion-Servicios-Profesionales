@@ -9,14 +9,13 @@ on:
       - feat/**
       - chore/**
       - fix/**
-    paths:
-      - 'backend/**'
   pull_request:
     branches:
       - main
       - dev
     paths:
       - 'backend/**'
+      - '.github/workflows/backend-tests.yml'
 
 jobs:
   test-and-coverage:
