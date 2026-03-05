@@ -24,7 +24,7 @@ const Navigation: React.FC = () => {
     },
   )
 
-  const mobileNavBtnRef = React.useRef<HTMLButtonElement>()
+  const mobileNavBtnRef = React.useRef<HTMLButtonElement | null>(null)
 
   const mounted = React.useRef(false)
   React.useEffect(() => {

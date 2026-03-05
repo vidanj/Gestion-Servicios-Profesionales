@@ -50,17 +50,13 @@ export const Pricing: React.FC<PricingProps> = (props) => {
               title={plan.title}
               description={plan.description}
               price={plan.price}
-              sx={
-                plan.isRecommended
-                  ? {
-                      borderColor: 'primary.500',
-                      _dark: {
-                        borderColor: 'primary.500',
-                        bg: 'blackAlpha.300',
-                      },
-                    }
-                  : {}
-              }
+              {...(plan.isRecommended ? {
+                borderColor: 'primary.500',
+                _dark: {
+                  borderColor: 'primary.500',
+                  bg: 'blackAlpha.300',
+                },
+              } : {})}
             >
               <PricingFeatures>
                 {plan.features.map((feature, i) =>

@@ -44,7 +44,7 @@ export default function RequestsPage() {
               </Text>
             ) : null}
             <HStack gap="4" flexWrap="wrap">
-              <Button asChild colorScheme="purple">
+              <Button asChild colorPalette="purple">
                 <NextLink href="/solicitudes">Solicitudes</NextLink>
               </Button>
               <Button asChild variant="ghost">

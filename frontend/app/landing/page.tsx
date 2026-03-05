@@ -37,7 +37,7 @@ export default function LandingPage() {
           description="Una base moderna para tu sitio, con secciones listas para personalizar."
         >
           <HStack gap="4" mt="8" flexWrap="wrap">
-            <ButtonLink href="#pricing" colorScheme="primary">
+            <ButtonLink href="#pricing" colorPalette="primary">
               Ver planes
             </ButtonLink>
             <Button variant="outline" asChild>
