@@ -1,6 +1,6 @@
 <Project>
   <PropertyGroup>
-    <!-- Aplica el EditorConfig a toda la solución -->
+    <!-- Aplica el EditorConfig a toda la solucion -->
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
     <!-- Tratar advertencias de analizadores como errores en CI (controlado por variable de entorno CI) -->
     <TreatWarningsAsErrors Condition="'$(CI)' == 'true'">false</TreatWarningsAsErrors>
@@ -13,14 +13,14 @@
     <!-- SA1128: inicializadores de constructor en su propia linea -->
     <!-- SA1502: elemento no debe estar en una sola linea (conflicto con CSharpier) -->
     <NoWarn>$(NoWarn);SA1009;SA1111;SA1118;SA1119;SA1127;SA1128;SA1502</NoWarn>
-    <!-- Habilitar análisis de código de .NET en todos los proyectos -->
+    <!-- Habilitar analisis de codigo de .NET en todos los proyectos -->
     <EnableNETAnalyzers>true</EnableNETAnalyzers>
     <AnalysisLevel>latest-recommended</AnalysisLevel>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
 
-  <!-- Archivo de configuración de StyleCop a nivel de solución -->
+  <!-- Archivo de configuracion de StyleCop a nivel de solucion -->
   <ItemGroup>
     <AdditionalFiles Include="$(MSBuildThisFileDirectory)stylecop.json" Link="stylecop.json" />
   </ItemGroup>
