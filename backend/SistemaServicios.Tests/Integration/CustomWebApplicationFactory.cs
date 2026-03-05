@@ -67,7 +67,9 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
             }
 
             // 3. Registrar DbContext fresco con base de datos en memoria
-            _ = services.AddDbContext<AppDbContext>(options => options.UseInMemoryDatabase(_dbName));
+            _ = services.AddDbContext<AppDbContext>(options =>
+                options.UseInMemoryDatabase(_dbName)
+            );
         });
 
         // Suprimir warnings de HTTPS del test server (no tiene puerto HTTPS configurado)

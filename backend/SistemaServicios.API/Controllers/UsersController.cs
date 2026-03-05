@@ -28,7 +28,8 @@ public class UsersController : ControllerBase
                 Page = page,
                 Size = size,
                 Data = users,
-            });
+            }
+        );
     }
 
     [HttpGet("{id}")]

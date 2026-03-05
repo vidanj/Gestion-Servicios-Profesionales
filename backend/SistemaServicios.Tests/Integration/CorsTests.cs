@@ -52,7 +52,10 @@ public class CorsTests : IClassFixture<CustomWebApplicationFactory>
             .BeTrue(
                 because: "una petición preflight desde un origen permitido debe recibir el header CORS"
             );
-        _ = response.Headers.GetValues("Access-Control-Allow-Origin").Should().Contain(OrigenPermitido);
+        _ = response
+            .Headers.GetValues("Access-Control-Allow-Origin")
+            .Should()
+            .Contain(OrigenPermitido);
     }
 
     [Fact]
@@ -95,7 +98,10 @@ public class CorsTests : IClassFixture<CustomWebApplicationFactory>
             .BeTrue(
                 because: "el middleware CORS agrega el header antes de que el controller procese la request"
             );
-        _ = response.Headers.GetValues("Access-Control-Allow-Origin").Should().Contain(OrigenPermitido);
+        _ = response
+            .Headers.GetValues("Access-Control-Allow-Origin")
+            .Should()
+            .Contain(OrigenPermitido);
     }
 
     [Fact]
@@ -111,7 +117,10 @@ public class CorsTests : IClassFixture<CustomWebApplicationFactory>
         // Assert: 401 esperado (sin token), pero CORS debe permitir la petición
         _ = response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
         _ = response.Headers.Contains("Access-Control-Allow-Origin").Should().BeTrue();
-        _ = response.Headers.GetValues("Access-Control-Allow-Origin").Should().Contain(OrigenPermitido);
+        _ = response
+            .Headers.GetValues("Access-Control-Allow-Origin")
+            .Should()
+            .Contain(OrigenPermitido);
     }
 
     // ─────────────────────────────────────────────────────────────

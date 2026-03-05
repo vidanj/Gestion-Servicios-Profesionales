@@ -90,7 +90,9 @@ public class AuthServiceTests
             Status = false, // <-- cuenta desactivada
         };
 
-        _ = _mockRepo.Setup(r => r.GetByEmailAsync("inactivo@test.com")).ReturnsAsync(usuarioInactivo);
+        _ = _mockRepo
+            .Setup(r => r.GetByEmailAsync("inactivo@test.com"))
+            .ReturnsAsync(usuarioInactivo);
 
         var dto = new LoginRequestDto { Email = "inactivo@test.com", Password = "Password123!" };
 
@@ -214,7 +216,10 @@ public class AuthServiceTests
         // Assert: la contraseña nunca se guarda en texto plano
         _ = usuarioGuardado.Should().NotBeNull();
         _ = usuarioGuardado!.PasswordHash.Should().NotBe("Password123!");
-        _ = BCrypt.Net.BCrypt.Verify("Password123!", usuarioGuardado.PasswordHash).Should().BeTrue();
+        _ = BCrypt
+            .Net.BCrypt.Verify("Password123!", usuarioGuardado.PasswordHash)
+            .Should()
+            .BeTrue();
     }
 
     [Fact]

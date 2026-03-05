@@ -15,7 +15,8 @@ public static class ApplicationServiceExtensions
 {
     public static IServiceCollection AddApplicationServices(
         this IServiceCollection services,
-        IConfiguration config)
+        IConfiguration config
+    )
     {
         // Busca el .env subiendo desde el directorio actual hasta encontrarlo
         var directory = new DirectoryInfo(Directory.GetCurrentDirectory());
@@ -32,7 +33,8 @@ public static class ApplicationServiceExtensions
         {
             Env.Load(
                 Path.Combine(directory.FullName, ".env"),
-                new LoadOptions(clobberExistingVars: false));
+                new LoadOptions(clobberExistingVars: false)
+            );
         }
 
         // Inyecta las variables del .env en el sistema de configuración de ASP.NET Core
@@ -44,10 +46,13 @@ public static class ApplicationServiceExtensions
                 ["JwtSettings:Issuer"] = Environment.GetEnvironmentVariable("JWT_ISSUER"),
                 ["JwtSettings:Audience"] = Environment.GetEnvironmentVariable("JWT_AUDIENCE"),
                 ["JwtSettings:ExpiresInMinutes"] = Environment.GetEnvironmentVariable(
-                    "JWT_EXPIRES_MINUTES"),
+                    "JWT_EXPIRES_MINUTES"
+                ),
                 ["CorsSettings:AllowedOrigins"] = Environment.GetEnvironmentVariable(
-                    "ALLOWED_ORIGINS"),
-            });
+                    "ALLOWED_ORIGINS"
+                ),
+            }
+        );
 
         var dbHost =
             Environment.GetEnvironmentVariable("DB_HOST")
@@ -106,11 +111,13 @@ public static class ApplicationServiceExtensions
         var rawOrigins =
             config["CorsSettings:AllowedOrigins"]
             ?? throw new InvalidOperationException(
-                "ALLOWED_ORIGINS no definido en el archivo .env");
+                "ALLOWED_ORIGINS no definido en el archivo .env"
+            );
 
         var allowedOrigins = rawOrigins.Split(
             ',',
-            StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries
+        );
 
         services.AddCors(options =>
         {
@@ -119,7 +126,8 @@ public static class ApplicationServiceExtensions
                 policy =>
                 {
                     policy.WithOrigins(allowedOrigins).AllowAnyHeader().AllowAnyMethod();
-                });
+                }
+            );
         });
 
         // Swagger con soporte para JWT Bearer
@@ -137,7 +145,8 @@ public static class ApplicationServiceExtensions
                     BearerFormat = "JWT",
                     In = ParameterLocation.Header,
                     Description = "Ingresa el token así: Bearer {tu_token}",
-                });
+                }
+            );
 
             c.AddSecurityRequirement(
                 new OpenApiSecurityRequirement
@@ -153,7 +162,8 @@ public static class ApplicationServiceExtensions
                         },
                         Array.Empty<string>()
                     },
-                });
+                }
+            );
         });
 
         return services;

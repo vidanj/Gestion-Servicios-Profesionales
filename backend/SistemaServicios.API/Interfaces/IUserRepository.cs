@@ -4,7 +4,10 @@ namespace SistemaServicios.API.Interfaces;
 
 public interface IUserRepository
 {
-    public Task<(IEnumerable<User> users, int totalCount)> GetUsersAsync(int pageNumber, int pageSize);
+    public Task<(IEnumerable<User> users, int totalCount)> GetUsersAsync(
+        int pageNumber,
+        int pageSize
+    );
 
     public Task<User?> GetByIdAsync(Guid id);
 

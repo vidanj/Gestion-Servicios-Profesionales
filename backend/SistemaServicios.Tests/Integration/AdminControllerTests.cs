@@ -83,7 +83,8 @@ public class AdminControllerTests : IClassFixture<AdminWebApplicationFactory>
         var user = new User
         {
             Id = Guid.NewGuid(),
-            Email = $"{rol.ToString().ToLower(System.Globalization.CultureInfo.CurrentCulture)}@test.com",
+            Email =
+                $"{rol.ToString().ToLower(System.Globalization.CultureInfo.CurrentCulture)}@test.com",
             PasswordHash = "hash-no-relevante",
             FirstName = rol.ToString(),
             LastName = "Test",

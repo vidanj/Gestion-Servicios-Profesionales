@@ -27,7 +27,9 @@ public class TokenServiceTests
             ["JwtSettings:Key"] = TestKey,
             ["JwtSettings:Issuer"] = TestIssuer,
             ["JwtSettings:Audience"] = TestAudience,
-            ["JwtSettings:ExpiresInMinutes"] = ExpiresMinutes.ToString(CultureInfo.InvariantCulture),
+            ["JwtSettings:ExpiresInMinutes"] = ExpiresMinutes.ToString(
+                CultureInfo.InvariantCulture
+            ),
         };
 
         _config = new ConfigurationBuilder().AddInMemoryCollection(configValues).Build();
@@ -182,7 +184,8 @@ public class TokenServiceTests
         var jwt = new JwtSecurityTokenHandler().ReadJwtToken(token);
 
         // El token debe expirar aproximadamente en ExpiresMinutes minutos
-        _ = jwt.ValidTo.Should()
+        _ = jwt
+            .ValidTo.Should()
             .BeCloseTo(antes.AddMinutes(ExpiresMinutes), precision: TimeSpan.FromSeconds(10));
     }
 
@@ -255,6 +258,8 @@ public class TokenServiceTests
 
         // Assert: el token se generó y expira en ~60 minutos (valor por defecto)
         var jwt = new JwtSecurityTokenHandler().ReadJwtToken(token);
-        _ = jwt.ValidTo.Should().BeCloseTo(antes.AddMinutes(60), precision: TimeSpan.FromSeconds(10));
+        _ = jwt
+            .ValidTo.Should()
+            .BeCloseTo(antes.AddMinutes(60), precision: TimeSpan.FromSeconds(10));
     }
 }

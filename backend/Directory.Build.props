@@ -4,8 +4,15 @@
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
     <!-- Tratar advertencias de analizadores como errores en CI (controlado por variable de entorno CI) -->
     <TreatWarningsAsErrors Condition="'$(CI)' == 'true'">false</TreatWarningsAsErrors>
-    <!-- SA1009: conflicto conocido entre CSharpier y StyleCop (closing paren tras lambda multilinea) -->
-    <NoWarn>$(NoWarn);SA1009</NoWarn>
+    <!-- Conflictos conocidos entre CSharpier y StyleCop -->
+    <!-- SA1009: closing paren tras lambda/expresion multilinea -->
+    <!-- SA1111: closing paren en linea del ultimo parametro -->
+    <!-- SA1118: parametro no debe abarcar multiples lineas -->
+    <!-- SA1119: parentesis innecesarios generados por CSharpier -->
+    <!-- SA1127: restricciones de tipo generico en su propia linea -->
+    <!-- SA1128: inicializadores de constructor en su propia linea -->
+    <!-- SA1502: elemento no debe estar en una sola linea (conflicto con CSharpier) -->
+    <NoWarn>$(NoWarn);SA1009;SA1111;SA1118;SA1119;SA1127;SA1128;SA1502</NoWarn>
     <!-- Habilitar análisis de código de .NET en todos los proyectos -->
     <EnableNETAnalyzers>true</EnableNETAnalyzers>
     <AnalysisLevel>latest-recommended</AnalysisLevel>

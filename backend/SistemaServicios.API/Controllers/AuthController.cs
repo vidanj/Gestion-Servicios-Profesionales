@@ -66,6 +66,7 @@ public class AuthController : ControllerBase
                 role,
                 firstName,
                 lastName,
-            });
+            }
+        );
     }
 }

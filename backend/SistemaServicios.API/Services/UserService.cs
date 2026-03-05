@@ -15,7 +15,8 @@ public class UserService : IUserService
 
     public async Task<(IEnumerable<UserDto> users, int totalCount)> GetAllUsersAsync(
         int page,
-        int size)
+        int size
+    )
     {
         var (users, total) = await _userRepository.GetUsersAsync(page, size);
         var dtos = users.Select(u => MapToDto(u));
