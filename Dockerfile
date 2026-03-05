@@ -22,11 +22,8 @@ COPY --from=build /app/publish .
 
 # Render expone el puerto 10000 por defecto en el plan free.
 # ASPNETCORE_URLS sobreescribe el Kestrel configurado en appsettings.json.
-# ASPNETCORE_URLS aplica cuando NO hay configuracion Kestrel en appsettings.
-# ASPNETCORE_Kestrel__ sobreescribe la seccion Kestrel de appsettings.json,
-# forzando que el servidor escuche en todas las interfaces (0.0.0.0).
+# Sin seccion Kestrel en appsettings.json, ASPNETCORE_URLS controla el binding.
 ENV ASPNETCORE_URLS=http://+:10000
-ENV ASPNETCORE_Kestrel__Endpoints__Http__Url=http://+:10000
 EXPOSE 10000
 
 ENTRYPOINT ["dotnet", "SistemaServicios.API.dll"]
