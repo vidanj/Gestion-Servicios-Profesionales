@@ -76,11 +76,7 @@ export const AnnouncementBanner: React.FC<AnnouncementBannerProps> = (
                 {action && (
                   <HStack gap="1" color="gray.500">
                     <Text fontSize="xs">{action}</Text>
-                    <Icon
-                      as={FiArrowRight}
-                      transitionProperty="common"
-                      transitionDuration="normal"
-                    />
+                    <Icon transitionProperty="common" transitionDuration="normal"><FiArrowRight /></Icon>
                   </HStack>
                 )}
               </HStack>

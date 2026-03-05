@@ -58,7 +58,7 @@ export const HighlightsTestimonialItem: React.FC<
       {...rest}
     >
       <Box
-        bgGradient={`linear(to-br, ${gradient[0]}, ${gradient[1]})`}
+        bgGradient={`linear-gradient(to bottom right, ${gradient[0]}, ${gradient[1]})`}
         opacity="0.8"
         position="absolute"
         inset="0px"

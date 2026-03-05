@@ -7,7 +7,6 @@ import {
   IconButtonProps,
   Stack,
   useBreakpointValue,
-  useUpdateEffect,
 } from '@chakra-ui/react'
 import NextLink from 'next/link'
 import useRouteChanged from '@/hooks/use-route-changed'
@@ -79,7 +78,9 @@ export function MobileNavContent(props: MobileNavContentProps) {
     }
   }, [showOnBreakpoint, onClose])
 
-  useUpdateEffect(() => {
+  const mounted = React.useRef(false)
+  React.useEffect(() => {
+    if (!mounted.current) { mounted.current = true; return }
     if (isOpen) {
       requestAnimationFrame(() => {
         closeBtnRef.current?.focus()
