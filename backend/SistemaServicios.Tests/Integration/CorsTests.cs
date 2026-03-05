@@ -34,7 +34,7 @@ public class CorsTests : IClassFixture<CustomWebApplicationFactory>
     // ─────────────────────────────────────────────────────────────
 
     [Fact]
-    public async Task Cors_Preflight_OrigenPermitido_RetornaHeaderACAO()
+    public async Task CorsPreflightOrigenPermitidoRetornaHeaderACAO()
     {
         // Arrange
         var request = new HttpRequestMessage(HttpMethod.Options, "/api/auth/login");
@@ -46,17 +46,20 @@ public class CorsTests : IClassFixture<CustomWebApplicationFactory>
         var response = await _client.SendAsync(request);
 
         // Assert: el middleware CORS responde al preflight con el origen reflejado
-        response
+        _ = response
             .Headers.Contains("Access-Control-Allow-Origin")
             .Should()
             .BeTrue(
                 because: "una petición preflight desde un origen permitido debe recibir el header CORS"
             );
-        response.Headers.GetValues("Access-Control-Allow-Origin").Should().Contain(OrigenPermitido);
+        _ = response
+            .Headers.GetValues("Access-Control-Allow-Origin")
+            .Should()
+            .Contain(OrigenPermitido);
     }
 
     [Fact]
-    public async Task Cors_Preflight_OrigenPermitido_PermiteMetodoPOST()
+    public async Task CorsPreflightOrigenPermitidoPermiteMetodoPOST()
     {
         // Arrange
         var request = new HttpRequestMessage(HttpMethod.Options, "/api/auth/login");
@@ -68,9 +71,9 @@ public class CorsTests : IClassFixture<CustomWebApplicationFactory>
         var response = await _client.SendAsync(request);
 
         // Assert
-        response.Headers.Contains("Access-Control-Allow-Methods").Should().BeTrue();
+        _ = response.Headers.Contains("Access-Control-Allow-Methods").Should().BeTrue();
         var metodos = string.Join(",", response.Headers.GetValues("Access-Control-Allow-Methods"));
-        metodos.Should().Contain("POST", because: "la política permite cualquier método");
+        _ = metodos.Should().Contain("POST", because: "la política permite cualquier método");
     }
 
     // ─────────────────────────────────────────────────────────────
@@ -78,7 +81,7 @@ public class CorsTests : IClassFixture<CustomWebApplicationFactory>
     // ─────────────────────────────────────────────────────────────
 
     [Fact]
-    public async Task Cors_Post_OrigenPermitido_RetornaHeaderACAO()
+    public async Task CorsPostOrigenPermitidoRetornaHeaderACAO()
     {
         // Arrange: cuerpo vacío → 400, pero el header CORS debe aparecer igualmente
         var request = new HttpRequestMessage(HttpMethod.Post, "/api/auth/login");
@@ -89,17 +92,20 @@ public class CorsTests : IClassFixture<CustomWebApplicationFactory>
         var response = await _client.SendAsync(request);
 
         // Assert: independientemente del código de respuesta HTTP, el header CORS debe estar
-        response
+        _ = response
             .Headers.Contains("Access-Control-Allow-Origin")
             .Should()
             .BeTrue(
                 because: "el middleware CORS agrega el header antes de que el controller procese la request"
             );
-        response.Headers.GetValues("Access-Control-Allow-Origin").Should().Contain(OrigenPermitido);
+        _ = response
+            .Headers.GetValues("Access-Control-Allow-Origin")
+            .Should()
+            .Contain(OrigenPermitido);
     }
 
     [Fact]
-    public async Task Cors_Get_OrigenPermitido_RetornaHeaderACAO()
+    public async Task CorsGetOrigenPermitidoRetornaHeaderACAO()
     {
         // Arrange
         var request = new HttpRequestMessage(HttpMethod.Get, "/api/auth/me");
@@ -109,9 +115,12 @@ public class CorsTests : IClassFixture<CustomWebApplicationFactory>
         var response = await _client.SendAsync(request);
 
         // Assert: 401 esperado (sin token), pero CORS debe permitir la petición
-        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
-        response.Headers.Contains("Access-Control-Allow-Origin").Should().BeTrue();
-        response.Headers.GetValues("Access-Control-Allow-Origin").Should().Contain(OrigenPermitido);
+        _ = response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+        _ = response.Headers.Contains("Access-Control-Allow-Origin").Should().BeTrue();
+        _ = response
+            .Headers.GetValues("Access-Control-Allow-Origin")
+            .Should()
+            .Contain(OrigenPermitido);
     }
 
     // ─────────────────────────────────────────────────────────────
@@ -119,7 +128,7 @@ public class CorsTests : IClassFixture<CustomWebApplicationFactory>
     // ─────────────────────────────────────────────────────────────
 
     [Fact]
-    public async Task Cors_Post_OrigenNoPermitido_NoRetornaHeaderACAO()
+    public async Task CorsPostOrigenNoPermitidoNoRetornaHeaderACAO()
     {
         // Arrange
         var request = new HttpRequestMessage(HttpMethod.Post, "/api/auth/login");
@@ -130,14 +139,14 @@ public class CorsTests : IClassFixture<CustomWebApplicationFactory>
         var response = await _client.SendAsync(request);
 
         // Assert: el servidor NO incluye el header → el navegador bloqueará la respuesta
-        response
+        _ = response
             .Headers.Contains("Access-Control-Allow-Origin")
             .Should()
             .BeFalse(because: $"'{OrigenNoPermitido}' no está en la lista ALLOWED_ORIGINS");
     }
 
     [Fact]
-    public async Task Cors_Preflight_OrigenNoPermitido_NoRetornaHeaderACAO()
+    public async Task CorsPreflightOrigenNoPermitidoNoRetornaHeaderACAO()
     {
         // Arrange
         var request = new HttpRequestMessage(HttpMethod.Options, "/api/auth/login");
@@ -148,7 +157,7 @@ public class CorsTests : IClassFixture<CustomWebApplicationFactory>
         var response = await _client.SendAsync(request);
 
         // Assert
-        response
+        _ = response
             .Headers.Contains("Access-Control-Allow-Origin")
             .Should()
             .BeFalse(because: "un origen no autorizado no debe recibir cabeceras CORS");
@@ -159,7 +168,7 @@ public class CorsTests : IClassFixture<CustomWebApplicationFactory>
     // ─────────────────────────────────────────────────────────────
 
     [Fact]
-    public async Task Cors_SinHeaderOrigin_ApiRespondeNormalmenteSinHeaderCors()
+    public async Task CorsSinHeaderOriginApiRespondeNormalmenteSinHeaderCors()
     {
         // Arrange: petición directa sin Origin (curl, Swagger, servidor → servidor)
         var request = new HttpRequestMessage(HttpMethod.Post, "/api/auth/login");
@@ -170,8 +179,8 @@ public class CorsTests : IClassFixture<CustomWebApplicationFactory>
 
         // Assert: no es petición CORS → el middleware no agrega Access-Control-Allow-Origin
         // La API responde normalmente (400 por cuerpo incompleto) sin cabeceras CORS
-        response.StatusCode.Should().NotBe(HttpStatusCode.InternalServerError);
-        response
+        _ = response.StatusCode.Should().NotBe(HttpStatusCode.InternalServerError);
+        _ = response
             .Headers.Contains("Access-Control-Allow-Origin")
             .Should()
             .BeFalse(

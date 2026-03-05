@@ -37,7 +37,10 @@ public class UsersController : ControllerBase
     {
         var user = await _userService.GetUserByIdAsync(id);
         if (user == null)
+        {
             return NotFound();
+        }
+
         return Ok(user);
     }
 
@@ -60,7 +63,10 @@ public class UsersController : ControllerBase
     {
         var result = await _userService.UpdateUserAsync(id, updateUserDto);
         if (!result)
+        {
             return NotFound();
+        }
+
         return NoContent();
     }
 
@@ -69,7 +75,10 @@ public class UsersController : ControllerBase
     {
         var result = await _userService.SoftDeleteUserAsync(id);
         if (!result)
+        {
             return NotFound();
+        }
+
         return NoContent();
     }
 }

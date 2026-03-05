@@ -40,13 +40,13 @@ public class UserRepositoryTests
     // ─────────────────────────────────────────────────────────────
 
     [Fact]
-    public async Task GetByIdAsync_UsuarioExistente_RetornaUsuario()
+    public async Task GetByIdAsyncUsuarioExistenteRetornaUsuario()
     {
         // Arrange
         await using var context = CreateDbContext();
         var user = CrearUsuario();
-        context.Users.Add(user);
-        await context.SaveChangesAsync();
+        _ = context.Users.Add(user);
+        _ = await context.SaveChangesAsync();
 
         var repo = new UserRepository(context);
 
@@ -54,13 +54,13 @@ public class UserRepositoryTests
         var resultado = await repo.GetByIdAsync(user.Id);
 
         // Assert
-        resultado.Should().NotBeNull();
-        resultado!.Id.Should().Be(user.Id);
-        resultado.Email.Should().Be("test@test.com");
+        _ = resultado.Should().NotBeNull();
+        _ = resultado!.Id.Should().Be(user.Id);
+        _ = resultado.Email.Should().Be("test@test.com");
     }
 
     [Fact]
-    public async Task GetByIdAsync_IdInexistente_RetornaNulo()
+    public async Task GetByIdAsyncIdInexistenteRetornaNulo()
     {
         // Arrange: base de datos vacía
         await using var context = CreateDbContext();
@@ -70,6 +70,6 @@ public class UserRepositoryTests
         var resultado = await repo.GetByIdAsync(Guid.NewGuid());
 
         // Assert
-        resultado.Should().BeNull();
+        _ = resultado.Should().BeNull();
     }
 }

@@ -13,7 +13,7 @@ public class UserService : IUserService
         _userRepository = userRepository;
     }
 
-    public async Task<(IEnumerable<UserDto> Users, int TotalCount)> GetAllUsersAsync(
+    public async Task<(IEnumerable<UserDto> users, int totalCount)> GetAllUsersAsync(
         int page,
         int size
     )
@@ -29,22 +29,24 @@ public class UserService : IUserService
         return user == null ? null : MapToDto(user);
     }
 
-    public async Task<UserDto> CreateUserAsync(CreateUserDto dto)
+    public async Task<UserDto> CreateUserAsync(CreateUserDto createUserDto)
     {
         // Validar unicidad de email
-        var existingUser = await _userRepository.GetUserByEmailAsync(dto.Email);
+        var existingUser = await _userRepository.GetUserByEmailAsync(createUserDto.Email);
         if (existingUser != null)
-            throw new Exception("El correo ya estÃ¡ registrado.");
+        {
+            throw new InvalidOperationException("El correo ya está registrado.");
+        }
 
         var user = new User
         {
             Id = Guid.NewGuid(),
-            Email = dto.Email,
-            FirstName = dto.FirstName,
-            LastName = dto.LastName,
-            PhoneNumber = dto.PhoneNumber,
-            Role = dto.Role,
-            PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password), // EncriptaciÃ³n bÃ¡sica
+            Email = createUserDto.Email,
+            FirstName = createUserDto.FirstName,
+            LastName = createUserDto.LastName,
+            PhoneNumber = createUserDto.PhoneNumber,
+            Role = createUserDto.Role,
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword(createUserDto.Password), // Encriptación básica
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow,
         };
@@ -53,17 +55,19 @@ public class UserService : IUserService
         return MapToDto(user);
     }
 
-    public async Task<bool> UpdateUserAsync(Guid id, UpdateUserDto dto)
+    public async Task<bool> UpdateUserAsync(Guid id, UpdateUserDto updateUserDto)
     {
         var user = await _userRepository.GetByIdAsync(id);
         if (user == null)
+        {
             return false;
+        }
 
-        user.FirstName = dto.FirstName;
-        user.LastName = dto.LastName;
-        user.PhoneNumber = dto.PhoneNumber;
-        user.Role = dto.Role;
-        user.Status = dto.Status;
+        user.FirstName = updateUserDto.FirstName;
+        user.LastName = updateUserDto.LastName;
+        user.PhoneNumber = updateUserDto.PhoneNumber;
+        user.Role = updateUserDto.Role;
+        user.Status = updateUserDto.Status;
         user.UpdatedAt = DateTime.UtcNow;
 
         await _userRepository.UpdateUserAsync(user);
@@ -74,9 +78,11 @@ public class UserService : IUserService
     {
         var user = await _userRepository.GetByIdAsync(id);
         if (user == null)
+        {
             return false;
+        }
 
-        // Borrado lÃ³gico
+        // Borrado lógico
         user.Status = false;
         await _userRepository.UpdateUserAsync(user);
         return true;

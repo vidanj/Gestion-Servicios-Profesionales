@@ -4,7 +4,7 @@ using SistemaServicios.API.Models;
 
 namespace SistemaServicios.API.Services;
 
-// Fat Model: toda la lÃ³gica de negocio de autenticaciÃ³n vive aquÃ­.
+// Fat Model: toda la lógica de negocio de autenticación vive aquí.
 public class AuthService : IAuthService
 {
     private readonly IUserRepository _userRepo;
@@ -20,13 +20,17 @@ public class AuthService : IAuthService
     {
         var user =
             await _userRepo.GetByEmailAsync(dto.Email)
-            ?? throw new UnauthorizedAccessException("Credenciales invÃ¡lidas.");
+            ?? throw new UnauthorizedAccessException("Credenciales inválidas.");
 
         if (!user.Status)
-            throw new UnauthorizedAccessException("La cuenta estÃ¡ desactivada.");
+        {
+            throw new UnauthorizedAccessException("La cuenta está desactivada.");
+        }
 
         if (!BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash))
-            throw new UnauthorizedAccessException("Credenciales invÃ¡lidas.");
+        {
+            throw new UnauthorizedAccessException("Credenciales inválidas.");
+        }
 
         return BuildAuthResponse(user);
     }
@@ -34,12 +38,14 @@ public class AuthService : IAuthService
     public async Task<AuthResponseDto> RegisterAsync(RegisterRequestDto dto)
     {
         if (await _userRepo.EmailExistsAsync(dto.Email))
-            throw new InvalidOperationException("El correo ya estÃ¡ registrado.");
+        {
+            throw new InvalidOperationException("El correo ya está registrado.");
+        }
 
         var user = new User
         {
             Id = Guid.NewGuid(),
-            Email = dto.Email.ToLower().Trim(),
+            Email = dto.Email.ToLower(System.Globalization.CultureInfo.CurrentCulture).Trim(),
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password),
             FirstName = dto.FirstName.Trim(),
             LastName = dto.LastName.Trim(),

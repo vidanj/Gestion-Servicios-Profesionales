@@ -10,14 +10,20 @@ public class AppDbContext : DbContext
 
     // Registro de todas las tablas del diagrama
     public DbSet<User> Users { get; set; }
+
     public DbSet<Category> Categories { get; set; }
+
     public DbSet<Service> Services { get; set; }
+
     public DbSet<Request> Requests { get; set; }
+
     public DbSet<Rating> Ratings { get; set; }
+
     public DbSet<Quote> Quotes { get; set; }
+
     public DbSet<Verification> Verifications { get; set; }
 
-    // ConfiguraciÃ³n especial de relaciones (Fluent API)
+    // Configuración especial de relaciones (Fluent API)
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);

@@ -12,7 +12,9 @@ public class BackupService : IBackupService
     {
         var dir = new DirectoryInfo(Directory.GetCurrentDirectory());
         while (dir != null && !File.Exists(Path.Combine(dir.FullName, ".env")))
+        {
             dir = dir.Parent;
+        }
 
         var repoRoot = dir?.FullName ?? Directory.GetCurrentDirectory();
         _backupDir = Path.Combine(repoRoot, "backups");
@@ -35,7 +37,10 @@ public class BackupService : IBackupService
             Environment.GetEnvironmentVariable("DB_PASSWORD")
             ?? throw new InvalidOperationException("DB_PASSWORD no definido");
 
-        var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmm");
+        var timestamp = DateTime.Now.ToString(
+            "yyyyMMdd_HHmm",
+            System.Globalization.CultureInfo.InvariantCulture
+        );
         var fileName = $"backup_{timestamp}.sql";
         var filePath = Path.Combine(_backupDir, fileName);
 
@@ -59,7 +64,7 @@ public class BackupService : IBackupService
         catch (System.ComponentModel.Win32Exception ex)
         {
             throw new InvalidOperationException(
-                "pg_dump no encontrado. Verifica que PostgreSQL estÃ© instalado y que su carpeta bin estÃ© en el PATH del sistema.",
+                "pg_dump no encontrado. Verifica que PostgreSQL esté instalado y que su carpeta bin esté en el PATH del sistema.",
                 ex
             );
         }
@@ -68,9 +73,11 @@ public class BackupService : IBackupService
         await process.WaitForExitAsync();
 
         if (process.ExitCode != 0)
+        {
             throw new InvalidOperationException(
-                $"pg_dump fallÃ³ (cÃ³digo {process.ExitCode}): {stderr}"
+                $"pg_dump falló (código {process.ExitCode}): {stderr}"
             );
+        }
 
         var fileInfo = new FileInfo(filePath);
 

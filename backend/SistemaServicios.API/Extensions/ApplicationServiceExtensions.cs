@@ -22,19 +22,23 @@ public static class ApplicationServiceExtensions
         var directory = new DirectoryInfo(Directory.GetCurrentDirectory());
 
         while (directory != null && !File.Exists(Path.Combine(directory.FullName, ".env")))
+        {
             directory = directory.Parent;
+        }
 
-        // clobberExistingVars: false â†’ las variables ya fijadas en el entorno
+        // clobberExistingVars: false → las variables ya fijadas en el entorno
         // (sistema operativo, Docker, CI, o la factory de tests) tienen prioridad
-        // sobre las del archivo .env. Sigue el estÃ¡ndar de prioridad de env vars.
+        // sobre las del archivo .env. Sigue el estándar de prioridad de env vars.
         if (directory != null)
+        {
             Env.Load(
                 Path.Combine(directory.FullName, ".env"),
                 new LoadOptions(clobberExistingVars: false)
             );
+        }
 
-        // Inyecta las variables del .env en el sistema de configuraciÃ³n de ASP.NET Core
-        // AsÃ­ config["JwtSettings:Key"] se resuelve desde JWT_KEY del .env
+        // Inyecta las variables del .env en el sistema de configuración de ASP.NET Core
+        // Así config["JwtSettings:Key"] se resuelve desde JWT_KEY del .env
         ((IConfigurationBuilder)config).AddInMemoryCollection(
             new Dictionary<string, string?>
             {
@@ -103,7 +107,7 @@ public static class ApplicationServiceExtensions
 
         services.AddAuthorization();
 
-        // CORS â€” orÃ­genes cargados desde ALLOWED_ORIGINS en .env (separados por coma)
+        // CORS — orígenes cargados desde ALLOWED_ORIGINS en .env (separados por coma)
         var rawOrigins =
             config["CorsSettings:AllowedOrigins"]
             ?? throw new InvalidOperationException(
@@ -140,7 +144,7 @@ public static class ApplicationServiceExtensions
                     Scheme = "Bearer",
                     BearerFormat = "JWT",
                     In = ParameterLocation.Header,
-                    Description = "Ingresa el token asÃ­: Bearer {tu_token}",
+                    Description = "Ingresa el token así: Bearer {tu_token}",
                 }
             );
 

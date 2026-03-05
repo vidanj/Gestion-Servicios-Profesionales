@@ -17,19 +17,25 @@ public class Quote
 
     [Required]
     public int ServiceId { get; set; }
+
     public Service? Service { get; set; }
 
     [Required]
     public Guid ClientId { get; set; }
+
     public User? Client { get; set; }
 
     [Column(TypeName = "decimal(18,2)")]
     public decimal EstimatedPrice { get; set; }
+
     public int EstimatedDuration { get; set; }
 
     [MaxLength(1000)]
     public string? Description { get; set; }
+
     public QuoteStatus Status { get; set; } = QuoteStatus.Pending;
+
     public DateTime? ValidUntil { get; set; }
+
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }

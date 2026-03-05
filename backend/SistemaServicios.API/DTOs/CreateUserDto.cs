@@ -5,16 +5,20 @@ namespace SistemaServicios.API.DTOs;
 
 public class CreateUserDto
 {
-    [Required, EmailAddress]
+    [Required]
+    [EmailAddress]
     public required string Email { get; set; }
 
-    [Required, MinLength(6)]
+    [Required]
+    [MinLength(6)]
     public required string Password { get; set; }
 
-    [Required, MaxLength(255)]
+    [Required]
+    [MaxLength(255)]
     public required string FirstName { get; set; }
 
-    [Required, MaxLength(255)]
+    [Required]
+    [MaxLength(255)]
     public required string LastName { get; set; }
 
     public UserRole Role { get; set; } = UserRole.Client;

@@ -9,10 +9,12 @@ public class Service
 
     [Required]
     public Guid ProfessionalId { get; set; }
+
     public User? Professional { get; set; }
 
     [Required]
     public int CategoryId { get; set; }
+
     public Category? Category { get; set; }
 
     [Required]
@@ -27,7 +29,10 @@ public class Service
 
     [MaxLength(2048)]
     public string? ImageUrl { get; set; }
+
     public bool IsActive { get; set; } = true;
+
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
     public DateTime? UpdatedAt { get; set; }
 }
