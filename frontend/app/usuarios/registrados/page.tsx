@@ -91,7 +91,7 @@ export default function RegisteredUsersPage() {
               <Button asChild variant="ghost">
                 <NextLink href="/usuarios">CRUD</NextLink>
               </Button>
-              <Button asChild colorScheme="purple">
+              <Button asChild colorPalette="purple">
                 <NextLink href="/usuarios/registrados">Usuarios registrados</NextLink>
               </Button>
               <Button asChild variant="ghost">
@@ -117,7 +117,7 @@ export default function RegisteredUsersPage() {
                       </Text>
                     </Stack>
                     {/* Badge con el rol del usuario */}
-                    <Badge colorScheme={roleColor[user.role]} ml="auto">
+                    <Badge colorPalette={roleColor[user.role]} ml="auto">
                       {user.role}
                     </Badge>
                   </HStack>
@@ -134,7 +134,7 @@ export default function RegisteredUsersPage() {
                       {/* Lista visual de permisos */}
                       <HStack gap="2" flexWrap="wrap">
                         {user.permissions.map((permission) => (
-                          <Tag.Root key={permission} size="sm" variant="subtle" colorScheme="purple">
+                          <Tag.Root key={permission} size="sm" variant="subtle" colorPalette="purple">
                             <Tag.Label>{permission}</Tag.Label>
                           </Tag.Root>
                         ))}

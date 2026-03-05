@@ -98,7 +98,7 @@ export default function UserLogsPage() {
               <Button asChild variant="ghost">
                 <NextLink href="/usuarios/registrados">Usuarios registrados</NextLink>
               </Button>
-              <Button asChild colorScheme="purple">
+              <Button asChild colorPalette="purple">
                 <NextLink href="/usuarios/logs">Logs de usuarios</NextLink>
               </Button>
             </HStack>
@@ -151,7 +151,7 @@ export default function UserLogsPage() {
                       <Stack gap="1">
                         <HStack gap="3" flexWrap="wrap">
                           {/* Badge con severidad del evento */}
-                          <Badge colorScheme={statusColor[log.status]}>
+                          <Badge colorPalette={statusColor[log.status]}>
                             {log.status}
                           </Badge>
                           <Text fontWeight="semibold">{log.action}</Text>

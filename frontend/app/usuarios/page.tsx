@@ -97,7 +97,7 @@ export default function UsersCrudPage() {
               Crea, edita y administra usuarios. Vista solamente visual.
             </Text>
             <HStack gap="4" flexWrap="wrap">
-              <Button asChild colorScheme="purple">
+              <Button asChild colorPalette="purple">
                 <NextLink href="/usuarios">CRUD</NextLink>
               </Button>
               <Button asChild variant="ghost">
@@ -157,7 +157,7 @@ export default function UsersCrudPage() {
                   </HStack>
                   {/* Acciones principales del formulario */}
                   <ButtonGroup>
-                    <Button colorScheme="purple">
+                    <Button colorPalette="purple">
                       <FiPlus /> Crear usuario
                     </Button>
                     <Button variant="outline">Limpiar</Button>
@@ -202,13 +202,13 @@ export default function UsersCrudPage() {
                         </Table.Cell>
                         <Table.Cell>
                           {/* Badge de rol */}
-                          <Badge colorScheme={roleColor[user.role]}>
+                          <Badge colorPalette={roleColor[user.role]}>
                             {user.role}
                           </Badge>
                         </Table.Cell>
                         <Table.Cell>
                           {/* Badge de estado */}
-                          <Badge colorScheme={statusColor[user.status]}>
+                          <Badge colorPalette={statusColor[user.status]}>
                             {user.status}
                           </Badge>
                         </Table.Cell>
@@ -222,7 +222,7 @@ export default function UsersCrudPage() {
                             <IconButton aria-label="Reset" size="sm" variant="ghost">
                               <FiLock />
                             </IconButton>
-                            <IconButton aria-label="Eliminar" size="sm" colorScheme="red" variant="ghost">
+                            <IconButton aria-label="Eliminar" size="sm" colorPalette="red" variant="ghost">
                               <FiTrash2 />
                             </IconButton>
                           </HStack>
