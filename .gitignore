@@ -104,3 +104,8 @@ PULL_REQUEST_TEMPLATE.md
 backups/*
 !backups/.gitkeep
 *.sql
+# ========================
+# dotnet tools (--tool-path)
+# ========================
+.store/
+dotnet-ef.exe

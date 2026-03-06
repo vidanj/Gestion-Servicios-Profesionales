@@ -12,9 +12,14 @@ public class AppDbContextFactory : IDesignTimeDbContextFactory<AppDbContext>
 {
     public AppDbContext CreateDbContext(string[] args)
     {
+        var host = Environment.GetEnvironmentVariable("DB_HOST") ?? "localhost";
+        var port = Environment.GetEnvironmentVariable("DB_PORT") ?? "5432";
+        var user = Environment.GetEnvironmentVariable("DB_USER") ?? "postgres";
+        var password = Environment.GetEnvironmentVariable("DB_PASSWORD") ?? string.Empty;
+
         var optionsBuilder = new DbContextOptionsBuilder<AppDbContext>();
         optionsBuilder.UseNpgsql(
-            "Host=localhost;Database=design_time_db;Username=postgres;Password=postgres"
+            $"Host={host};Port={port};Database=design_time_db;Username={user};Password={password}"
         );
         return new AppDbContext(optionsBuilder.Options);
     }

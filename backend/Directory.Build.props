@@ -2,8 +2,8 @@
   <PropertyGroup>
     <!-- Aplica el EditorConfig a toda la solucion -->
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
-    <!-- Tratar advertencias de analizadores como errores en CI (controlado por variable de entorno CI) -->
-    <TreatWarningsAsErrors Condition="'$(CI)' == 'true'">false</TreatWarningsAsErrors>
+    <!-- Tratar todas las advertencias como errores -->
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <!-- Conflictos conocidos entre CSharpier y StyleCop -->
     <!-- SA1009: closing paren tras lambda/expresion multilinea -->
     <!-- SA1111: closing paren en linea del ultimo parametro -->
