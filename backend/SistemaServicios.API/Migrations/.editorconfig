@@ -1,0 +1,3 @@
+# Suprimir advertencias de análisis en archivos de migración generados por EF Core
+[*.cs]
+generated_code = true

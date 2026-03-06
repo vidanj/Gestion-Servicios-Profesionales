@@ -1,5 +1,4 @@
 <Project Sdk="Microsoft.NET.Sdk">
-
   <PropertyGroup>
     <TargetFramework>net9.0</TargetFramework>
     <Nullable>enable</Nullable>
@@ -31,5 +30,4 @@
   <ItemGroup>
     <ProjectReference Include="..\SistemaServicios.API\SistemaServicios.API.csproj" />
   </ItemGroup>
-
 </Project>

@@ -1,4 +1,5 @@
 import type { ElementType } from 'react'
+import { FiBriefcase, FiClipboard, FiShield, FiStar } from 'react-icons/fi'
 
 const siteConfig = {
   logo: undefined as ElementType | undefined,
@@ -30,24 +31,24 @@ const siteConfig = {
         title: "Publicación de servicios",
         description:
           "Publica tus servicios con precios y descripciones detalladas.",
-        icon: "FiBriefcase",
+        icon: FiBriefcase,
       },
       {
         title: "Gestión de pedidos",
         description:
           "Administra solicitudes y entregas desde un panel centralizado.",
-        icon: "FiClipboard",
+        icon: FiClipboard,
       },
       {
         title: "Pagos seguros",
         description: "Procesa pagos de forma segura y transparente.",
-        icon: "FiShield",
+        icon: FiShield,
       },
       {
         title: "Valoraciones y reseñas",
         description:
           "Construye tu reputación con el sistema de valoraciones integrado.",
-        icon: "FiStar",
+        icon: FiStar,
       },
     ],
   },

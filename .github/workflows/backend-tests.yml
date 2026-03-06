@@ -1,17 +1,21 @@
 name: Backend — Pruebas y Cobertura
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - main
+      - dev
       - feat/**
-    paths:
-      - 'backend/**'
+      - chore/**
+      - fix/**
   pull_request:
     branches:
       - main
+      - dev
     paths:
       - 'backend/**'
+      - '.github/workflows/backend-tests.yml'
 
 jobs:
   test-and-coverage:

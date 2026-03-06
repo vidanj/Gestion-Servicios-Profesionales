@@ -43,24 +43,20 @@ export const Pricing: React.FC<PricingProps> = (props) => {
       <Box zIndex="2" pos="relative">
         <SectionTitle title={title} description={description}></SectionTitle>
 
-        <SimpleGrid columns={[1, null, 3]} spacing={4}>
+        <SimpleGrid columns={[1, null, 3]} gap={4}>
           {plans?.map((plan) => (
             <PricingBox
               key={plan.id}
               title={plan.title}
               description={plan.description}
               price={plan.price}
-              sx={
-                plan.isRecommended
-                  ? {
-                      borderColor: 'primary.500',
-                      _dark: {
-                        borderColor: 'primary.500',
-                        bg: 'blackAlpha.300',
-                      },
-                    }
-                  : {}
-              }
+              {...(plan.isRecommended ? {
+                borderColor: 'primary.500',
+                _dark: {
+                  borderColor: 'primary.500',
+                  bg: 'blackAlpha.300',
+                },
+              } : {})}
             >
               <PricingFeatures>
                 {plan.features.map((feature, i) =>
@@ -71,7 +67,7 @@ export const Pricing: React.FC<PricingProps> = (props) => {
                   ),
                 )}
               </PricingFeatures>
-              <ButtonLink colorScheme="primary" {...plan.action}>
+              <ButtonLink colorPalette="primary" {...plan.action}>
                 {plan.action.label || 'Sign Up'}
               </ButtonLink>
             </PricingBox>
@@ -91,7 +87,7 @@ const PricingFeatures: React.FC<React.PropsWithChildren<{}>> = ({
     <VStack
       align="stretch"
       justifyContent="stretch"
-      spacing="4"
+      gap="4"
       mb="8"
       flex="1"
     >
@@ -109,7 +105,7 @@ const PricingFeature: React.FC<PricingFeatureProps> = (props) => {
   const { title, iconColor = 'primary.500' } = props
   return (
     <HStack>
-      <Icon as={FiCheck} color={iconColor} />
+      <Icon color={iconColor}><FiCheck /></Icon>
       <Text flex="1" fontSize="sm">
         {title}
       </Text>
@@ -148,7 +144,7 @@ const PricingBox: React.FC<PricingBoxProps> = (props) => {
       <Box fontSize="2xl" fontWeight="bold" py="4">
         {price}
       </Box>
-      <VStack align="stretch" justifyContent="stretch" spacing="4" flex="1">
+      <VStack align="stretch" justifyContent="stretch" gap="4" flex="1">
         {children}
       </VStack>
     </VStack>
