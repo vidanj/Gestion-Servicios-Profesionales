@@ -16,14 +16,30 @@ namespace SistemaServicios.API.Migrations
                 name: "Categories",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    Name = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
-                    Description = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true),
-                    IconUrl = table.Column<string>(type: "character varying(2048)", maxLength: 2048, nullable: true),
+                    Id = table
+                        .Column<int>(type: "integer", nullable: false)
+                        .Annotation(
+                            "Npgsql:ValueGenerationStrategy",
+                            NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    Name = table.Column<string>(
+                        type: "character varying(200)",
+                        maxLength: 200,
+                        nullable: false),
+                    Description = table.Column<string>(
+                        type: "character varying(1000)",
+                        maxLength: 1000,
+                        nullable: true),
+                    IconUrl = table.Column<string>(
+                        type: "character varying(2048)",
+                        maxLength: 2048,
+                        nullable: true),
                     IsActive = table.Column<bool>(type: "boolean", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
+                    CreatedAt = table.Column<DateTime>(
+                        type: "timestamp with time zone",
+                        nullable: false),
+                    UpdatedAt = table.Column<DateTime>(
+                        type: "timestamp with time zone",
+                        nullable: true),
                 },
                 constraints: table =>
                 {
@@ -37,15 +53,31 @@ namespace SistemaServicios.API.Migrations
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
                     Email = table.Column<string>(type: "text", nullable: false),
                     PasswordHash = table.Column<string>(type: "text", nullable: false),
-                    FirstName = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
-                    LastName = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
+                    FirstName = table.Column<string>(
+                        type: "character varying(255)",
+                        maxLength: 255,
+                        nullable: false),
+                    LastName = table.Column<string>(
+                        type: "character varying(255)",
+                        maxLength: 255,
+                        nullable: false),
                     Role = table.Column<int>(type: "integer", nullable: false),
-                    PhoneNumber = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: true),
+                    PhoneNumber = table.Column<string>(
+                        type: "character varying(20)",
+                        maxLength: 20,
+                        nullable: true),
                     AverageRating = table.Column<decimal>(type: "numeric(18,2)", nullable: false),
                     Status = table.Column<bool>(type: "boolean", nullable: false),
-                    ProfileImageUrl = table.Column<string>(type: "character varying(2048)", maxLength: 2048, nullable: true),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                    ProfileImageUrl = table.Column<string>(
+                        type: "character varying(2048)",
+                        maxLength: 2048,
+                        nullable: true),
+                    CreatedAt = table.Column<DateTime>(
+                        type: "timestamp with time zone",
+                        nullable: false),
+                    UpdatedAt = table.Column<DateTime>(
+                        type: "timestamp with time zone",
+                        nullable: false),
                 },
                 constraints: table =>
                 {
@@ -56,17 +88,37 @@ namespace SistemaServicios.API.Migrations
                 name: "Services",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    Id = table
+                        .Column<int>(type: "integer", nullable: false)
+                        .Annotation(
+                            "Npgsql:ValueGenerationStrategy",
+                            NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     ProfessionalId = table.Column<Guid>(type: "uuid", nullable: false),
                     CategoryId = table.Column<int>(type: "integer", nullable: false),
-                    Title = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
-                    Description = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true),
-                    BasePrice = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: false),
-                    ImageUrl = table.Column<string>(type: "character varying(2048)", maxLength: 2048, nullable: true),
+                    Title = table.Column<string>(
+                        type: "character varying(200)",
+                        maxLength: 200,
+                        nullable: false),
+                    Description = table.Column<string>(
+                        type: "character varying(1000)",
+                        maxLength: 1000,
+                        nullable: true),
+                    BasePrice = table.Column<decimal>(
+                        type: "numeric(18,2)",
+                        precision: 18,
+                        scale: 2,
+                        nullable: false),
+                    ImageUrl = table.Column<string>(
+                        type: "character varying(2048)",
+                        maxLength: 2048,
+                        nullable: true),
                     IsActive = table.Column<bool>(type: "boolean", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
+                    CreatedAt = table.Column<DateTime>(
+                        type: "timestamp with time zone",
+                        nullable: false),
+                    UpdatedAt = table.Column<DateTime>(
+                        type: "timestamp with time zone",
+                        nullable: true),
                 },
                 constraints: table =>
                 {
@@ -89,16 +141,31 @@ namespace SistemaServicios.API.Migrations
                 name: "Verifications",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    Id = table
+                        .Column<int>(type: "integer", nullable: false)
+                        .Annotation(
+                            "Npgsql:ValueGenerationStrategy",
+                            NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     ProfessionalId = table.Column<Guid>(type: "uuid", nullable: false),
                     DocumentType = table.Column<int>(type: "integer", nullable: false),
-                    DocumentUrl = table.Column<string>(type: "character varying(2048)", maxLength: 2048, nullable: false),
+                    DocumentUrl = table.Column<string>(
+                        type: "character varying(2048)",
+                        maxLength: 2048,
+                        nullable: false),
                     Status = table.Column<int>(type: "integer", nullable: false),
-                    ExternalReference = table.Column<string>(type: "character varying(2048)", maxLength: 2048, nullable: false),
-                    SubmittedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    VerifiedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    ExpiresAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
+                    ExternalReference = table.Column<string>(
+                        type: "character varying(2048)",
+                        maxLength: 2048,
+                        nullable: false),
+                    SubmittedAt = table.Column<DateTime>(
+                        type: "timestamp with time zone",
+                        nullable: false),
+                    VerifiedAt = table.Column<DateTime>(
+                        type: "timestamp with time zone",
+                        nullable: true),
+                    ExpiresAt = table.Column<DateTime>(
+                        type: "timestamp with time zone",
+                        nullable: true),
                 },
                 constraints: table =>
                 {
@@ -115,16 +182,26 @@ namespace SistemaServicios.API.Migrations
                 name: "Quotes",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    Id = table
+                        .Column<int>(type: "integer", nullable: false)
+                        .Annotation(
+                            "Npgsql:ValueGenerationStrategy",
+                            NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     ServiceId = table.Column<int>(type: "integer", nullable: false),
                     ClientId = table.Column<Guid>(type: "uuid", nullable: false),
                     EstimatedPrice = table.Column<decimal>(type: "numeric(18,2)", nullable: false),
                     EstimatedDuration = table.Column<int>(type: "integer", nullable: false),
-                    Description = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true),
+                    Description = table.Column<string>(
+                        type: "character varying(1000)",
+                        maxLength: 1000,
+                        nullable: true),
                     Status = table.Column<int>(type: "integer", nullable: false),
-                    ValidUntil = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                    ValidUntil = table.Column<DateTime>(
+                        type: "timestamp with time zone",
+                        nullable: true),
+                    CreatedAt = table.Column<DateTime>(
+                        type: "timestamp with time zone",
+                        nullable: false),
                 },
                 constraints: table =>
                 {
@@ -147,17 +224,29 @@ namespace SistemaServicios.API.Migrations
                 name: "Requests",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    Id = table
+                        .Column<int>(type: "integer", nullable: false)
+                        .Annotation(
+                            "Npgsql:ValueGenerationStrategy",
+                            NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     ClientId = table.Column<Guid>(type: "uuid", nullable: false),
                     ProfessionalId = table.Column<Guid>(type: "uuid", nullable: false),
                     ServiceId = table.Column<int>(type: "integer", nullable: false),
                     Status = table.Column<int>(type: "integer", nullable: false),
                     QuotedPrice = table.Column<decimal>(type: "numeric(18,2)", nullable: false),
-                    Description = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true),
-                    RequestDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    ScheduledDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    CompletionDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
+                    Description = table.Column<string>(
+                        type: "character varying(1000)",
+                        maxLength: 1000,
+                        nullable: true),
+                    RequestDate = table.Column<DateTime>(
+                        type: "timestamp with time zone",
+                        nullable: false),
+                    ScheduledDate = table.Column<DateTime>(
+                        type: "timestamp with time zone",
+                        nullable: true),
+                    CompletionDate = table.Column<DateTime>(
+                        type: "timestamp with time zone",
+                        nullable: true),
                 },
                 constraints: table =>
                 {
@@ -186,14 +275,22 @@ namespace SistemaServicios.API.Migrations
                 name: "Ratings",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    Id = table
+                        .Column<int>(type: "integer", nullable: false)
+                        .Annotation(
+                            "Npgsql:ValueGenerationStrategy",
+                            NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     RequestId = table.Column<int>(type: "integer", nullable: false),
                     ClientId = table.Column<Guid>(type: "uuid", nullable: false),
                     ProfessionalId = table.Column<Guid>(type: "uuid", nullable: false),
                     Score = table.Column<int>(type: "integer", nullable: false),
-                    Comment = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                    Comment = table.Column<string>(
+                        type: "character varying(500)",
+                        maxLength: 500,
+                        nullable: true),
+                    CreatedAt = table.Column<DateTime>(
+                        type: "timestamp with time zone",
+                        nullable: false),
                 },
                 constraints: table =>
                 {
@@ -277,26 +374,19 @@ namespace SistemaServicios.API.Migrations
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropTable(
-                name: "Quotes");
+            migrationBuilder.DropTable(name: "Quotes");
 
-            migrationBuilder.DropTable(
-                name: "Ratings");
+            migrationBuilder.DropTable(name: "Ratings");
 
-            migrationBuilder.DropTable(
-                name: "Verifications");
+            migrationBuilder.DropTable(name: "Verifications");
 
-            migrationBuilder.DropTable(
-                name: "Requests");
+            migrationBuilder.DropTable(name: "Requests");
 
-            migrationBuilder.DropTable(
-                name: "Services");
+            migrationBuilder.DropTable(name: "Services");
 
-            migrationBuilder.DropTable(
-                name: "Categories");
+            migrationBuilder.DropTable(name: "Categories");
 
-            migrationBuilder.DropTable(
-                name: "Users");
+            migrationBuilder.DropTable(name: "Users");
         }
     }
 }

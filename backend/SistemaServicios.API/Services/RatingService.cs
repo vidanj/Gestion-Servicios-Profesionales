@@ -16,18 +16,23 @@ namespace SistemaServicios.API.Services
         public async Task<RatingDto> CreateRatingAsync(Guid clientId, CreateRatingDto dto)
         {
             // Validación de negocio: Evitar que el cliente califique dos veces el mismo trabajo
-            bool alreadyRated = await _ratingRepository.ExistsRatingForRequestAsync(dto.RequestId, clientId);
+            bool alreadyRated = await _ratingRepository.ExistsRatingForRequestAsync(
+                dto.RequestId,
+                clientId
+            );
             if (alreadyRated)
-                throw new InvalidOperationException("Ya has calificado este servicio anteriormente.");
+                throw new InvalidOperationException(
+                    "Ya has calificado este servicio anteriormente."
+                );
 
             var rating = new Rating
             {
                 RequestId = dto.RequestId,
                 ProfessionalId = dto.ProfessionalId,
-                ClientId = clientId, 
+                ClientId = clientId,
                 Score = dto.Score,
                 Comment = dto.Comment,
-                CreatedAt = DateTime.UtcNow
+                CreatedAt = DateTime.UtcNow,
             };
 
             var savedRating = await _ratingRepository.CreateAsync(rating);
@@ -40,15 +45,16 @@ namespace SistemaServicios.API.Services
                 ProfessionalId = savedRating.ProfessionalId,
                 Score = savedRating.Score,
                 Comment = savedRating.Comment,
-                CreatedAt = savedRating.CreatedAt
+                CreatedAt = savedRating.CreatedAt,
             };
         }
 
         public async Task<double> GetProfessionalAverageRatingAsync(Guid professionalId)
         {
             var ratings = await _ratingRepository.GetByProfessionalIdAsync(professionalId);
-            
-            if (!ratings.Any()) return 0;
+
+            if (!ratings.Any())
+                return 0;
 
             return Math.Round(ratings.Average(r => r.Score), 1);
         }
@@ -64,7 +70,7 @@ namespace SistemaServicios.API.Services
                 ProfessionalId = r.ProfessionalId,
                 Score = r.Score,
                 Comment = r.Comment,
-                CreatedAt = r.CreatedAt
+                CreatedAt = r.CreatedAt,
             });
         }
     }

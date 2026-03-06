@@ -1,5 +1,4 @@
-import { HStack } from '@chakra-ui/react'
-import { useDisclosure, useUpdateEffect } from '@chakra-ui/react'
+import { HStack, useDisclosure } from '@chakra-ui/react'
 import { useScrollSpy } from 'hooks/use-scrollspy'
 import { usePathname, useRouter } from 'next/navigation'
 
@@ -25,9 +24,11 @@ const Navigation: React.FC = () => {
     },
   )
 
-  const mobileNavBtnRef = React.useRef<HTMLButtonElement>()
+  const mobileNavBtnRef = React.useRef<HTMLButtonElement | null>(null)
 
-  useUpdateEffect(() => {
+  const mounted = React.useRef(false)
+  React.useEffect(() => {
+    if (!mounted.current) { mounted.current = true; return }
     mobileNavBtnRef.current?.focus()
   }, [mobileNav.open])
 

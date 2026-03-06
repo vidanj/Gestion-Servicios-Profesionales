@@ -26,13 +26,22 @@ namespace SistemaServicios.API.Controllers
             {
                 // Extraer el ID del cliente directamente del Token JWT
                 var clientIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-                if (string.IsNullOrEmpty(clientIdClaim) || !Guid.TryParse(clientIdClaim, out Guid clientId))
+                if (
+                    string.IsNullOrEmpty(clientIdClaim)
+                    || !Guid.TryParse(clientIdClaim, out Guid clientId)
+                )
                 {
-                    return Unauthorized(new { message = "Token inválido o usuario no autenticado." });
+                    return Unauthorized(
+                        new { message = "Token inválido o usuario no autenticado." }
+                    );
                 }
 
                 var result = await _ratingService.CreateRatingAsync(clientId, dto);
-                return CreatedAtAction(nameof(GetProfessionalRatings), new { professionalId = result.ProfessionalId }, result);
+                return CreatedAtAction(
+                    nameof(GetProfessionalRatings),
+                    new { professionalId = result.ProfessionalId },
+                    result
+                );
             }
             catch (InvalidOperationException ex)
             {
@@ -41,13 +50,18 @@ namespace SistemaServicios.API.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "Error interno del servidor.", error = ex.Message });
+                return StatusCode(
+                    500,
+                    new { message = "Error interno del servidor.", error = ex.Message }
+                );
             }
         }
 
         [AllowAnonymous] // Cualquier persona (incluso sin login) puede ver las reseñas
         [HttpGet("professional/{professionalId}")]
-        public async Task<ActionResult<IEnumerable<RatingDto>>> GetProfessionalRatings(Guid professionalId)
+        public async Task<ActionResult<IEnumerable<RatingDto>>> GetProfessionalRatings(
+            Guid professionalId
+        )
         {
             var ratings = await _ratingService.GetProfessionalRatingsAsync(professionalId);
             return Ok(ratings);

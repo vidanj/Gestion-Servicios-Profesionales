@@ -20,7 +20,7 @@ public class DevelopmentWebApplicationFactory : CustomWebApplicationFactory
 
         // Sobreescribe a "Development" para que IsDevelopment() devuelva true
         // y el pipeline registre el middleware de Swagger
-        builder.UseEnvironment("Development");
+        _ = builder.UseEnvironment("Development");
     }
 }
 
@@ -50,50 +50,62 @@ public class SwaggerTests : IClassFixture<DevelopmentWebApplicationFactory>
     // ─────────────────────────────────────────────────────────────
 
     [Fact]
-    public async Task Swagger_DocumentoOpenApi_Retorna200()
+    public async Task SwaggerDocumentoOpenApiRetorna200()
     {
         // Act
         var response = await _client.GetAsync("/swagger/v1/swagger.json");
 
         // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.OK,
-            because: "el endpoint de Swagger debe estar disponible en ambiente Development");
+        _ = response
+            .StatusCode.Should()
+            .Be(
+                HttpStatusCode.OK,
+                because: "el endpoint de Swagger debe estar disponible en ambiente Development"
+            );
     }
 
     [Fact]
-    public async Task Swagger_DocumentoOpenApi_ContieneNombreYVersionDelApi()
+    public async Task SwaggerDocumentoOpenApiContieneNombreYVersionDelApi()
     {
         // Act
         var response = await _client.GetAsync("/swagger/v1/swagger.json");
         var contenido = await response.Content.ReadAsStringAsync();
 
         // Assert — refleja el SwaggerDoc configurado en AddApplicationServices
-        contenido.Should().Contain("Sistema Servicios API",
-            because: "el título fue configurado en c.SwaggerDoc(\"v1\", new OpenApiInfo { Title = ... })");
-        contenido.Should().Contain("v1",
-            because: "la versión fue configurada en c.SwaggerDoc(\"v1\", ...)");
+        _ = contenido
+            .Should()
+            .Contain(
+                "Sistema Servicios API",
+                because: "el título fue configurado en c.SwaggerDoc(\"v1\", new OpenApiInfo { Title = ... })"
+            );
+        _ = contenido
+            .Should()
+            .Contain("v1", because: "la versión fue configurada en c.SwaggerDoc(\"v1\", ...)");
     }
 
     [Fact]
-    public async Task Swagger_DocumentoOpenApi_ContieneEsquemaDeSeguridad()
+    public async Task SwaggerDocumentoOpenApiContieneEsquemaDeSeguridad()
     {
         // Act
         var response = await _client.GetAsync("/swagger/v1/swagger.json");
         var contenido = await response.Content.ReadAsStringAsync();
 
         // Assert — refleja AddSecurityDefinition y AddSecurityRequirement
-        contenido.Should().Contain("Bearer",
-            because: "el esquema de seguridad JWT Bearer fue registrado con c.AddSecurityDefinition");
+        _ = contenido
+            .Should()
+            .Contain(
+                "Bearer",
+                because: "el esquema de seguridad JWT Bearer fue registrado con c.AddSecurityDefinition"
+            );
     }
 
     [Fact]
-    public async Task Swagger_DocumentoOpenApi_ContentTypeEsJson()
+    public async Task SwaggerDocumentoOpenApiContentTypeEsJson()
     {
         // Act
         var response = await _client.GetAsync("/swagger/v1/swagger.json");
 
         // Assert
-        response.Content.Headers.ContentType?.MediaType
-            .Should().Be("application/json");
+        _ = (response.Content.Headers.ContentType?.MediaType.Should().Be("application/json"));
     }
 }

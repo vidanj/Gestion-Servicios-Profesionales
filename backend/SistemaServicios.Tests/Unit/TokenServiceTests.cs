@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using FluentAssertions;
@@ -23,50 +24,51 @@ public class TokenServiceTests
     {
         var configValues = new Dictionary<string, string?>
         {
-            ["JwtSettings:Key"]              = TestKey,
-            ["JwtSettings:Issuer"]           = TestIssuer,
-            ["JwtSettings:Audience"]         = TestAudience,
-            ["JwtSettings:ExpiresInMinutes"] = ExpiresMinutes.ToString(),
+            ["JwtSettings:Key"] = TestKey,
+            ["JwtSettings:Issuer"] = TestIssuer,
+            ["JwtSettings:Audience"] = TestAudience,
+            ["JwtSettings:ExpiresInMinutes"] = ExpiresMinutes.ToString(
+                CultureInfo.InvariantCulture
+            ),
         };
 
-        _config = new ConfigurationBuilder()
-            .AddInMemoryCollection(configValues)
-            .Build();
+        _config = new ConfigurationBuilder().AddInMemoryCollection(configValues).Build();
 
         _tokenService = new TokenService(_config);
     }
 
-    private static User CrearUsuarioDePrueba() => new()
-    {
-        Id = Guid.Parse("11111111-1111-1111-1111-111111111111"),
-        Email = "usuario@test.com",
-        PasswordHash = "hash-no-relevante",
-        FirstName = "Juan",
-        LastName = "Pérez",
-        Role = UserRole.Client,
-        Status = true,
-    };
+    private static User CrearUsuarioDePrueba() =>
+        new()
+        {
+            Id = Guid.Parse("11111111-1111-1111-1111-111111111111"),
+            Email = "usuario@test.com",
+            PasswordHash = "hash-no-relevante",
+            FirstName = "Juan",
+            LastName = "Pérez",
+            Role = UserRole.Client,
+            Status = true,
+        };
 
     // ─────────────────────────────────────────────────────────────
     // Formato del token
     // ─────────────────────────────────────────────────────────────
 
     [Fact]
-    public void CreateToken_UsuarioValido_RetornaStringNoVacio()
+    public void CreateTokenUsuarioValidoRetornaStringNoVacio()
     {
         var token = _tokenService.CreateToken(CrearUsuarioDePrueba());
 
-        token.Should().NotBeNullOrWhiteSpace();
+        _ = token.Should().NotBeNullOrWhiteSpace();
     }
 
     [Fact]
-    public void CreateToken_UsuarioValido_RetornaTokenJwtValido()
+    public void CreateTokenUsuarioValidoRetornaTokenJwtValido()
     {
         var token = _tokenService.CreateToken(CrearUsuarioDePrueba());
 
         // Un JWT siempre tiene el formato: header.payload.signature
         var partes = token.Split('.');
-        partes.Should().HaveCount(3, "un JWT siempre tiene tres partes separadas por punto");
+        _ = partes.Should().HaveCount(3, "un JWT siempre tiene tres partes separadas por punto");
     }
 
     // ─────────────────────────────────────────────────────────────
@@ -74,7 +76,7 @@ public class TokenServiceTests
     // ─────────────────────────────────────────────────────────────
 
     [Fact]
-    public void CreateToken_UsuarioValido_ContieneClaimEmail()
+    public void CreateTokenUsuarioValidoContieneClaimEmail()
     {
         var usuario = CrearUsuarioDePrueba();
         var token = _tokenService.CreateToken(usuario);
@@ -82,12 +84,12 @@ public class TokenServiceTests
         var jwt = new JwtSecurityTokenHandler().ReadJwtToken(token);
         var emailClaim = jwt.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Email);
 
-        emailClaim.Should().NotBeNull();
-        emailClaim!.Value.Should().Be("usuario@test.com");
+        _ = emailClaim.Should().NotBeNull();
+        _ = emailClaim!.Value.Should().Be("usuario@test.com");
     }
 
     [Fact]
-    public void CreateToken_UsuarioValido_ContieneClaimNameIdentifier()
+    public void CreateTokenUsuarioValidoContieneClaimNameIdentifier()
     {
         var usuario = CrearUsuarioDePrueba();
         var token = _tokenService.CreateToken(usuario);
@@ -95,12 +97,12 @@ public class TokenServiceTests
         var jwt = new JwtSecurityTokenHandler().ReadJwtToken(token);
         var idClaim = jwt.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier);
 
-        idClaim.Should().NotBeNull();
-        idClaim!.Value.Should().Be("11111111-1111-1111-1111-111111111111");
+        _ = idClaim.Should().NotBeNull();
+        _ = idClaim!.Value.Should().Be("11111111-1111-1111-1111-111111111111");
     }
 
     [Fact]
-    public void CreateToken_UsuarioValido_ContieneClaimRole()
+    public void CreateTokenUsuarioValidoContieneClaimRole()
     {
         var usuario = CrearUsuarioDePrueba();
         var token = _tokenService.CreateToken(usuario);
@@ -108,12 +110,12 @@ public class TokenServiceTests
         var jwt = new JwtSecurityTokenHandler().ReadJwtToken(token);
         var roleClaim = jwt.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Role);
 
-        roleClaim.Should().NotBeNull();
-        roleClaim!.Value.Should().Be("Client");
+        _ = roleClaim.Should().NotBeNull();
+        _ = roleClaim!.Value.Should().Be("Client");
     }
 
     [Fact]
-    public void CreateToken_UsuarioValido_ContieneClaimFirstName()
+    public void CreateTokenUsuarioValidoContieneClaimFirstName()
     {
         var usuario = CrearUsuarioDePrueba();
         var token = _tokenService.CreateToken(usuario);
@@ -121,12 +123,12 @@ public class TokenServiceTests
         var jwt = new JwtSecurityTokenHandler().ReadJwtToken(token);
         var firstNameClaim = jwt.Claims.FirstOrDefault(c => c.Type == "firstName");
 
-        firstNameClaim.Should().NotBeNull();
-        firstNameClaim!.Value.Should().Be("Juan");
+        _ = firstNameClaim.Should().NotBeNull();
+        _ = firstNameClaim!.Value.Should().Be("Juan");
     }
 
     [Fact]
-    public void CreateToken_UsuarioValido_ContieneClaimLastName()
+    public void CreateTokenUsuarioValidoContieneClaimLastName()
     {
         var usuario = CrearUsuarioDePrueba();
         var token = _tokenService.CreateToken(usuario);
@@ -134,8 +136,8 @@ public class TokenServiceTests
         var jwt = new JwtSecurityTokenHandler().ReadJwtToken(token);
         var lastNameClaim = jwt.Claims.FirstOrDefault(c => c.Type == "lastName");
 
-        lastNameClaim.Should().NotBeNull();
-        lastNameClaim!.Value.Should().Be("Pérez");
+        _ = lastNameClaim.Should().NotBeNull();
+        _ = lastNameClaim!.Value.Should().Be("Pérez");
     }
 
     // ─────────────────────────────────────────────────────────────
@@ -143,21 +145,21 @@ public class TokenServiceTests
     // ─────────────────────────────────────────────────────────────
 
     [Fact]
-    public void CreateToken_UsuarioValido_IssuerCorrecto()
+    public void CreateTokenUsuarioValidoIssuerCorrecto()
     {
         var token = _tokenService.CreateToken(CrearUsuarioDePrueba());
 
         var jwt = new JwtSecurityTokenHandler().ReadJwtToken(token);
-        jwt.Issuer.Should().Be(TestIssuer);
+        _ = jwt.Issuer.Should().Be(TestIssuer);
     }
 
     [Fact]
-    public void CreateToken_UsuarioValido_AudienceCorrecto()
+    public void CreateTokenUsuarioValidoAudienceCorrecto()
     {
         var token = _tokenService.CreateToken(CrearUsuarioDePrueba());
 
         var jwt = new JwtSecurityTokenHandler().ReadJwtToken(token);
-        jwt.Audiences.Should().Contain(TestAudience);
+        _ = jwt.Audiences.Should().Contain(TestAudience);
     }
 
     // ─────────────────────────────────────────────────────────────
@@ -165,16 +167,16 @@ public class TokenServiceTests
     // ─────────────────────────────────────────────────────────────
 
     [Fact]
-    public void CreateToken_UsuarioValido_TokenNoEstaExpirado()
+    public void CreateTokenUsuarioValidoTokenNoEstaExpirado()
     {
         var token = _tokenService.CreateToken(CrearUsuarioDePrueba());
 
         var jwt = new JwtSecurityTokenHandler().ReadJwtToken(token);
-        jwt.ValidTo.Should().BeAfter(DateTime.UtcNow);
+        _ = jwt.ValidTo.Should().BeAfter(DateTime.UtcNow);
     }
 
     [Fact]
-    public void CreateToken_UsuarioValido_ExpiracionCercanaDeLaConfiguracion()
+    public void CreateTokenUsuarioValidoExpiracionCercanaDeLaConfiguracion()
     {
         var antes = DateTime.UtcNow;
         var token = _tokenService.CreateToken(CrearUsuarioDePrueba());
@@ -182,9 +184,9 @@ public class TokenServiceTests
         var jwt = new JwtSecurityTokenHandler().ReadJwtToken(token);
 
         // El token debe expirar aproximadamente en ExpiresMinutes minutos
-        jwt.ValidTo.Should().BeCloseTo(
-            antes.AddMinutes(ExpiresMinutes),
-            precision: TimeSpan.FromSeconds(10));
+        _ = jwt
+            .ValidTo.Should()
+            .BeCloseTo(antes.AddMinutes(ExpiresMinutes), precision: TimeSpan.FromSeconds(10));
     }
 
     // ─────────────────────────────────────────────────────────────
@@ -195,7 +197,7 @@ public class TokenServiceTests
     [InlineData(UserRole.Admin, "Admin")]
     [InlineData(UserRole.Client, "Client")]
     [InlineData(UserRole.Professional, "Professional")]
-    public void CreateToken_CadaRol_ContieneRolCorrecto(UserRole rol, string rolEsperado)
+    public void CreateTokenCadaRolContieneRolCorrecto(UserRole rol, string rolEsperado)
     {
         var usuario = CrearUsuarioDePrueba();
         usuario.Role = rol;
@@ -204,7 +206,7 @@ public class TokenServiceTests
 
         var jwt = new JwtSecurityTokenHandler().ReadJwtToken(token);
         var roleClaim = jwt.Claims.First(c => c.Type == ClaimTypes.Role);
-        roleClaim.Value.Should().Be(rolEsperado);
+        _ = roleClaim.Value.Should().Be(rolEsperado);
     }
 
     // ─────────────────────────────────────────────────────────────
@@ -212,49 +214,52 @@ public class TokenServiceTests
     // ─────────────────────────────────────────────────────────────
 
     [Fact]
-    public void CreateToken_SinJwtKey_LanzaInvalidOperationException()
+    public void CreateTokenSinJwtKeyLanzaInvalidOperationException()
     {
         var configSinKey = new ConfigurationBuilder()
-            .AddInMemoryCollection(new Dictionary<string, string?>
-            {
-                ["JwtSettings:Issuer"]           = TestIssuer,
-                ["JwtSettings:Audience"]         = TestAudience,
-                ["JwtSettings:ExpiresInMinutes"] = "60",
-                // JWT_KEY intencionalmente omitido
-            })
+            .AddInMemoryCollection(
+                new Dictionary<string, string?>
+                {
+                    ["JwtSettings:Issuer"] = TestIssuer,
+                    ["JwtSettings:Audience"] = TestAudience,
+                    ["JwtSettings:ExpiresInMinutes"] = "60",
+                    // JWT_KEY intencionalmente omitido
+                }
+            )
             .Build();
 
         var tokenServiceSinKey = new TokenService(configSinKey);
 
         var act = () => tokenServiceSinKey.CreateToken(CrearUsuarioDePrueba());
-        act.Should().Throw<InvalidOperationException>()
-           .WithMessage("JWT Key no configurado.");
+        _ = act.Should().Throw<InvalidOperationException>().WithMessage("JWT Key no configurado.");
     }
 
     [Fact]
-    public void CreateToken_SinExpiresInMinutes_UsaDefault60Minutos()
+    public void CreateTokenSinExpiresInMinutesUsaDefault60Minutos()
     {
         // Arrange: JwtSettings:ExpiresInMinutes omitido → debe usar el valor por defecto "60"
         var config = new ConfigurationBuilder()
-            .AddInMemoryCollection(new Dictionary<string, string?>
-            {
-                ["JwtSettings:Key"]      = TestKey,
-                ["JwtSettings:Issuer"]   = TestIssuer,
-                ["JwtSettings:Audience"] = TestAudience,
-                // ExpiresInMinutes intencionalmente omitido
-            })
+            .AddInMemoryCollection(
+                new Dictionary<string, string?>
+                {
+                    ["JwtSettings:Key"] = TestKey,
+                    ["JwtSettings:Issuer"] = TestIssuer,
+                    ["JwtSettings:Audience"] = TestAudience,
+                    // ExpiresInMinutes intencionalmente omitido
+                }
+            )
             .Build();
 
         var service = new TokenService(config);
-        var antes   = DateTime.UtcNow;
+        var antes = DateTime.UtcNow;
 
         // Act
         var token = service.CreateToken(CrearUsuarioDePrueba());
 
         // Assert: el token se generó y expira en ~60 minutos (valor por defecto)
         var jwt = new JwtSecurityTokenHandler().ReadJwtToken(token);
-        jwt.ValidTo.Should().BeCloseTo(
-            antes.AddMinutes(60),
-            precision: TimeSpan.FromSeconds(10));
+        _ = jwt
+            .ValidTo.Should()
+            .BeCloseTo(antes.AddMinutes(60), precision: TimeSpan.FromSeconds(10));
     }
 }

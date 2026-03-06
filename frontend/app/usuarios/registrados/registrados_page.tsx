@@ -1,16 +1,11 @@
-"use client";
+﻿"use client";
 
 // Navegacion y componentes UI usados por la vista.
 import NextLink from "next/link";
 import { useRef, useState } from "react";
 import {
-  AlertDialog,
-  AlertDialogBody,
-  AlertDialogContent,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogOverlay,
-  Avatar,
+  AvatarFallback,
+  AvatarRoot,
   Badge,
   Box,
   Button,
@@ -18,16 +13,28 @@ import {
   CardBody,
   CardHeader,
   Container,
+  DialogBackdrop,
+  DialogBody,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogPositioner,
+  DialogRoot,
   Flex,
   HStack,
   Heading,
   SimpleGrid,
   Stack,
-  Tag,
   TagLabel,
+  TagRoot,
   Text,
+  ToastCloseTrigger,
+  ToastDescription,
+  ToastRoot,
+  ToastTitle,
+  Toaster,
+  createToaster,
   useDisclosure,
-  useToast,
 } from "@chakra-ui/react";
 import { UserCardActions } from "../../../src/components/user-actions";
 import { useUsersStore, type User } from "../../../src/data/users-store";
@@ -41,6 +48,8 @@ const roleColor: Record<string, string> = {
   auditor: "orange",
 };
 
+const toaster = createToaster({ placement: "top-end" });
+
 // Pagina de listado de usuarios con permisos.
 export default function RegisteredUsersPage() {
   const { users: rows, setUsers: setRows } = useUsersStore();
@@ -48,9 +57,9 @@ export default function RegisteredUsersPage() {
     type: "delete" | "edit";
     userId: string;
   } | null>(null);
-  const { isOpen, onOpen, onClose } = useDisclosure();
+  const { open: isOpen, onOpen, onClose } = useDisclosure();
   const cancelRef = useRef<HTMLButtonElement>(null);
-  const toast = useToast();
+  
 
   const openConfirm = (type: "delete" | "edit", userId: string) => {
     setPendingAction({ type, userId });
@@ -69,12 +78,12 @@ export default function RegisteredUsersPage() {
 
     const target = rows.find((user: User) => user.id === pendingAction.userId);
     if (!target) {
-      toast({
+      toaster.create({
         title: "Usuario no encontrado",
         description: "No se pudo completar la accion solicitada.",
-        status: "error",
+        type: "error",
         duration: 4000,
-        isClosable: true,
+
       });
       handleClose();
       return;
@@ -83,29 +92,29 @@ export default function RegisteredUsersPage() {
     try {
       if (pendingAction.type === "delete") {
         setRows((prev: User[]) => prev.filter((user: User) => user.id !== target.id));
-        toast({
+        toaster.create({
           title: "Usuario eliminado",
           description: `${target.name} fue eliminado correctamente.`,
-          status: "success",
+          type: "success",
           duration: 3000,
-          isClosable: true,
+
         });
       } else {
-        toast({
+        toaster.create({
           title: "Edicion confirmada",
           description: `${target.name} esta listo para editarse.`,
-          status: "success",
+          type: "success",
           duration: 3000,
-          isClosable: true,
+
         });
       }
     } catch (error) {
-      toast({
+      toaster.create({
         title: "Ocurrio un error",
         description: "Intenta nuevamente o revisa la consola.",
-        status: "error",
+        type: "error",
         duration: 4000,
-        isClosable: true,
+
       });
       console.error("Error al procesar la accion de usuario:", error);
     } finally {
@@ -118,43 +127,48 @@ export default function RegisteredUsersPage() {
         title: "Confirmar eliminacion",
         body: "Esta accion eliminara el usuario seleccionado. Deseas continuar?",
         confirmLabel: "Eliminar",
-        confirmScheme: "red",
+        confirmPalette: "red",
       }
     : {
         title: "Confirmar edicion",
         body: "Deseas continuar con la edicion de este usuario?",
         confirmLabel: "Confirmar",
-        confirmScheme: "purple",
+        confirmPalette: "purple",
       };
 
   return (
     <Box py={{ base: 10, md: 16 }}>
+      <Toaster toaster={toaster}>
+        {(toast) => (
+          <ToastRoot key={toast.id}>
+            <ToastTitle>{String(toast.title || "")}</ToastTitle>
+            {toast.description && (
+              <ToastDescription>{String(toast.description)}</ToastDescription>
+            )}
+            <ToastCloseTrigger />
+          </ToastRoot>
+        )}
+      </Toaster>
       <Container maxW="container.xl">
-        <Stack spacing="6">
+        <Stack gap="6">
           {/* Encabezado de la pagina y navegacion entre vistas */}
-          <Stack spacing="2">
+          <Stack gap="2">
             <Heading size="lg">Usuarios registrados</Heading>
             <Text color="muted">
               Lista visual de usuarios con roles y permisos.
             </Text>
-            <HStack spacing="4" flexWrap="wrap">
-              <Button as={NextLink} href="/usuarios" variant="ghost">
-                Usuarios
-              </Button>
-              <Button as={NextLink} href="/usuarios/registrados" colorScheme="purple">
-                Usuarios registrados
-              </Button>
-              <Button as={NextLink} href="/usuarios/logs" variant="ghost">
-                Logs de usuarios
-              </Button>
+            <HStack gap="4" flexWrap="wrap">
+              <Button asChild variant="ghost"><NextLink href="/usuarios">Usuarios</NextLink></Button>
+              <Button asChild colorPalette="purple"><NextLink href="/usuarios/registrados">Usuarios registrados</NextLink></Button>
+              <Button asChild variant="ghost"><NextLink href="/usuarios/logs">Logs de usuarios</NextLink></Button>
             </HStack>
           </Stack>
 
           {/* Grid de tarjetas por usuario */}
-          <SimpleGrid columns={{ base: 1, md: 2, xl: 3 }} spacing="6">
+          <SimpleGrid columns={{ base: 1, md: 2, xl: 3 }} gap="6">
             {/* Renderizado de cada card con datos mock */}
             {rows.map((user: User) => (
-              <Card key={user.id} variant="outline">
+              <Card.Root key={user.id} variant="outline">
                 <CardHeader>
                   <Flex
                     align="center"
@@ -162,20 +176,20 @@ export default function RegisteredUsersPage() {
                     gap="4"
                     wrap="wrap"
                   >
-                    <HStack spacing="4" minW={0} flex="1">
-                      <Avatar name={user.name} />
-                      <Stack spacing="1" minW={0}>
-                        <Heading size="sm" noOfLines={1}>
+                    <HStack gap="4" minW={0} flex="1">
+                      <AvatarRoot><AvatarFallback name={user.name} /></AvatarRoot>
+                      <Stack gap="1" minW={0}>
+                        <Heading size="sm" lineClamp={1}>
                           {user.name}
                         </Heading>
-                        <Text fontSize="sm" color="muted" noOfLines={1}>
+                        <Text fontSize="sm" color="muted" lineClamp={1}>
                           {user.email}
                         </Text>
                       </Stack>
                     </HStack>
-                    <HStack spacing="2" flexShrink={0}>
+                    <HStack gap="2" flexShrink={0}>
                       {/* Badge con el rol del usuario */}
-                      <Badge colorScheme={roleColor[user.role]}>
+                      <Badge colorPalette={roleColor[user.role]}>
                         {user.role}
                       </Badge>
                       <UserCardActions
@@ -186,64 +200,65 @@ export default function RegisteredUsersPage() {
                   </Flex>
                 </CardHeader>
                 <CardBody>
-                  <Stack spacing="3">
+                  <Stack gap="3">
                     <Text fontSize="sm" color="muted">
                       Equipo: {user.team || "Sin equipo"}
                     </Text>
-                    <Stack spacing="2">
+                    <Stack gap="2">
                       <Text fontSize="sm" fontWeight="semibold">
                         Permisos
                       </Text>
                       {/* Lista visual de permisos */}
-                      <HStack spacing="2" flexWrap="wrap">
+                      <HStack gap="2" flexWrap="wrap">
                         {(user.permissions?.length ? user.permissions : ["sin_permisos"]).map(
                           (permission: string) => (
-                            <Tag
+                            <TagRoot
                               key={permission}
                               size="sm"
                               variant="subtle"
-                              colorScheme="purple"
+                              colorPalette="purple"
                             >
                               <TagLabel>{permission}</TagLabel>
-                            </Tag>
+                            </TagRoot>
                           )
                         )}
                       </HStack>
                     </Stack>
                   </Stack>
                 </CardBody>
-              </Card>
+              </Card.Root>
             ))}
           </SimpleGrid>
 
-          <AlertDialog
-            isOpen={isOpen}
-            leastDestructiveRef={cancelRef}
-            onClose={handleClose}
+          <DialogRoot
+            open={isOpen}
+            onOpenChange={({ open }) => !open && handleClose()}
+            
           >
-            <AlertDialogOverlay>
-              <AlertDialogContent>
-                <AlertDialogHeader fontSize="lg" fontWeight="bold">
+            <DialogBackdrop />
+              <DialogPositioner>
+              <DialogContent>
+                <DialogHeader fontSize="lg" fontWeight="bold">
                   {dialogCopy.title}
-                </AlertDialogHeader>
+                </DialogHeader>
 
-                <AlertDialogBody>{dialogCopy.body}</AlertDialogBody>
+                <DialogBody>{dialogCopy.body}</DialogBody>
 
-                <AlertDialogFooter>
+                <DialogFooter>
                   <Button ref={cancelRef} onClick={handleClose} variant="ghost">
                     Cancelar
                   </Button>
                   <Button
-                    colorScheme={dialogCopy.confirmScheme}
+                    colorPalette={dialogCopy.confirmPalette}
                     onClick={handleConfirm}
                     ml={3}
                   >
                     {dialogCopy.confirmLabel}
                   </Button>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialogOverlay>
-          </AlertDialog>
+                </DialogFooter>
+              </DialogContent>
+            </DialogPositioner>
+          </DialogRoot>
         </Stack>
       </Container>
     </Box>

@@ -23,14 +23,16 @@ namespace SistemaServicios.API.Repositories
 
         public async Task<IEnumerable<Rating>> GetByProfessionalIdAsync(Guid professionalId)
         {
-            return await _context.Ratings
-                .Where(r => r.ProfessionalId == professionalId)
+            return await _context
+                .Ratings.Where(r => r.ProfessionalId == professionalId)
                 .ToListAsync();
         }
 
         public async Task<bool> ExistsRatingForRequestAsync(int requestId, Guid clientId)
         {
-            return await _context.Ratings.AnyAsync(r => r.RequestId == requestId && r.ClientId == clientId);
+            return await _context.Ratings.AnyAsync(r =>
+                r.RequestId == requestId && r.ClientId == clientId
+            );
         }
     }
 }

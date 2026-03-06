@@ -29,27 +29,30 @@ public class AdminControllerTests
     // ─────────────────────────────────────────────────────────────
 
     [Fact]
-    public async Task CreateBackup_Exitoso_Retorna201()
+    public async Task CreateBackupExitosoRetorna201()
     {
         // Arrange
-        _mockBackupService.Setup(s => s.GenerateBackupAsync())
-            .ReturnsAsync(new BackupResponseDto
-            {
-                FileName = "backup_20260226_1000.sql",
-                CreatedAt = DateTime.UtcNow,
-                FileSizeBytes = 4096,
-            });
+        _ = _mockBackupService
+            .Setup(s => s.GenerateBackupAsync())
+            .ReturnsAsync(
+                new BackupResponseDto
+                {
+                    FileName = "backup_20260226_1000.sql",
+                    CreatedAt = DateTime.UtcNow,
+                    FileSizeBytes = 4096,
+                }
+            );
 
         // Act
         var result = await _controller.CreateBackup();
 
         // Assert
         var objectResult = result.Should().BeOfType<ObjectResult>().Subject;
-        objectResult.StatusCode.Should().Be(201);
+        _ = objectResult.StatusCode.Should().Be(201);
     }
 
     [Fact]
-    public async Task CreateBackup_Exitoso_RetornaBackupResponseDto()
+    public async Task CreateBackupExitosoRetornaBackupResponseDto()
     {
         // Arrange
         var expected = new BackupResponseDto
@@ -59,53 +62,57 @@ public class AdminControllerTests
             FileSizeBytes = 8192,
         };
 
-        _mockBackupService.Setup(s => s.GenerateBackupAsync())
-            .ReturnsAsync(expected);
+        _ = _mockBackupService.Setup(s => s.GenerateBackupAsync()).ReturnsAsync(expected);
 
         // Act
         var result = await _controller.CreateBackup();
 
         // Assert
         var objectResult = result.Should().BeOfType<ObjectResult>().Subject;
-        objectResult.Value.Should().BeEquivalentTo(expected);
+        _ = objectResult.Value.Should().BeEquivalentTo(expected);
     }
 
     [Fact]
-    public async Task CreateBackup_Exitoso_LlamaAlServicioExactamenteUnaVez()
+    public async Task CreateBackupExitosoLlamaAlServicioExactamenteUnaVez()
     {
         // Arrange
-        _mockBackupService.Setup(s => s.GenerateBackupAsync())
+        _ = _mockBackupService
+            .Setup(s => s.GenerateBackupAsync())
             .ReturnsAsync(new BackupResponseDto { FileName = "backup.sql" });
 
         // Act
-        await _controller.CreateBackup();
+        _ = await _controller.CreateBackup();
 
         // Assert: el controller no duplica llamadas al servicio
         _mockBackupService.Verify(s => s.GenerateBackupAsync(), Times.Once);
     }
 
     [Fact]
-    public async Task CreateBackup_ServicioLanzaInvalidOperationException_Retorna500()
+    public async Task CreateBackupServicioLanzaInvalidOperationExceptionRetorna500()
     {
         // Arrange
-        _mockBackupService.Setup(s => s.GenerateBackupAsync())
-            .ThrowsAsync(new InvalidOperationException("pg_dump falló (código 1): conexión rechazada"));
+        _ = _mockBackupService
+            .Setup(s => s.GenerateBackupAsync())
+            .ThrowsAsync(
+                new InvalidOperationException("pg_dump falló (código 1): conexión rechazada")
+            );
 
         // Act
         var result = await _controller.CreateBackup();
 
         // Assert
         var objectResult = result.Should().BeOfType<ObjectResult>().Subject;
-        objectResult.StatusCode.Should().Be(500);
+        _ = objectResult.StatusCode.Should().Be(500);
     }
 
     [Fact]
-    public async Task CreateBackup_ServicioLanzaInvalidOperationException_RetornaMensajeDeError()
+    public async Task CreateBackupServicioLanzaInvalidOperationExceptionRetornaMensajeDeError()
     {
         // Arrange
         const string mensajeEsperado = "pg_dump falló (código 1): conexión rechazada";
 
-        _mockBackupService.Setup(s => s.GenerateBackupAsync())
+        _ = _mockBackupService
+            .Setup(s => s.GenerateBackupAsync())
             .ThrowsAsync(new InvalidOperationException(mensajeEsperado));
 
         // Act
@@ -113,19 +120,19 @@ public class AdminControllerTests
 
         // Assert: el mensaje de error se propaga en el body de la respuesta
         var objectResult = result.Should().BeOfType<ObjectResult>().Subject;
-        objectResult.Value.Should().BeEquivalentTo(new { message = mensajeEsperado });
+        _ = objectResult.Value.Should().BeEquivalentTo(new { message = mensajeEsperado });
     }
 
     [Fact]
-    public async Task CreateBackup_ExcepcionNoEsperada_NoesCapturaday_BurbujeoHaciaArriba()
+    public async Task CreateBackupExcepcionNoEsperadaNoesCapturadayBurbujeoHaciaArriba()
     {
         // Arrange: el controller solo captura InvalidOperationException.
         // Cualquier otra excepción debe burbujear para que el middleware la maneje.
-        _mockBackupService.Setup(s => s.GenerateBackupAsync())
-            .ThrowsAsync(new OutOfMemoryException("sin memoria"));
+        _ = _mockBackupService
+            .Setup(s => s.GenerateBackupAsync())
+            .ThrowsAsync(new IOException("error inesperado"));
 
         // Act & Assert
-        await Assert.ThrowsAsync<OutOfMemoryException>(
-            () => _controller.CreateBackup());
+        _ = await Assert.ThrowsAsync<IOException>(() => _controller.CreateBackup());
     }
 }

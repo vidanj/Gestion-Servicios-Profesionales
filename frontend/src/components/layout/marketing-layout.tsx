@@ -1,6 +1,6 @@
 'use client'
 
-import { Box, SkipNavContent, SkipNavLink } from '@chakra-ui/react'
+import { Box } from '@chakra-ui/react'
 
 import { ReactNode } from 'react'
 
@@ -22,11 +22,11 @@ export const MarketingLayout: React.FC<LayoutProps> = (props) => {
   const { children, announcementProps, headerProps, footerProps } = props
   return (
     <Box>
-      <SkipNavLink>Skip to content</SkipNavLink>
+      <a href="#skip-content" style={{ position: "absolute", top: "-40px", left: 0, zIndex: 100 }}>Skip to content</a>
       {announcementProps ? <AnnouncementBanner {...announcementProps} /> : null}
       <Header {...headerProps} />
       <Box as="main">
-        <SkipNavContent />
+        <div id="skip-content" />
         {children}
       </Box>
       <Footer {...footerProps} />
