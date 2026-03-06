@@ -27,8 +27,6 @@ public static class ApplicationServiceExtensions
         }
 
         // clobberExistingVars: false → las variables ya fijadas en el entorno
-        // (sistema operativo, Docker, CI, o la factory de tests) tienen prioridad
-        // sobre las del archivo .env. Sigue el estándar de prioridad de env vars.
         if (directory != null)
         {
             Env.Load(
@@ -38,7 +36,6 @@ public static class ApplicationServiceExtensions
         }
 
         // Inyecta las variables del .env en el sistema de configuración de ASP.NET Core
-        // Así config["JwtSettings:Key"] se resuelve desde JWT_KEY del .env
         ((IConfigurationBuilder)config).AddInMemoryCollection(
             new Dictionary<string, string?>
             {
@@ -73,15 +70,16 @@ public static class ApplicationServiceExtensions
 
         services.AddDbContext<AppDbContext>(options => options.UseNpgsql(connectionString));
 
-        // Repositories
+        // Repositories unificados
         services.AddScoped<IUserRepository, UserRepository>();
+        services.AddScoped<IRatingRepository, RatingRepository>();
 
-        // Services
+        // Services unificados
         services.AddScoped<ITokenService, TokenService>();
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IBackupService, BackupService>();
-        services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IUserService, UserService>();
+        services.AddScoped<IRatingService, RatingService>();
 
         // JWT Authentication
         var jwtKey =
@@ -107,13 +105,12 @@ public static class ApplicationServiceExtensions
 
         services.AddAuthorization();
 
-        // CORS — orígenes cargados desde ALLOWED_ORIGINS en .env (separados por coma)
+        // CORS — orígenes cargados desde ALLOWED_ORIGINS en .env
         var rawOrigins =
             config["CorsSettings:AllowedOrigins"]
             ?? throw new InvalidOperationException(
                 "ALLOWED_ORIGINS no definido en el archivo .env"
             );
-
         var allowedOrigins = rawOrigins.Split(
             ',',
             StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries
