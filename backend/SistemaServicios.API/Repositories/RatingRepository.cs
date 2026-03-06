@@ -23,9 +23,7 @@ public class RatingRepository : IRatingRepository
 
     public async Task<IEnumerable<Rating>> GetByProfessionalIdAsync(Guid professionalId)
     {
-        return await _context
-            .Ratings.Where(r => r.ProfessionalId == professionalId)
-            .ToListAsync();
+        return await _context.Ratings.Where(r => r.ProfessionalId == professionalId).ToListAsync();
     }
 
     public async Task<bool> ExistsRatingForRequestAsync(int requestId, Guid clientId)

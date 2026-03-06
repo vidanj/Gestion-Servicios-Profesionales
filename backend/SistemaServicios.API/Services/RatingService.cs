@@ -22,9 +22,7 @@ public class RatingService : IRatingService
         );
         if (alreadyRated)
         {
-            throw new InvalidOperationException(
-                "Ya has calificado este servicio anteriormente."
-            );
+            throw new InvalidOperationException("Ya has calificado este servicio anteriormente.");
         }
 
         var rating = new Rating

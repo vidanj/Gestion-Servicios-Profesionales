@@ -31,9 +31,7 @@ public class RatingsController : ControllerBase
                 || !Guid.TryParse(clientIdClaim, out Guid clientId)
             )
             {
-                return Unauthorized(
-                    new { message = "Token inválido o usuario no autenticado." }
-                );
+                return Unauthorized(new { message = "Token inválido o usuario no autenticado." });
             }
 
             var result = await _ratingService.CreateRatingAsync(clientId, dto);
