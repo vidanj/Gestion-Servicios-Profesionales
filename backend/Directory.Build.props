@@ -12,7 +12,7 @@
     <!-- SA1127: restricciones de tipo generico en su propia linea -->
     <!-- SA1128: inicializadores de constructor en su propia linea -->
     <!-- SA1502: elemento no debe estar en una sola linea (conflicto con CSharpier) -->
-    <NoWarn>$(NoWarn);SA1009;SA1101;SA1111;SA1118;SA1119;SA1127;SA1128;SA1502</NoWarn>
+    <NoWarn>$(NoWarn);SA1009;SA1111;SA1118;SA1119;SA1127;SA1128;SA1502</NoWarn>
     <!-- Habilitar analisis de codigo de .NET en todos los proyectos -->
     <EnableNETAnalyzers>true</EnableNETAnalyzers>
     <AnalysisLevel>latest-recommended</AnalysisLevel>
