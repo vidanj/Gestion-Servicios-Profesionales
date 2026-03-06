@@ -48,6 +48,11 @@ public static class ApplicationServiceExtensions
                 ["CorsSettings:AllowedOrigins"] = Environment.GetEnvironmentVariable(
                     "ALLOWED_ORIGINS"
                 ),
+                ["SmtpSettings:Host"] = Environment.GetEnvironmentVariable("SMTP_HOST"),
+                ["SmtpSettings:Port"] = Environment.GetEnvironmentVariable("SMTP_PORT"),
+                ["SmtpSettings:User"] = Environment.GetEnvironmentVariable("SMTP_USER"),
+                ["SmtpSettings:Password"] = Environment.GetEnvironmentVariable("SMTP_PASSWORD"),
+                ["SmtpSettings:From"] = Environment.GetEnvironmentVariable("SMTP_FROM"),
             }
         );
 
@@ -80,6 +85,7 @@ public static class ApplicationServiceExtensions
         services.AddScoped<IBackupService, BackupService>();
         services.AddScoped<IUserService, UserService>();
         services.AddScoped<IRatingService, RatingService>();
+        services.AddScoped<IEmailService, EmailService>();
 
         // JWT Authentication
         var jwtKey =
