@@ -39,18 +39,31 @@ public static class ApplicationServiceExtensions
                 ["JwtSettings:Key"] = Environment.GetEnvironmentVariable("JWT_KEY"),
                 ["JwtSettings:Issuer"] = Environment.GetEnvironmentVariable("JWT_ISSUER"),
                 ["JwtSettings:Audience"] = Environment.GetEnvironmentVariable("JWT_AUDIENCE"),
-                ["JwtSettings:ExpiresInMinutes"] = Environment.GetEnvironmentVariable("JWT_EXPIRES_MINUTES"),
-                ["CorsSettings:AllowedOrigins"] = Environment.GetEnvironmentVariable("ALLOWED_ORIGINS"),
+                ["JwtSettings:ExpiresInMinutes"] = Environment.GetEnvironmentVariable(
+                    "JWT_EXPIRES_MINUTES"
+                ),
+                ["CorsSettings:AllowedOrigins"] = Environment.GetEnvironmentVariable(
+                    "ALLOWED_ORIGINS"
+                ),
             }
         );
 
-        var dbHost = Environment.GetEnvironmentVariable("DB_HOST") ?? throw new InvalidOperationException("DB_HOST no definido en el archivo .env");
+        var dbHost =
+            Environment.GetEnvironmentVariable("DB_HOST")
+            ?? throw new InvalidOperationException("DB_HOST no definido en el archivo .env");
         var dbPort = Environment.GetEnvironmentVariable("DB_PORT") ?? "5432";
-        var dbName = Environment.GetEnvironmentVariable("DB_NAME") ?? throw new InvalidOperationException("DB_NAME no definido en el archivo .env");
-        var dbUser = Environment.GetEnvironmentVariable("DB_USER") ?? throw new InvalidOperationException("DB_USER no definido en el archivo .env");
-        var dbPassword = Environment.GetEnvironmentVariable("DB_PASSWORD") ?? throw new InvalidOperationException("DB_PASSWORD no definido en el archivo .env");
+        var dbName =
+            Environment.GetEnvironmentVariable("DB_NAME")
+            ?? throw new InvalidOperationException("DB_NAME no definido en el archivo .env");
+        var dbUser =
+            Environment.GetEnvironmentVariable("DB_USER")
+            ?? throw new InvalidOperationException("DB_USER no definido en el archivo .env");
+        var dbPassword =
+            Environment.GetEnvironmentVariable("DB_PASSWORD")
+            ?? throw new InvalidOperationException("DB_PASSWORD no definido en el archivo .env");
 
-        var connectionString = $"Host={dbHost};Port={dbPort};Database={dbName};Username={dbUser};Password={dbPassword}";
+        var connectionString =
+            $"Host={dbHost};Port={dbPort};Database={dbName};Username={dbUser};Password={dbPassword}";
 
         services.AddDbContext<AppDbContext>(options => options.UseNpgsql(connectionString));
 
@@ -62,10 +75,17 @@ public static class ApplicationServiceExtensions
         services.AddScoped<IBackupService, BackupService>();
         services.AddScoped<IUserService, UserService>();
         services.AddScoped<IRatingService, RatingService>();
+        services.AddScoped<IServiceRequestRepository, ServiceRequestRepository>();
+        services.AddScoped<IServiceRequestService, ServiceRequestService>();
+        services.AddScoped<IServiceRequestRepository, ServiceRequestRepository>();
+        services.AddScoped<IServiceRequestService, ServiceRequestService>();
 
-        var jwtKey = config["JwtSettings:Key"] ?? throw new InvalidOperationException("JWT_KEY no definido en el archivo .env");
+        var jwtKey =
+            config["JwtSettings:Key"]
+            ?? throw new InvalidOperationException("JWT_KEY no definido en el archivo .env");
 
-        services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+        services
+            .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             .AddJwtBearer(options =>
             {
                 options.TokenValidationParameters = new TokenValidationParameters
@@ -83,45 +103,60 @@ public static class ApplicationServiceExtensions
 
         services.AddAuthorization();
 
-        var rawOrigins = config["CorsSettings:AllowedOrigins"] ?? throw new InvalidOperationException("ALLOWED_ORIGINS no definido en el archivo .env");
-        var allowedOrigins = rawOrigins.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        var rawOrigins =
+            config["CorsSettings:AllowedOrigins"]
+            ?? throw new InvalidOperationException(
+                "ALLOWED_ORIGINS no definido en el archivo .env"
+            );
+        var allowedOrigins = rawOrigins.Split(
+            ',',
+            StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries
+        );
 
         services.AddCors(options =>
         {
-            options.AddPolicy("FrontendPolicy", policy =>
-            {
-                policy.WithOrigins(allowedOrigins).AllowAnyHeader().AllowAnyMethod();
-            });
+            options.AddPolicy(
+                "FrontendPolicy",
+                policy =>
+                {
+                    policy.WithOrigins(allowedOrigins).AllowAnyHeader().AllowAnyMethod();
+                }
+            );
         });
 
         services.AddSwaggerGen(c =>
         {
             c.SwaggerDoc("v1", new OpenApiInfo { Title = "Sistema Servicios API", Version = "v1" });
 
-            c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
-            {
-                Name = "Authorization",
-                Type = SecuritySchemeType.ApiKey,
-                Scheme = "Bearer",
-                BearerFormat = "JWT",
-                In = ParameterLocation.Header,
-                Description = "Ingresa el token así: Bearer {tu_token}",
-            });
-
-            c.AddSecurityRequirement(new OpenApiSecurityRequirement
-            {
+            c.AddSecurityDefinition(
+                "Bearer",
+                new OpenApiSecurityScheme
                 {
-                    new OpenApiSecurityScheme
+                    Name = "Authorization",
+                    Type = SecuritySchemeType.ApiKey,
+                    Scheme = "Bearer",
+                    BearerFormat = "JWT",
+                    In = ParameterLocation.Header,
+                    Description = "Ingresa el token así: Bearer {tu_token}",
+                }
+            );
+
+            c.AddSecurityRequirement(
+                new OpenApiSecurityRequirement
+                {
                     {
-                        Reference = new OpenApiReference
+                        new OpenApiSecurityScheme
                         {
-                            Type = ReferenceType.SecurityScheme,
-                            Id = "Bearer",
+                            Reference = new OpenApiReference
+                            {
+                                Type = ReferenceType.SecurityScheme,
+                                Id = "Bearer",
+                            },
                         },
+                        Array.Empty<string>()
                     },
-                    Array.Empty<string>()
-                },
-            });
+                }
+            );
         });
 
         return services;
