@@ -50,12 +50,6 @@ public static class ApplicationServiceExtensions
                 ["SmtpSettings:User"] = Environment.GetEnvironmentVariable("SMTP_USER"),
                 ["SmtpSettings:Password"] = Environment.GetEnvironmentVariable("SMTP_PASSWORD"),
                 ["SmtpSettings:From"] = Environment.GetEnvironmentVariable("SMTP_FROM"),
-                ["JwtSettings:ExpiresInMinutes"] = Environment.GetEnvironmentVariable(
-                    "JWT_EXPIRES_MINUTES"
-                ),
-                ["CorsSettings:AllowedOrigins"] = Environment.GetEnvironmentVariable(
-                    "ALLOWED_ORIGINS"
-                ),
             }
         );
 
