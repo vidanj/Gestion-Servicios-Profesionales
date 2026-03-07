@@ -11,6 +11,7 @@ export default function RegisterPage() {
     const [lastName, setLastName] = useState("");
     const [phoneNumber, setPhoneNumber] = useState("");
     const [error, setError] = useState("");
+    const apiUrl = process.env.NEXT_PUBLIC_ALLOWED_PATH;
 
     const validateForm = () => {
         if (!firstName.trim()) {
@@ -50,7 +51,7 @@ export default function RegisterPage() {
         if (!validateForm()) return;
 
         try {
-            const res = await fetch("http://localhost:5000/api/Auth/register", {
+            const res = await fetch(`${apiUrl}/api/Auth/register`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ email, password, firstName, lastName, phoneNumber }),

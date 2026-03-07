@@ -54,6 +54,11 @@ jobs:
           DB_USER: "fake"
           DB_PASSWORD: "fake"
           ALLOWED_ORIGINS: "http://localhost:3000"
+          SMTP_HOST: "dummy-host"
+          SMTP_PORT: "587"
+          SMTP_USER: "dummy@test.com"
+          SMTP_PASSWORD: "dummy-pass"
+          SMTP_FROM: "dummy@test.com"
         run: |
           dotnet test backend/SistemaServicios.Tests \
             --no-build \

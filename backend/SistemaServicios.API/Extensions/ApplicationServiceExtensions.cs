@@ -45,6 +45,12 @@ public static class ApplicationServiceExtensions
                 ["CorsSettings:AllowedOrigins"] = Environment.GetEnvironmentVariable(
                     "ALLOWED_ORIGINS"
                 ),
+                ["SmtpSettings:Host"] = Environment.GetEnvironmentVariable("SMTP_HOST"),
+                ["SmtpSettings:Port"] = Environment.GetEnvironmentVariable("SMTP_PORT"),
+                ["SmtpSettings:User"] = Environment.GetEnvironmentVariable("SMTP_USER"),
+                ["SmtpSettings:Password"] = Environment.GetEnvironmentVariable("SMTP_PASSWORD"),
+                ["SmtpSettings:From"] = Environment.GetEnvironmentVariable("SMTP_FROM"),
+
             }
         );
 
@@ -79,7 +85,7 @@ public static class ApplicationServiceExtensions
         services.AddScoped<IServiceRequestService, ServiceRequestService>();
         services.AddScoped<IServiceRequestRepository, ServiceRequestRepository>();
         services.AddScoped<IServiceRequestService, ServiceRequestService>();
-
+        services.AddScoped<IEmailService, EmailService>();
         var jwtKey =
             config["JwtSettings:Key"]
             ?? throw new InvalidOperationException("JWT_KEY no definido en el archivo .env");
