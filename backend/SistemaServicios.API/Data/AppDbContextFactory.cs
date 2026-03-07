@@ -15,7 +15,7 @@ public class AppDbContextFactory : IDesignTimeDbContextFactory<AppDbContext>
         var host = Environment.GetEnvironmentVariable("DB_HOST") ?? "localhost";
         var port = Environment.GetEnvironmentVariable("DB_PORT") ?? "5432";
         var user = Environment.GetEnvironmentVariable("DB_USER") ?? "postgres";
-        var password = Environment.GetEnvironmentVariable("DB_PASSWORD") ?? "pizza007";
+        var password = Environment.GetEnvironmentVariable("DB_PASSWORD") ?? string.Empty;
 
         var optionsBuilder = new DbContextOptionsBuilder<AppDbContext>();
         optionsBuilder.UseNpgsql(
