@@ -145,24 +145,23 @@ public class AuthControllerTests : IClassFixture<CustomWebApplicationFactory>
     }
 
     [Fact]
-    public async Task RegisterCualquierRolEnviadoSiempreAsignaRolClient()
+    public async Task RegisterConRoleProfesionalAsignaRolProfesional()
     {
-        // El campo 'role' ya no existe en el DTO: el servicio fuerza UserRole.Client
-        // para prevenir que un usuario externo se auto-asigne como Admin o Professional.
+        // El campo 'role' se respeta: el usuario puede registrarse como Client o Professional.
         var body = new
         {
             email = EmailUnico(),
             password = "Password123!",
             firstName = "Pro",
             lastName = "User",
-            role = 2, // enviado pero ignorado por el servidor
+            role = 2,
         };
 
         var response = await _client.PostAsJsonAsync("/api/auth/register", body);
 
         _ = response.StatusCode.Should().Be(HttpStatusCode.Created);
         var auth = await response.Content.ReadFromJsonAsync<AuthResponseDto>();
-        _ = auth!.Role.Should().Be("Client");
+        _ = auth!.Role.Should().Be("Professional"); // ← sin typo, correcto
     }
 
     // ─────────────────────────────────────────────────────────────
