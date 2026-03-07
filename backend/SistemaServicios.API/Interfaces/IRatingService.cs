@@ -1,12 +1,12 @@
 using SistemaServicios.API.DTOs.Ratings;
 
-namespace SistemaServicios.API.Interfaces
+namespace SistemaServicios.API.Interfaces;
+
+public interface IRatingService
 {
-    public interface IRatingService
-    {
-        Task<RatingDto> CreateRatingAsync(Guid clientId, CreateRatingDto dto);
-        
-        Task<double> GetProfessionalAverageRatingAsync(Guid professionalId);
-        Task<IEnumerable<RatingDto>> GetProfessionalRatingsAsync(Guid professionalId);
-    }
+    public Task<RatingDto> CreateRatingAsync(Guid clientId, CreateRatingDto dto);
+
+    public Task<double> GetProfessionalAverageRatingAsync(Guid professionalId);
+
+    public Task<IEnumerable<RatingDto>> GetProfessionalRatingsAsync(Guid professionalId);
 }

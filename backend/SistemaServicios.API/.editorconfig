@@ -1,0 +1,3 @@
+# Suprimir advertencias de análisis en archivos.csproj
+[*.csproj]
+generated_code = true

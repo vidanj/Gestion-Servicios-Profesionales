@@ -65,15 +65,14 @@ DB_PASSWORD=contraseña
 ## Probar Backend:
 
 ```bash
-cd backend
-dotnet clean
-dotnet tool install dotnet-ef
-dotnet restore
+export $(grep -v '^#' .env | xargs)
+dotnet clean backend
+dotnet tool install --tool-path backend dotnet-ef
+dotnet restore backend
 dotnet tool restore
-dotnet build
-cd SistemaServicios.API
-dotnet ef database update
-dotnet run
+dotnet build backend
+dotnet ef database update --project backend/SistemaServicios.API
+dotnet run --project backend/SistemaServicios.API
 #http://localhost:5000/openapi/v1.json
 ```
 
