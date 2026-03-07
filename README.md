@@ -192,6 +192,18 @@ DB_PORT=5432
 DB_NAME=nombre_db
 DB_USER=usuario
 DB_PASSWORD=contraseña
+
+ALLOWED_ORIGINS=http://localhost:3000
+
+NEXT_PUBLIC_ALLOWED_PATH=http://localhost:5000
+
+SMTP_HOST= smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER= usuario del correo
+SMTP_PASSWORD= clave
+SMTP_FROM= remitente
+
+Nota: los smtp user, from y password se generan para el ambiente de prueba, desde tu cuenta de gmail ve a configuración, añade contraseña de app y listo; User y from serían tu propio correo. En caso de producción, tener un correo dedicado para esto como no_reply
 ```
 
 ## Generar un respaldo

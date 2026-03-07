@@ -45,6 +45,13 @@ public class AuthController : ControllerBase
         {
             return BadRequest(new { message = ex.Message });
         }
+        catch (Exception)
+        {
+            return StatusCode(
+                500,
+                new { message = "Error al procesar la solicitud. Intenta más tarde." }
+            );
+        }
     }
 
     /// <summary>Devuelve los datos del usuario autenticado (requiere JWT).</summary>

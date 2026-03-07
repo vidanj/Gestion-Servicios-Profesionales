@@ -55,7 +55,7 @@ public class AuthService : IAuthService
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password),
             FirstName = dto.FirstName.Trim(),
             LastName = dto.LastName.Trim(),
-            Role = UserRole.Client,
+            Role = dto.Role,
             PhoneNumber = dto.PhoneNumber?.Trim(),
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow,

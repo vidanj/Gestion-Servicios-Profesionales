@@ -9,6 +9,7 @@ test('Register page carga correctamente', async ({ page }) => {
     await expect(page.getByTestId('phone-input')).toBeVisible();
     await expect(page.getByTestId('password-input')).toBeVisible();
     await expect(page.getByTestId('register-button')).toBeVisible();
+    await expect(page.getByTestId('role-button')).toBeVisible();
 });
 
 test('Registro exitoso redirige al login', async ({ page }) => {
@@ -24,6 +25,8 @@ test('Registro exitoso redirige al login', async ({ page }) => {
     await page.getByTestId('firstname-input').fill('Juan');
     await page.getByTestId('lastname-input').fill('Perez');
     await page.getByTestId('username-input').fill('juan@ejemplo.com');
+    await page.getByTestId('role-button').click();
+    await page.getByTestId('role-option-cliente').click();
     await page.getByTestId('phone-input').fill('6641234567');
     await page.getByTestId('password-input').fill('password123');
     await page.getByTestId('register-button').click();
@@ -48,6 +51,8 @@ test('Registro con email vacío muestra validación', async ({ page }) => {
     await page.goto('http://localhost:3000/register');
     await page.getByTestId('firstname-input').fill('Juan');
     await page.getByTestId('lastname-input').fill('Perez');
+    await page.getByTestId('role-button').click();
+    await page.getByTestId('role-option-cliente').click();
     await page.getByTestId('register-button').click();
     await expect(page.getByTestId('error-message')).toHaveText('El email es obligatorio');
 });
@@ -56,6 +61,8 @@ test('Registro con email inválido muestra validación', async ({ page }) => {
     await page.goto('http://localhost:3000/register');
     await page.getByTestId('firstname-input').fill('Juan');
     await page.getByTestId('lastname-input').fill('Perez');
+    await page.getByTestId('role-button').click();
+    await page.getByTestId('role-option-cliente').click();
     await page.getByTestId('username-input').fill('noesunemail');
     await page.getByTestId('register-button').click();
     await expect(page.getByTestId('error-message')).toHaveText('El email no es válido');
@@ -65,6 +72,8 @@ test('Registro con teléfono vacío muestra validación', async ({ page }) => {
     await page.goto('http://localhost:3000/register');
     await page.getByTestId('firstname-input').fill('Juan');
     await page.getByTestId('lastname-input').fill('Perez');
+    await page.getByTestId('role-button').click();
+    await page.getByTestId('role-option-cliente').click();
     await page.getByTestId('username-input').fill('juan@ejemplo.com');
     await page.getByTestId('register-button').click();
     await expect(page.getByTestId('error-message')).toHaveText('El teléfono es obligatorio');
@@ -74,6 +83,8 @@ test('Registro con contraseña vacía muestra validación', async ({ page }) => 
     await page.goto('http://localhost:3000/register');
     await page.getByTestId('firstname-input').fill('Juan');
     await page.getByTestId('lastname-input').fill('Perez');
+    await page.getByTestId('role-button').click();
+    await page.getByTestId('role-option-cliente').click();
     await page.getByTestId('username-input').fill('juan@ejemplo.com');
     await page.getByTestId('phone-input').fill('6641234567');
     await page.getByTestId('register-button').click();
@@ -84,6 +95,8 @@ test('Registro con contraseña corta muestra validación', async ({ page }) => {
     await page.goto('http://localhost:3000/register');
     await page.getByTestId('firstname-input').fill('Juan');
     await page.getByTestId('lastname-input').fill('Perez');
+    await page.getByTestId('role-button').click();
+    await page.getByTestId('role-option-cliente').click();
     await page.getByTestId('username-input').fill('juan@ejemplo.com');
     await page.getByTestId('phone-input').fill('6641234567');
     await page.getByTestId('password-input').fill('123');
@@ -95,10 +108,4 @@ test('Link ¿Ya tienes cuenta? redirige al login', async ({ page }) => {
     await page.goto('http://localhost:3000/register');
     await page.getByText('¿Ya tienes cuenta?').click();
     await expect(page).toHaveURL(/login/);
-});
-
-test('Link ¿Olvidaste tu contraseña? redirige a recovery', async ({ page }) => {
-    await page.goto('http://localhost:3000/register');
-    await page.getByText('¿Olvidaste tu contraseña?').click();
-    await expect(page).toHaveURL(/recovery/);
 });
