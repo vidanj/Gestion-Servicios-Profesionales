@@ -50,7 +50,6 @@ public static class ApplicationServiceExtensions
                 ["SmtpSettings:User"] = Environment.GetEnvironmentVariable("SMTP_USER"),
                 ["SmtpSettings:Password"] = Environment.GetEnvironmentVariable("SMTP_PASSWORD"),
                 ["SmtpSettings:From"] = Environment.GetEnvironmentVariable("SMTP_FROM"),
-
             }
         );
 
