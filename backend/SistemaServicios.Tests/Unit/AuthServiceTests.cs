@@ -12,6 +12,7 @@ public class AuthServiceTests
 {
     private readonly Mock<IUserRepository> _mockRepo;
     private readonly Mock<ITokenService> _mockToken;
+    private readonly Mock<IEmailService> _mockEmail;
     private readonly AuthService _authService;
 
     // Usuario base reutilizable en las pruebas
@@ -21,7 +22,8 @@ public class AuthServiceTests
     {
         _mockRepo = new Mock<IUserRepository>();
         _mockToken = new Mock<ITokenService>();
-        _authService = new AuthService(_mockRepo.Object, _mockToken.Object);
+        _mockEmail = new Mock<IEmailService>();
+        _authService = new AuthService(_mockRepo.Object, _mockToken.Object, _mockEmail.Object);
 
         _usuarioActivo = new User
         {
