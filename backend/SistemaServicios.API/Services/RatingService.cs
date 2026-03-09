@@ -15,7 +15,6 @@ public class RatingService : IRatingService
 
     public async Task<RatingDto> CreateRatingAsync(Guid clientId, CreateRatingDto dto)
     {
-        // Validación de negocio: Evitar que el cliente califique dos veces el mismo trabajo
         bool alreadyRated = await _ratingRepository.ExistsRatingForRequestAsync(
             dto.RequestId,
             clientId

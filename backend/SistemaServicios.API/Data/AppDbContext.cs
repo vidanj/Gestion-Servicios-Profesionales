@@ -8,7 +8,6 @@ public class AppDbContext : DbContext
     public AppDbContext(DbContextOptions<AppDbContext> options)
         : base(options) { }
 
-    // Registro de todas las tablas del diagrama
     public DbSet<User> Users { get; set; }
 
     public DbSet<Category> Categories { get; set; }
