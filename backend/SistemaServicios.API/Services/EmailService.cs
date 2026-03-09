@@ -1,43 +1,37 @@
-using System.Net;
 using System.Net.Mail;
 using SistemaServicios.API.Interfaces;
+
+[assembly: System.Runtime.CompilerServices.InternalsVisibleTo("SistemaServicios.Tests")]
 
 namespace SistemaServicios.API.Services;
 
 public class EmailService : IEmailService
 {
-    private readonly string _host;
-    private readonly int _port;
-    private readonly string _user;
-    private readonly string _password;
+    private readonly ISmtpClientWrapper _smtpClient;
     private readonly string _from;
 
-    public EmailService(IConfiguration config)
+    public EmailService(IConfiguration config, ISmtpClientWrapper? smtpClient = null)
     {
-        _host =
+        var host =
             config["SmtpSettings:Host"]
             ?? throw new InvalidOperationException("SMTP_HOST no configurado.");
-        _port = int.Parse(
+        var port = int.Parse(
             config["SmtpSettings:Port"] ?? "587",
             System.Globalization.CultureInfo.InvariantCulture
         );
-        _user =
+        var user =
             config["SmtpSettings:User"]
             ?? throw new InvalidOperationException("SMTP_USER no configurado.");
-        _password =
+        var password =
             config["SmtpSettings:Password"]
             ?? throw new InvalidOperationException("SMTP_PASSWORD no configurado.");
-        _from = config["SmtpSettings:From"] ?? _user;
+
+        _from = config["SmtpSettings:From"] ?? user;
+        _smtpClient = smtpClient ?? new SmtpClientWrapper(host, port, user, password);
     }
 
     public async Task SendPasswordResetEmailAsync(string toEmail, string newPassword)
     {
-        using var client = new SmtpClient(_host, _port)
-        {
-            Credentials = new NetworkCredential(_user, _password),
-            EnableSsl = true,
-        };
-
         var message = new MailMessage
         {
             From = new MailAddress(_from, "SistemaServicios"),
@@ -47,10 +41,10 @@ public class EmailService : IEmailService
         };
         message.To.Add(toEmail);
 
-        await client.SendMailAsync(message);
+        await _smtpClient.SendMailAsync(message);
     }
 
-    private static string BuildEmailBody(string newPassword) =>
+    internal static string BuildEmailBody(string newPassword) =>
         $"""
             <h2>Recuperación de contraseña</h2>
             <p>Tu nueva contraseña temporal es:</p>

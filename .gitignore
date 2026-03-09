@@ -114,6 +114,7 @@ backend/SistemaServicios.API/wwwroot/uploads/avatars/*
 # ========================
 **/playwright-report/
 **/test-results/
+**/testresults/
 !backend/SistemaServicios.API/wwwroot/uploads/avatars/.gitkeep
 *.sql
 # ========================
