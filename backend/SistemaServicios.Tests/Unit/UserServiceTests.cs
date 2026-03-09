@@ -1,4 +1,5 @@
 using FluentAssertions;
+using Microsoft.AspNetCore.Hosting;
 using Moq;
 using SistemaServicios.API.DTOs;
 using SistemaServicios.API.Interfaces;
@@ -11,6 +12,7 @@ namespace SistemaServicios.Tests.Unit;
 public class UserServiceTests
 {
     private readonly Mock<IUserRepository> _mockRepo;
+    private readonly Mock<IWebHostEnvironment> _mockEnv;
     private readonly UserService _userService;
 
     // Usuario base reutilizable en las pruebas
@@ -19,7 +21,8 @@ public class UserServiceTests
     public UserServiceTests()
     {
         _mockRepo = new Mock<IUserRepository>();
-        _userService = new UserService(_mockRepo.Object);
+        _mockEnv = new Mock<IWebHostEnvironment>();
+        _userService = new UserService(_mockRepo.Object, _mockEnv.Object);
 
         _usuarioActivo = new User
         {

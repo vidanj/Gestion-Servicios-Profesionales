@@ -34,6 +34,7 @@ app.Use(
 );
 
 app.UseHttpsRedirection();
+app.UseStaticFiles();
 app.UseCors("FrontendPolicy");
 app.UseAuthentication();
 app.UseAuthorization();

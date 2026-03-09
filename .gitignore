@@ -103,6 +103,12 @@ PULL_REQUEST_TEMPLATE.md
 # ========================
 backups/*
 !backups/.gitkeep
+
+# ========================
+# Avatares de usuarios (imágenes subidas en runtime)
+# ========================
+backend/SistemaServicios.API/wwwroot/uploads/avatars/*
+!backend/SistemaServicios.API/wwwroot/uploads/avatars/.gitkeep
 *.sql
 # ========================
 # dotnet tools (--tool-path)

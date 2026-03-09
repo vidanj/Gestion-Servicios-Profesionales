@@ -1,4 +1,5 @@
 using SistemaServicios.API.DTOs;
+using SistemaServicios.API.DTOs.Profile;
 using SistemaServicios.API.Interfaces;
 using SistemaServicios.API.Models;
 
@@ -6,11 +7,17 @@ namespace SistemaServicios.API.Services;
 
 public class UserService : IUserService
 {
-    private readonly IUserRepository _userRepository;
+    private const long MaxImageSizeBytes = 2 * 1024 * 1024; // 2 MB
 
-    public UserService(IUserRepository userRepository)
+    private static readonly string[] AllowedImageMimeTypes = ["image/jpeg", "image/png"];
+
+    private readonly IUserRepository _userRepository;
+    private readonly IWebHostEnvironment _env;
+
+    public UserService(IUserRepository userRepository, IWebHostEnvironment env)
     {
         _userRepository = userRepository;
+        _env = env;
     }
 
     public async Task<(IEnumerable<UserDto> users, int totalCount)> GetAllUsersAsync(
@@ -88,6 +95,80 @@ public class UserService : IUserService
         return true;
     }
 
+    public async Task<UserDto?> UpdateOwnProfileAsync(Guid userId, UpdateProfileDto dto)
+    {
+        var user = await _userRepository.GetByIdAsync(userId);
+        if (user == null)
+        {
+            return null;
+        }
+
+        user.FirstName = dto.FirstName;
+        user.LastName = dto.LastName;
+        user.PhoneNumber = dto.PhoneNumber;
+        user.UpdatedAt = DateTime.UtcNow;
+
+        await _userRepository.UpdateUserAsync(user);
+        return MapToDto(user);
+    }
+
+    public async Task<bool> ChangePasswordAsync(Guid userId, ChangePasswordDto dto)
+    {
+        var user = await _userRepository.GetByIdAsync(userId);
+        if (user == null)
+        {
+            return false;
+        }
+
+        if (!BCrypt.Net.BCrypt.Verify(dto.CurrentPassword, user.PasswordHash))
+        {
+            throw new InvalidOperationException("La contraseña actual es incorrecta.");
+        }
+
+        user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.NewPassword);
+        user.UpdatedAt = DateTime.UtcNow;
+
+        await _userRepository.UpdateUserAsync(user);
+        return true;
+    }
+
+    public async Task<UserDto?> UpdateProfileImageAsync(Guid userId, IFormFile foto)
+    {
+        var user = await _userRepository.GetByIdAsync(userId);
+        if (user == null)
+        {
+            return null;
+        }
+
+        if (!AllowedImageMimeTypes.Contains(foto.ContentType))
+        {
+            throw new InvalidOperationException("Solo se permiten imágenes en formato JPG o PNG.");
+        }
+
+        if (foto.Length > MaxImageSizeBytes)
+        {
+            throw new InvalidOperationException("La imagen no puede superar los 2 MB.");
+        }
+
+        var ext = foto.ContentType == "image/png" ? ".png" : ".jpg";
+        var uploadsDir = Path.Combine(_env.WebRootPath, "uploads", "avatars");
+        Directory.CreateDirectory(uploadsDir);
+
+        var fileName = $"{userId}{ext}";
+        var filePath = Path.Combine(uploadsDir, fileName);
+
+        await using (var stream = new FileStream(filePath, FileMode.Create))
+        {
+            await foto.CopyToAsync(stream);
+        }
+
+        user.ProfileImageUrl = $"/uploads/avatars/{fileName}";
+        user.UpdatedAt = DateTime.UtcNow;
+
+        await _userRepository.UpdateUserAsync(user);
+        return MapToDto(user);
+    }
+
     private static UserDto MapToDto(User u) =>
         new UserDto
         {
@@ -99,6 +180,7 @@ public class UserService : IUserService
             PhoneNumber = u.PhoneNumber,
             AverageRating = u.AverageRating,
             Status = u.Status,
+            ProfileImageUrl = u.ProfileImageUrl,
             CreatedAt = u.CreatedAt,
         };
 }
