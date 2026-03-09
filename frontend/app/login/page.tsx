@@ -2,10 +2,12 @@
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useState } from "react";
+import { useAuthStore } from "@/store/auth-store";
 
 export default function LoginPage() {
 
   const router = useRouter();
+  const setFromAuthResponse = useAuthStore((s) => s.setFromAuthResponse);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -59,6 +61,12 @@ export default function LoginPage() {
 
       const data = await res.json();
       localStorage.setItem("token", data.token);
+      setFromAuthResponse({
+        firstName: data.firstName,
+        lastName: data.lastName,
+        email: data.email,
+        role: data.role,
+      });
 
       router.push("/dashboard");
     } catch (error) {
