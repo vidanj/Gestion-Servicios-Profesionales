@@ -76,7 +76,7 @@ export function ChangePasswordForm() {
 
         <div>
           <label style={labelStyle}>Contraseña actual</label>
-          <input {...register("currentPassword")} type="password" placeholder="••••••••" style={inputStyle} />
+          <input data-testid="current-password-input" {...register("currentPassword")} type="password" placeholder="••••••••" style={inputStyle} />
           {errors.currentPassword && (
             <p style={{ color: "#f87171", fontSize: "0.78rem", marginTop: "0.3rem" }}>
               {errors.currentPassword.message}
@@ -86,7 +86,7 @@ export function ChangePasswordForm() {
 
         <div>
           <label style={labelStyle}>Nueva contraseña</label>
-          <input {...register("newPassword")} type="password" placeholder="Mínimo 8 caracteres" style={inputStyle} />
+          <input data-testid="new-password-input" {...register("newPassword")} type="password" placeholder="Mínimo 8 caracteres" style={inputStyle} />
           {errors.newPassword && (
             <p style={{ color: "#f87171", fontSize: "0.78rem", marginTop: "0.3rem" }}>
               {errors.newPassword.message}
@@ -96,7 +96,7 @@ export function ChangePasswordForm() {
 
         <div>
           <label style={labelStyle}>Confirmar nueva contraseña</label>
-          <input {...register("confirmNewPassword")} type="password" placeholder="••••••••" style={inputStyle} />
+          <input data-testid="confirm-password-input" {...register("confirmNewPassword")} type="password" placeholder="••••••••" style={inputStyle} />
           {errors.confirmNewPassword && (
             <p style={{ color: "#f87171", fontSize: "0.78rem", marginTop: "0.3rem" }}>
               {errors.confirmNewPassword.message}
@@ -108,7 +108,7 @@ export function ChangePasswordForm() {
         {success && <Text style={{ color: "#34d399" }} fontSize="sm">{success}</Text>}
 
         <HStack justify="flex-end">
-          <Button type="submit" colorPalette="purple" loading={isSubmitting}>
+          <Button data-testid="submit-password-btn" type="submit" colorPalette="purple" loading={isSubmitting}>
             Actualizar contraseña
           </Button>
         </HStack>

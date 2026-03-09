@@ -29,14 +29,23 @@ public class ProfileControllerTests : IClassFixture<CustomWebApplicationFactory>
     )
     {
         email ??= EmailUnico();
-        var body = new { email, password, firstName = "Juan", lastName = "Pérez" };
+        var body = new
+        {
+            email,
+            password,
+            firstName = "Juan",
+            lastName = "Pérez",
+        };
         var res = await _client.PostAsJsonAsync("/api/auth/register", body);
         var auth = await res.Content.ReadFromJsonAsync<AuthResponseDto>();
         return (auth!.Token, email);
     }
 
     private static HttpRequestMessage ConRequest(HttpMethod method, string url, string token) =>
-        new(method, url) { Headers = { Authorization = new AuthenticationHeaderValue("Bearer", token) } };
+        new(method, url)
+        {
+            Headers = { Authorization = new AuthenticationHeaderValue("Bearer", token) },
+        };
 
     /// <summary>
     /// Marca al usuario como inactivo (Status = false) directamente en la base de datos en memoria.
@@ -86,12 +95,14 @@ public class ProfileControllerTests : IClassFixture<CustomWebApplicationFactory>
         var (token, _) = await RegistrarUsuario();
 
         var req = ConRequest(HttpMethod.Put, "/api/Profile", token);
-        req.Content = JsonContent.Create(new
-        {
-            firstName = "Carlos",
-            lastName = "García",
-            phoneNumber = "6649876543",
-        });
+        req.Content = JsonContent.Create(
+            new
+            {
+                firstName = "Carlos",
+                lastName = "García",
+                phoneNumber = "6649876543",
+            }
+        );
 
         var res = await _client.SendAsync(req);
 
@@ -134,12 +145,14 @@ public class ProfileControllerTests : IClassFixture<CustomWebApplicationFactory>
         var (token, _) = await RegistrarUsuario(password: password);
 
         var req = ConRequest(HttpMethod.Put, "/api/Profile/password", token);
-        req.Content = JsonContent.Create(new
-        {
-            currentPassword = password,
-            newPassword = "NuevaPassword456!",
-            confirmNewPassword = "NuevaPassword456!",
-        });
+        req.Content = JsonContent.Create(
+            new
+            {
+                currentPassword = password,
+                newPassword = "NuevaPassword456!",
+                confirmNewPassword = "NuevaPassword456!",
+            }
+        );
 
         var res = await _client.SendAsync(req);
 
@@ -154,12 +167,14 @@ public class ProfileControllerTests : IClassFixture<CustomWebApplicationFactory>
         var (token, _) = await RegistrarUsuario();
 
         var req = ConRequest(HttpMethod.Put, "/api/Profile/password", token);
-        req.Content = JsonContent.Create(new
-        {
-            currentPassword = "ContrasenaEquivocada",
-            newPassword = "NuevaPassword456!",
-            confirmNewPassword = "NuevaPassword456!",
-        });
+        req.Content = JsonContent.Create(
+            new
+            {
+                currentPassword = "ContrasenaEquivocada",
+                newPassword = "NuevaPassword456!",
+                confirmNewPassword = "NuevaPassword456!",
+            }
+        );
 
         var res = await _client.SendAsync(req);
 
@@ -173,7 +188,12 @@ public class ProfileControllerTests : IClassFixture<CustomWebApplicationFactory>
     {
         var res = await _client.PutAsJsonAsync(
             "/api/Profile/password",
-            new { currentPassword = "a", newPassword = "b", confirmNewPassword = "b" }
+            new
+            {
+                currentPassword = "a",
+                newPassword = "b",
+                confirmNewPassword = "b",
+            }
         );
         res.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
@@ -185,12 +205,14 @@ public class ProfileControllerTests : IClassFixture<CustomWebApplicationFactory>
 
         var req = ConRequest(HttpMethod.Put, "/api/Profile/password", token);
         // newPassword muy corto (< 8 caracteres) — falla validación de modelo
-        req.Content = JsonContent.Create(new
-        {
-            currentPassword = "Password123!",
-            newPassword = "corta",
-            confirmNewPassword = "corta",
-        });
+        req.Content = JsonContent.Create(
+            new
+            {
+                currentPassword = "Password123!",
+                newPassword = "corta",
+                confirmNewPassword = "corta",
+            }
+        );
 
         var res = await _client.SendAsync(req);
 
@@ -330,12 +352,14 @@ public class ProfileControllerTests : IClassFixture<CustomWebApplicationFactory>
         await DesactivarUsuarioAsync(token);
 
         var req = ConRequest(HttpMethod.Put, "/api/Profile/password", token);
-        req.Content = JsonContent.Create(new
-        {
-            currentPassword = password,
-            newPassword = "NuevaPassword456!",
-            confirmNewPassword = "NuevaPassword456!",
-        });
+        req.Content = JsonContent.Create(
+            new
+            {
+                currentPassword = password,
+                newPassword = "NuevaPassword456!",
+                confirmNewPassword = "NuevaPassword456!",
+            }
+        );
         var res = await _client.SendAsync(req);
 
         res.StatusCode.Should().Be(HttpStatusCode.NotFound);

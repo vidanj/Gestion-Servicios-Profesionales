@@ -142,9 +142,7 @@ public class ProfileControllerUnitTests
     [Fact]
     public async Task GetProfileServicioRetornaNullRetorna404()
     {
-        _ = _mockService
-            .Setup(s => s.GetUserByIdAsync(_userId))
-            .ReturnsAsync((UserDto?)null);
+        _ = _mockService.Setup(s => s.GetUserByIdAsync(_userId)).ReturnsAsync((UserDto?)null);
 
         var result = await _controllerConClaim.GetProfile();
 
@@ -155,9 +153,7 @@ public class ProfileControllerUnitTests
     public async Task UpdateProfileServicioRetornaNullRetorna404()
     {
         _ = _mockService
-            .Setup(s =>
-                s.UpdateOwnProfileAsync(It.IsAny<Guid>(), It.IsAny<UpdateProfileDto>())
-            )
+            .Setup(s => s.UpdateOwnProfileAsync(It.IsAny<Guid>(), It.IsAny<UpdateProfileDto>()))
             .ReturnsAsync((UserDto?)null);
 
         var dto = new UpdateProfileDto { FirstName = "X", LastName = "Y" };
@@ -230,8 +226,6 @@ public class ProfileControllerUnitTests
 
         var bad = result.Result.Should().BeOfType<BadRequestObjectResult>().Subject;
         bad.Value.Should()
-            .BeEquivalentTo(
-                new { message = "Solo se permiten imágenes en formato JPG o PNG." }
-            );
+            .BeEquivalentTo(new { message = "Solo se permiten imágenes en formato JPG o PNG." });
     }
 }

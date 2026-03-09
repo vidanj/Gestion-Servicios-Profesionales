@@ -16,6 +16,12 @@ export function EditableField({ label, value, type = "text", onSave }: EditableF
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
+  const testId = label
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, "-");
+
   // Sincronizar si el padre actualiza el valor
   useEffect(() => {
     if (!editing) setCurrent(value);
@@ -61,6 +67,7 @@ export function EditableField({ label, value, type = "text", onSave }: EditableF
       </p>
       <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
         <input
+          data-testid={`field-${testId}`}
           type={type}
           value={current}
           readOnly={!editing}
@@ -81,6 +88,7 @@ export function EditableField({ label, value, type = "text", onSave }: EditableF
         <button
           onClick={handleButton}
           disabled={saving}
+          data-testid={`btn-${testId}`}
           title={btnTitle}
           style={{
             width: 34,

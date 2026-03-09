@@ -71,11 +71,7 @@ public class ProfileServiceTests
     {
         // Arrange
         _mockRepo.Setup(r => r.GetByIdAsync(It.IsAny<Guid>())).ReturnsAsync((User?)null);
-        var dto = new UpdateProfileDto
-        {
-            FirstName = "Carlos",
-            LastName = "García",
-        };
+        var dto = new UpdateProfileDto { FirstName = "Carlos", LastName = "García" };
 
         // Act
         var resultado = await _service.UpdateOwnProfileAsync(Guid.NewGuid(), dto);
@@ -146,8 +142,7 @@ public class ProfileServiceTests
         var act = () => _service.ChangePasswordAsync(_usuario.Id, dto);
 
         // Assert
-        await act.Should().ThrowAsync<InvalidOperationException>()
-            .WithMessage("*incorrecta*");
+        await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("*incorrecta*");
         _mockRepo.Verify(r => r.UpdateUserAsync(It.IsAny<User>()), Times.Never);
     }
 
@@ -182,7 +177,8 @@ public class ProfileServiceTests
         var mockFile = new Mock<IFormFile>();
         mockFile.Setup(f => f.ContentType).Returns("image/jpeg");
         mockFile.Setup(f => f.Length).Returns(500_000); // 500 KB
-        mockFile.Setup(f => f.CopyToAsync(It.IsAny<Stream>(), It.IsAny<CancellationToken>()))
+        mockFile
+            .Setup(f => f.CopyToAsync(It.IsAny<Stream>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
         // Act
@@ -208,8 +204,7 @@ public class ProfileServiceTests
         var act = () => _service.UpdateProfileImageAsync(_usuario.Id, mockFile.Object);
 
         // Assert
-        await act.Should().ThrowAsync<InvalidOperationException>()
-            .WithMessage("*JPG o PNG*");
+        await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("*JPG o PNG*");
         _mockRepo.Verify(r => r.UpdateUserAsync(It.IsAny<User>()), Times.Never);
     }
 
@@ -227,8 +222,7 @@ public class ProfileServiceTests
         var act = () => _service.UpdateProfileImageAsync(_usuario.Id, mockFile.Object);
 
         // Assert
-        await act.Should().ThrowAsync<InvalidOperationException>()
-            .WithMessage("*2 MB*");
+        await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("*2 MB*");
         _mockRepo.Verify(r => r.UpdateUserAsync(It.IsAny<User>()), Times.Never);
     }
 
@@ -241,7 +235,8 @@ public class ProfileServiceTests
         var mockFile = new Mock<IFormFile>();
         mockFile.Setup(f => f.ContentType).Returns("image/png");
         mockFile.Setup(f => f.Length).Returns(300_000); // 300 KB — dentro del límite
-        mockFile.Setup(f => f.CopyToAsync(It.IsAny<Stream>(), It.IsAny<CancellationToken>()))
+        mockFile
+            .Setup(f => f.CopyToAsync(It.IsAny<Stream>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
         // Act
