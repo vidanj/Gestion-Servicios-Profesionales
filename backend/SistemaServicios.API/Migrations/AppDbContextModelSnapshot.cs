@@ -184,37 +184,6 @@ namespace SistemaServicios.API.Migrations
                     b.ToTable("Requests");
                 });
 
-            modelBuilder.Entity("SistemaServicios.API.Models.RequestAuditLog", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("ChangedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("ChangedBy")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("Comments")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
-
-                    b.Property<int>("NewStatus")
-                        .HasColumnType("integer");
-
-                    b.Property<int?>("OldStatus")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("ServiceRequestId")
-                        .HasColumnType("integer");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("RequestAuditLogs");
-                });
 
             modelBuilder.Entity("SistemaServicios.API.Models.Service", b =>
                 {
@@ -263,44 +232,6 @@ namespace SistemaServicios.API.Migrations
                     b.HasIndex("ProfessionalId");
 
                     b.ToTable("Services");
-                });
-
-            modelBuilder.Entity("SistemaServicios.API.Models.ServiceRequest", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("ClientId")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Description")
-                        .IsRequired()
-                        .HasMaxLength(1000)
-                        .HasColumnType("character varying(1000)");
-
-                    b.Property<int>("ProfessionalId")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("Title")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("ServiceRequests");
                 });
 
             modelBuilder.Entity("SistemaServicios.API.Models.User", b =>
