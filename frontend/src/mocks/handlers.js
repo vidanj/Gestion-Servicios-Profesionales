@@ -87,4 +87,81 @@ export const handlers = [
       role: 1
     }, { status: 200 })
   }),
+
+  // GET /api/Profile
+  http.get('http://localhost:5000/api/Profile', ({ request }) => {
+    const authHeader = request.headers.get('Authorization')
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return HttpResponse.json({ message: 'No autorizado' }, { status: 401 })
+    }
+    return HttpResponse.json({
+      id: '00000000-0000-0000-0000-000000000001',
+      email: 'juan@ejemplo.com',
+      firstName: 'Juan',
+      lastName: 'Perez',
+      phoneNumber: '6641234567',
+      role: 1,
+      profileImageUrl: null,
+      status: true,
+      averageRating: 0,
+      createdAt: new Date().toISOString(),
+    }, { status: 200 })
+  }),
+
+  // PUT /api/Profile
+  http.put('http://localhost:5000/api/Profile', async ({ request }) => {
+    const authHeader = request.headers.get('Authorization')
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return HttpResponse.json({ message: 'No autorizado' }, { status: 401 })
+    }
+    const body = await request.json()
+    if (!body.firstName || !body.lastName) {
+      return HttpResponse.json({ message: 'Nombre y apellido son obligatorios' }, { status: 400 })
+    }
+    return HttpResponse.json({
+      id: '00000000-0000-0000-0000-000000000001',
+      email: 'juan@ejemplo.com',
+      firstName: body.firstName,
+      lastName: body.lastName,
+      phoneNumber: body.phoneNumber ?? null,
+      role: 1,
+      profileImageUrl: null,
+      status: true,
+      averageRating: 0,
+      createdAt: new Date().toISOString(),
+    }, { status: 200 })
+  }),
+
+  // PUT /api/Profile/password
+  http.put('http://localhost:5000/api/Profile/password', async ({ request }) => {
+    const authHeader = request.headers.get('Authorization')
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return HttpResponse.json({ message: 'No autorizado' }, { status: 401 })
+    }
+    const body = await request.json()
+    if (body.currentPassword !== 'password123') {
+      return HttpResponse.json({ message: 'La contraseña actual es incorrecta.' }, { status: 400 })
+    }
+    return HttpResponse.json({ message: 'Contraseña actualizada correctamente.' }, { status: 200 })
+  }),
+
+  // POST /api/Profile/foto
+  http.post('http://localhost:5000/api/Profile/foto', ({ request }) => {
+    const authHeader = request.headers.get('Authorization')
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return HttpResponse.json({ message: 'No autorizado' }, { status: 401 })
+    }
+    return HttpResponse.json({
+      id: '00000000-0000-0000-0000-000000000001',
+      email: 'juan@ejemplo.com',
+      firstName: 'Juan',
+      lastName: 'Perez',
+      phoneNumber: '6641234567',
+      role: 1,
+      profileImageUrl: '/uploads/avatars/00000000-0000-0000-0000-000000000001.jpg',
+      status: true,
+      averageRating: 0,
+      createdAt: new Date().toISOString(),
+    }, { status: 200 })
+  }),
 ]

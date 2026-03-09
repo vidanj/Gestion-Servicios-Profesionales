@@ -43,6 +43,14 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
+        // WebRootPath puede ser null en CI cuando no existe el directorio wwwroot
+        // en el content root del ensamblado. Fijar una ruta temporal garantiza que
+        // UserService.UpdateProfileImageAsync pueda ejecutar Directory.CreateDirectory
+        // sin lanzar ArgumentNullException.
+        var tempWebRoot = Path.Combine(Path.GetTempPath(), $"wwwroot_test_{_dbName}");
+        Directory.CreateDirectory(tempWebRoot);
+        _ = builder.UseWebRoot(tempWebRoot);
+
         _ = builder.ConfigureServices(services =>
         {
             // EF Core 9 registra la configuración del provider en IDbContextOptionsConfiguration<T>.

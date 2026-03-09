@@ -1,4 +1,5 @@
 using SistemaServicios.API.DTOs;
+using SistemaServicios.API.DTOs.Profile;
 
 namespace SistemaServicios.API.Interfaces;
 
@@ -13,4 +14,10 @@ public interface IUserService
     public Task<bool> UpdateUserAsync(Guid id, UpdateUserDto updateUserDto);
 
     public Task<bool> SoftDeleteUserAsync(Guid id);
+
+    public Task<UserDto?> UpdateOwnProfileAsync(Guid userId, UpdateProfileDto dto);
+
+    public Task<bool> ChangePasswordAsync(Guid userId, ChangePasswordDto dto);
+
+    public Task<UserDto?> UpdateProfileImageAsync(Guid userId, IFormFile foto);
 }
