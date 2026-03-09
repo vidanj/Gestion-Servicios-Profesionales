@@ -5,14 +5,13 @@ namespace SistemaServicios.API.DTOs.Requests;
 public class CreateServiceRequestDto
 {
     [Required]
-    public int ClientId { get; set; }
+    public Guid ClientId { get; set; }
 
     [Required]
-    public int ProfessionalId { get; set; }
+    public Guid ProfessionalId { get; set; }
 
     [Required]
-    [MaxLength(200)]
-    public string Title { get; set; } = string.Empty;
+    public int ServiceId { get; set; }
 
     [Required]
     [MaxLength(1000)]

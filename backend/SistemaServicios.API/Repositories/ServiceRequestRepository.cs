@@ -14,32 +14,21 @@ public class ServiceRequestRepository : IServiceRequestRepository
         _context = context;
     }
 
-    public async Task<ServiceRequest> CreateAsync(ServiceRequest request)
+    public async Task<Request> CreateAsync(Request request)
     {
-        _context.ServiceRequests.Add(request);
+        _context.Requests.Add(request);
         await _context.SaveChangesAsync();
-
         return request;
     }
 
-    public async Task<ServiceRequest?> GetByIdAsync(int id)
+    public async Task<Request?> GetByIdAsync(int id)
     {
-        return await _context.ServiceRequests.FindAsync(id);
+        return await _context.Requests.FirstOrDefaultAsync(r => r.Id == id);
     }
 
-    public async Task<ServiceRequest> UpdateAsync(ServiceRequest request)
+    public async Task UpdateAsync(Request request)
     {
-        _context.ServiceRequests.Update(request);
+        _context.Requests.Update(request);
         await _context.SaveChangesAsync();
-
-        return request;
-    }
-
-    public async Task<RequestAuditLog> AddAuditLogAsync(RequestAuditLog auditLog)
-    {
-        _context.RequestAuditLogs.Add(auditLog);
-        await _context.SaveChangesAsync();
-
-        return auditLog;
     }
 }

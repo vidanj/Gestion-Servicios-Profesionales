@@ -10,10 +10,6 @@ public class AppDbContext : DbContext
 
     public DbSet<User> Users { get; set; }
 
-    public DbSet<ServiceRequest> ServiceRequests { get; set; }
-
-    public DbSet<RequestAuditLog> RequestAuditLogs { get; set; }
-
     public DbSet<Category> Categories { get; set; }
 
     public DbSet<Service> Services { get; set; }

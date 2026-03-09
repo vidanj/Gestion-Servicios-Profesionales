@@ -4,11 +4,9 @@ namespace SistemaServicios.API.Interfaces;
 
 public interface IServiceRequestRepository
 {
-    public Task<ServiceRequest> CreateAsync(ServiceRequest request);
+    public Task<Request> CreateAsync(Request request);
 
-    public Task<ServiceRequest?> GetByIdAsync(int id);
+    public Task<Request?> GetByIdAsync(int id);
 
-    public Task<ServiceRequest> UpdateAsync(ServiceRequest request);
-
-    public Task<RequestAuditLog> AddAuditLogAsync(RequestAuditLog auditLog);
+    public Task UpdateAsync(Request request);
 }

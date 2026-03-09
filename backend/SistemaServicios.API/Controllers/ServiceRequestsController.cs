@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using SistemaServicios.API.DTOs.Requests;
 using SistemaServicios.API.Interfaces;
-using StatusEnum = SistemaServicios.API.Enums.RequestStatus;
+using StatusEnum = SistemaServicios.API.Models.RequestStatus;
 
 namespace SistemaServicios.API.Controllers;
 
@@ -24,21 +24,11 @@ public class ServiceRequestsController : ControllerBase
     }
 
     [HttpPut("{id}/status")]
-    public async Task<IActionResult> UpdateStatus(
-        int id,
-        [FromQuery] StatusEnum newStatus,
-        [FromQuery] int changedBy,
-        [FromQuery] string? comments
-    )
+    public async Task<IActionResult> UpdateStatus(int id, [FromQuery] StatusEnum newStatus)
     {
         try
         {
-            var result = await _requestService.UpdateStatusAsync(
-                id,
-                newStatus,
-                changedBy,
-                comments
-            );
+            var result = await _requestService.UpdateStatusAsync(id, newStatus);
             return Ok(result);
         }
         catch (KeyNotFoundException ex)

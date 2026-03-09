@@ -1,7 +1,6 @@
 using SistemaServicios.API.DTOs.Requests;
 using SistemaServicios.API.Interfaces;
 using SistemaServicios.API.Models;
-using StatusEnum = SistemaServicios.API.Enums.RequestStatus;
 
 namespace SistemaServicios.API.Services;
 
@@ -14,82 +13,61 @@ public class ServiceRequestService : IServiceRequestService
         _repository = repository;
     }
 
-    public async Task<ServiceRequest> CreateRequestAsync(CreateServiceRequestDto requestDto)
+    public async Task<Request> CreateRequestAsync(CreateServiceRequestDto requestDto)
     {
-        var newRequest = new ServiceRequest
+        var newRequest = new Request
         {
             ClientId = requestDto.ClientId,
             ProfessionalId = requestDto.ProfessionalId,
-            Title = requestDto.Title,
+            ServiceId = requestDto.ServiceId,
             Description = requestDto.Description,
-            Status = (Models.RequestStatus)StatusEnum.Pending,
+            Status = RequestStatus.Pending,
+            RequestDate = DateTime.UtcNow,
         };
 
         var createdRequest = await _repository.CreateAsync(newRequest);
-
-        await _repository.AddAuditLogAsync(
-            new RequestAuditLog
-            {
-                ServiceRequestId = createdRequest.Id,
-                OldStatus = null,
-                NewStatus = (Models.RequestStatus)StatusEnum.Pending,
-                ChangedBy = requestDto.ClientId,
-                Comments = "Solicitud creada por el cliente",
-            }
-        );
-
         return createdRequest;
     }
 
-    public async Task<ServiceRequest> UpdateStatusAsync(
-        int requestId,
-        StatusEnum newStatus,
-        int changedByUserId,
-        string? comments
-    )
+    public async Task<Request> UpdateStatusAsync(int requestId, RequestStatus newStatus)
     {
         var request =
             await _repository.GetByIdAsync(requestId)
             ?? throw new KeyNotFoundException("Solicitud no encontrada.");
 
-        var oldStatus = (StatusEnum)request.Status;
+        var oldStatus = request.Status;
 
         if (!IsValidTransition(oldStatus, newStatus))
         {
             throw new InvalidOperationException("Transición de estado inválida.");
         }
 
-        request.Status = (Models.RequestStatus)newStatus;
-        request.UpdatedAt = DateTime.UtcNow;
+        request.Status = newStatus;
+
+        if (newStatus == RequestStatus.Completed)
+        {
+            request.CompletionDate = DateTime.UtcNow;
+        }
 
         await _repository.UpdateAsync(request);
-
-        await _repository.AddAuditLogAsync(
-            new RequestAuditLog
-            {
-                ServiceRequestId = requestId,
-                OldStatus = (Models.RequestStatus?)oldStatus,
-                NewStatus = (Models.RequestStatus)newStatus,
-                ChangedBy = changedByUserId,
-                Comments = comments,
-            }
-        );
-
         return request;
     }
 
-    private static bool IsValidTransition(StatusEnum current, StatusEnum next)
+    private static bool IsValidTransition(RequestStatus current, RequestStatus next)
     {
-        if (current == StatusEnum.Pending)
+        if (current == RequestStatus.Pending)
         {
-            return next == StatusEnum.Accepted
-                || next == StatusEnum.Rejected
-                || next == StatusEnum.Cancelled;
+            return next == RequestStatus.Accepted || next == RequestStatus.Cancelled;
         }
 
-        if (current == StatusEnum.Accepted)
+        if (current == RequestStatus.Accepted)
         {
-            return next == StatusEnum.Completed || next == StatusEnum.Cancelled;
+            return next == RequestStatus.InProgress || next == RequestStatus.Cancelled;
+        }
+
+        if (current == RequestStatus.InProgress)
+        {
+            return next == RequestStatus.Completed || next == RequestStatus.Cancelled;
         }
 
         return false;

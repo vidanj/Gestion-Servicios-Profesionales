@@ -82,8 +82,6 @@ public static class ApplicationServiceExtensions
         services.AddScoped<IRatingService, RatingService>();
         services.AddScoped<IServiceRequestRepository, ServiceRequestRepository>();
         services.AddScoped<IServiceRequestService, ServiceRequestService>();
-        services.AddScoped<IServiceRequestRepository, ServiceRequestRepository>();
-        services.AddScoped<IServiceRequestService, ServiceRequestService>();
         services.AddScoped<IEmailService, EmailService>();
         var jwtKey =
             config["JwtSettings:Key"]
