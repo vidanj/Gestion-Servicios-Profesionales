@@ -22,6 +22,8 @@ public class AppDbContext : DbContext
 
     public DbSet<Verification> Verifications { get; set; }
 
+    public DbSet<UserLog> UserLogs { get; set; }
+
     // Configuración especial de relaciones (Fluent API)
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -60,5 +62,13 @@ public class AppDbContext : DbContext
             .WithMany()
             .HasForeignKey(r => r.ProfessionalId)
             .OnDelete(DeleteBehavior.Restrict);
-    }
+
+        // UserLog: al borrar usuario no elimina sus logs en cascada
+        modelBuilder
+            .Entity<UserLog>()
+            .HasOne(l => l.User)
+            .WithMany()
+            .HasForeignKey(l => l.UserId)
+            .OnDelete(DeleteBehavior.Restrict);
+            }
 }

@@ -83,6 +83,8 @@ public static class ApplicationServiceExtensions
         services.AddScoped<IServiceRequestRepository, ServiceRequestRepository>();
         services.AddScoped<IServiceRequestService, ServiceRequestService>();
         services.AddScoped<IEmailService, EmailService>();
+        services.AddScoped<IUserLogRepository, UserLogRepository>();
+        services.AddScoped<IUserLogService, UserLogService>();
         var jwtKey =
             config["JwtSettings:Key"]
             ?? throw new InvalidOperationException("JWT_KEY no definido en el archivo .env");

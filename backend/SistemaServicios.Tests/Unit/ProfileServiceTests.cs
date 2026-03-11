@@ -7,6 +7,7 @@ using SistemaServicios.API.Interfaces;
 using SistemaServicios.API.Models;
 using SistemaServicios.API.Services;
 using Xunit;
+using SistemaServicios.API.DTOs;
 
 namespace SistemaServicios.Tests.Unit;
 
@@ -15,7 +16,7 @@ public class ProfileServiceTests
     private readonly Mock<IUserRepository> _mockRepo;
     private readonly Mock<IWebHostEnvironment> _mockEnv;
     private readonly UserService _service;
-
+    private readonly Mock<IUserLogService> _mockLogService = null!;
     private readonly User _usuario;
 
     public ProfileServiceTests()
@@ -23,8 +24,11 @@ public class ProfileServiceTests
         _mockRepo = new Mock<IUserRepository>();
         _mockEnv = new Mock<IWebHostEnvironment>();
         _mockEnv.Setup(e => e.WebRootPath).Returns(Path.GetTempPath());
-
-        _service = new UserService(_mockRepo.Object, _mockEnv.Object);
+        _mockLogService = new Mock<IUserLogService>();
+        _mockLogService
+        .Setup(l => l.CreateLogAsync(It.IsAny<CreateUserLogDto>()))
+        .ReturnsAsync(new UserLogDto());
+        _service = new UserService(_mockRepo.Object, _mockEnv.Object, _mockLogService.Object);
 
         _usuario = new User
         {
