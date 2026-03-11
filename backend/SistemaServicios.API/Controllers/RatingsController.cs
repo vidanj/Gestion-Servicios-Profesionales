@@ -6,7 +6,7 @@ using SistemaServicios.API.Interfaces;
 
 namespace SistemaServicios.API.Controllers;
 
-[Authorize] // Protege para que solo usuarios logueados puedan calificar
+[Authorize(Roles = "Client")]
 [Route("api/[controller]")]
 [ApiController]
 [Tags("Módulo de Calificaciones")]
