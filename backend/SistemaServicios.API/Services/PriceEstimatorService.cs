@@ -40,7 +40,8 @@ public class PriceEstimatorService : IPriceEstimatorService
         var weekendFee = request.IncludeWeekendDelivery ? WeekendDeliveryFixedFee : 0m;
 
         // Multiplicadores porcentuales aplicados sobre el precio base.
-        var percentageAmount = request.BasePrice * (complexityPercent + urgencyPercent + revisionsPercent);
+        var percentageAmount =
+            request.BasePrice * (complexityPercent + urgencyPercent + revisionsPercent);
         var estimatedTotal = request.BasePrice + percentageAmount + supportFee + weekendFee;
 
         return new PriceEstimateResponseDto

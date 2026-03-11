@@ -13,7 +13,9 @@ public class PricingController : ControllerBase
     private readonly PriceEstimatorService _priceEstimatorService = new();
 
     [HttpPost("estimate")]
-    public ActionResult<PriceEstimateResponseDto> Estimate([FromBody] PriceEstimateRequestDto request)
+    public ActionResult<PriceEstimateResponseDto> Estimate(
+        [FromBody] PriceEstimateRequestDto request
+    )
     {
         if (!ModelState.IsValid)
         {
