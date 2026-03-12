@@ -6,7 +6,7 @@ using SistemaServicios.API.Interfaces;
 
 namespace SistemaServicios.API.Controllers;
 
-[Authorize(Roles = "Client")]
+[Authorize(Roles = "Client,Professional,Admin")]
 [Route("api/[controller]")]
 [ApiController]
 [Tags("Módulo de Calificaciones")]

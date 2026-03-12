@@ -25,7 +25,7 @@ public class ServiceRequestsController : ControllerBase
     }
 
     [HttpPut("{id}/status")]
-    [Authorize(Roles = "Professional")]
+    [Authorize(Roles = "Professional,Admin")]
     public async Task<IActionResult> UpdateStatus(int id, [FromQuery] StatusEnum newStatus)
     {
         try
