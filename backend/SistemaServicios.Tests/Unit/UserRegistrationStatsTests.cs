@@ -1,10 +1,10 @@
 using FluentAssertions;
+using Microsoft.AspNetCore.Hosting;
 using Moq;
 using SistemaServicios.API.DTOs;
 using SistemaServicios.API.Interfaces;
 using SistemaServicios.API.Models;
 using SistemaServicios.API.Services;
-using Microsoft.AspNetCore.Hosting;
 using Xunit;
 
 namespace SistemaServicios.Tests.Unit;
@@ -51,7 +51,9 @@ public class UserRegistrationStatsTests
     public async Task GetRegistrationsByDateAsyncDaysNegativoUsaDefault30()
     {
         // Arrange
-        _mockRepo.Setup(r => r.GetRegistrationsByDateAsync(30)).ReturnsAsync(new List<UserRegistrationStatDto>());
+        _mockRepo
+            .Setup(r => r.GetRegistrationsByDateAsync(30))
+            .ReturnsAsync(new List<UserRegistrationStatDto>());
 
         // Act
         await _service.GetRegistrationsByDateAsync(-5);
@@ -64,7 +66,9 @@ public class UserRegistrationStatsTests
     public async Task GetRegistrationsByDateAsyncDaysMayorA365UsaDefault30()
     {
         // Arrange
-        _mockRepo.Setup(r => r.GetRegistrationsByDateAsync(30)).ReturnsAsync(new List<UserRegistrationStatDto>());
+        _mockRepo
+            .Setup(r => r.GetRegistrationsByDateAsync(30))
+            .ReturnsAsync(new List<UserRegistrationStatDto>());
 
         // Act
         await _service.GetRegistrationsByDateAsync(400);
@@ -77,11 +81,14 @@ public class UserRegistrationStatsTests
     public async Task GetRegistrationsByDateAsyncDays7RetornaCorrectamente()
     {
         // Arrange
-        var stats = Enumerable.Range(0, 7).Select(i => new UserRegistrationStatDto
-        {
-            Date = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-6 + i)),
-            Count = i,
-        }).ToList();
+        var stats = Enumerable
+            .Range(0, 7)
+            .Select(i => new UserRegistrationStatDto
+            {
+                Date = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-6 + i)),
+                Count = i,
+            })
+            .ToList();
         _mockRepo.Setup(r => r.GetRegistrationsByDateAsync(7)).ReturnsAsync(stats);
 
         // Act
@@ -96,7 +103,9 @@ public class UserRegistrationStatsTests
     public async Task GetRegistrationsByDateAsyncListaVaciaRetornaSinErrores()
     {
         // Arrange
-        _mockRepo.Setup(r => r.GetRegistrationsByDateAsync(30)).ReturnsAsync(new List<UserRegistrationStatDto>());
+        _mockRepo
+            .Setup(r => r.GetRegistrationsByDateAsync(30))
+            .ReturnsAsync(new List<UserRegistrationStatDto>());
 
         // Act
         var resultado = await _service.GetRegistrationsByDateAsync(30);

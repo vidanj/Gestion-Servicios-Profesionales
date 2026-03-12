@@ -17,28 +17,34 @@ public class UserLogRepositoryTests
         return new AppDbContext(options);
     }
 
-    private static User CrearUsuario() => new()
-    {
-        Id = Guid.NewGuid(),
-        FirstName = "Juan",
-        LastName = "Pérez",
-        Email = $"{Guid.NewGuid()}@test.com",
-        PasswordHash = "hash",
-        Role = UserRole.Client,
-        Status = true,
-        CreatedAt = DateTime.UtcNow,
-        UpdatedAt = DateTime.UtcNow,
-    };
+    private static User CrearUsuario() =>
+        new()
+        {
+            Id = Guid.NewGuid(),
+            FirstName = "Juan",
+            LastName = "Pérez",
+            Email = $"{Guid.NewGuid()}@test.com",
+            PasswordHash = "hash",
+            Role = UserRole.Client,
+            Status = true,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow,
+        };
 
-    private static UserLog CrearLog(Guid userId, LogStatus status = LogStatus.Exitoso, LogAction action = LogAction.CreacionUsuario) => new()
-    {
-        Id = Guid.NewGuid(),
-        UserId = userId,
-        Action = action,
-        Detail = "Test log.",
-        Status = status,
-        CreatedAt = DateTime.UtcNow,
-    };
+    private static UserLog CrearLog(
+        Guid userId,
+        LogStatus status = LogStatus.Exitoso,
+        LogAction action = LogAction.CreacionUsuario
+    ) =>
+        new()
+        {
+            Id = Guid.NewGuid(),
+            UserId = userId,
+            Action = action,
+            Detail = "Test log.",
+            Status = status,
+            CreatedAt = DateTime.UtcNow,
+        };
 
     // ─── GetLogsAsync ────────────────────────────────────────────────────────
 
@@ -129,7 +135,13 @@ public class UserLogRepositoryTests
         await ctx.SaveChangesAsync();
 
         var repo = new UserLogRepository(ctx);
-        var (logs, total) = await repo.GetLogsAsync(1, 10, null, null, LogAction.EliminacionUsuario);
+        var (logs, total) = await repo.GetLogsAsync(
+            1,
+            10,
+            null,
+            null,
+            LogAction.EliminacionUsuario
+        );
 
         total.Should().Be(1);
         logs.First().Action.Should().Be(LogAction.EliminacionUsuario);
@@ -158,7 +170,13 @@ public class UserLogRepositoryTests
         await ctx.SaveChangesAsync();
 
         var repo = new UserLogRepository(ctx);
-        var (logs, total) = await repo.GetLogsAsync(1, 10, LogStatus.Exitoso, null, LogAction.CreacionUsuario);
+        var (logs, total) = await repo.GetLogsAsync(
+            1,
+            10,
+            LogStatus.Exitoso,
+            null,
+            LogAction.CreacionUsuario
+        );
 
         total.Should().Be(1);
         logs.First().Status.Should().Be(LogStatus.Exitoso);
