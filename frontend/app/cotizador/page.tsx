@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useState } from "react";
 import {
   Alert,
   Box,
@@ -55,18 +55,6 @@ export default function CotizadorPage() {
   const [errorMessage, setErrorMessage] = useState("");
   const [result, setResult] = useState<PriceEstimateResponse | null>(null);
 
-  const requestPreview = useMemo(
-    () => ({
-      basePrice: Number(basePrice || 0),
-      complexityLevel,
-      urgencyLevel,
-      extraRevisions: Number(extraRevisions || 0),
-      includePrioritySupport,
-      includeWeekendDelivery,
-    }),
-    [basePrice, complexityLevel, urgencyLevel, extraRevisions, includePrioritySupport, includeWeekendDelivery],
-  );
-
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setErrorMessage("");
@@ -104,7 +92,7 @@ export default function CotizadorPage() {
       setResult(data);
     } catch {
       setErrorMessage(
-        "No pude conectarme con el backend. Verifica que la API esté corriendo en http://localhost:5000.",
+        "No pude conectarme con el servidor. Verifica que la API esté disponible.",
       );
     } finally {
       setLoading(false);
@@ -278,14 +266,6 @@ export default function CotizadorPage() {
             </Card.Root>
           </SimpleGrid>
 
-          <Card.Root variant="subtle">
-            <Card.Body>
-              <Text fontSize="sm" color="muted">
-                Vista rápida del payload enviado al backend:
-              </Text>
-              <Text fontSize="sm">{JSON.stringify(requestPreview)}</Text>
-            </Card.Body>
-          </Card.Root>
         </Stack>
       </Container>
     </Box>
