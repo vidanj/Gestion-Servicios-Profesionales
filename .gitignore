@@ -127,4 +127,5 @@ dotnet-ef.exe
 # ========================
 # Scripts locales de desarrollo
 # ========================
-scripts/
+scripts/build-backend-local.ps1
+scripts/build-frontend-local.ps1
