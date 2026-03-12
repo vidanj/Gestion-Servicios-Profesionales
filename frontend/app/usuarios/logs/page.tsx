@@ -138,6 +138,7 @@ export default function UserLogsPage() {
               <Button asChild colorPalette="purple">
                 <NextLink href="/usuarios/logs">Logs de usuarios</NextLink>
               </Button>
+              <Button asChild variant="ghost"><NextLink href="/usuarios/grafica">Gráfica</NextLink></Button>
             </HStack>
           </Stack>
 

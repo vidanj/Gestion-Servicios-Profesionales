@@ -2,12 +2,12 @@ using FluentAssertions;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Moq;
+using SistemaServicios.API.DTOs;
 using SistemaServicios.API.DTOs.Profile;
 using SistemaServicios.API.Interfaces;
 using SistemaServicios.API.Models;
 using SistemaServicios.API.Services;
 using Xunit;
-using SistemaServicios.API.DTOs;
 
 namespace SistemaServicios.Tests.Unit;
 
@@ -26,8 +26,8 @@ public class ProfileServiceTests
         _mockEnv.Setup(e => e.WebRootPath).Returns(Path.GetTempPath());
         _mockLogService = new Mock<IUserLogService>();
         _mockLogService
-        .Setup(l => l.CreateLogAsync(It.IsAny<CreateUserLogDto>()))
-        .ReturnsAsync(new UserLogDto());
+            .Setup(l => l.CreateLogAsync(It.IsAny<CreateUserLogDto>()))
+            .ReturnsAsync(new UserLogDto());
         _service = new UserService(_mockRepo.Object, _mockEnv.Object, _mockLogService.Object);
 
         _usuario = new User

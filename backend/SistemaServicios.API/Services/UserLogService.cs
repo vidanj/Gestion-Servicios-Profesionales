@@ -18,7 +18,8 @@ public class UserLogService : IUserLogService
         int size,
         LogStatus? status,
         Guid? userId,
-        LogAction? action)
+        LogAction? action
+    )
     {
         var (logs, total) = await _repo.GetLogsAsync(page, size, status, userId, action);
         return (logs.Select(MapToDto), total);
@@ -40,16 +41,15 @@ public class UserLogService : IUserLogService
         return MapToDto(saved);
     }
 
-    private static UserLogDto MapToDto(UserLog l) => new()
-    {
-        Id = l.Id,
-        UserId = l.UserId,
-        UserName = l.User != null
-            ? $"{l.User.FirstName} {l.User.LastName}"
-            : "Desconocido",
-        Action = l.Action,
-        Detail = l.Detail,
-        Status = l.Status,
-        CreatedAt = l.CreatedAt,
-    };
+    private static UserLogDto MapToDto(UserLog l) =>
+        new()
+        {
+            Id = l.Id,
+            UserId = l.UserId,
+            UserName = l.User != null ? $"{l.User.FirstName} {l.User.LastName}" : "Desconocido",
+            Action = l.Action,
+            Detail = l.Detail,
+            Status = l.Status,
+            CreatedAt = l.CreatedAt,
+        };
 }

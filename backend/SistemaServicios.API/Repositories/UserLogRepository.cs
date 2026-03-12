@@ -19,11 +19,10 @@ public class UserLogRepository : IUserLogRepository
         int size,
         LogStatus? status,
         Guid? userId,
-        LogAction? action)
+        LogAction? action
+    )
     {
-        var query = _context.UserLogs
-            .Include(l => l.User)
-            .AsQueryable();
+        var query = _context.UserLogs.Include(l => l.User).AsQueryable();
 
         if (status.HasValue)
         {

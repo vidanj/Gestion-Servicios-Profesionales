@@ -48,9 +48,7 @@ public class UserLogServiceTests
     {
         // Arrange
         var logs = new List<UserLog> { _logEjemplo };
-        _mockRepo
-            .Setup(r => r.GetLogsAsync(1, 10, null, null, null))
-            .ReturnsAsync((logs, 1));
+        _mockRepo.Setup(r => r.GetLogsAsync(1, 10, null, null, null)).ReturnsAsync((logs, 1));
 
         // Act
         var (resultado, total) = await _service.GetLogsAsync(1, 10, null, null, null);
@@ -81,9 +79,7 @@ public class UserLogServiceTests
     {
         // Arrange
         var logs = new List<UserLog> { _logEjemplo };
-        _mockRepo
-            .Setup(r => r.GetLogsAsync(1, 10, null, null, null))
-            .ReturnsAsync((logs, 1));
+        _mockRepo.Setup(r => r.GetLogsAsync(1, 10, null, null, null)).ReturnsAsync((logs, 1));
 
         // Act
         var (resultado, _) = await _service.GetLogsAsync(1, 10, null, null, null);
@@ -123,11 +119,20 @@ public class UserLogServiceTests
             .ReturnsAsync((new List<UserLog> { _logEjemplo }, 1));
 
         // Act
-        var (resultado, total) = await _service.GetLogsAsync(1, 10, null, null, LogAction.CreacionUsuario);
+        var (resultado, total) = await _service.GetLogsAsync(
+            1,
+            10,
+            null,
+            null,
+            LogAction.CreacionUsuario
+        );
 
         // Assert
         total.Should().Be(1);
-        _mockRepo.Verify(r => r.GetLogsAsync(1, 10, null, null, LogAction.CreacionUsuario), Times.Once);
+        _mockRepo.Verify(
+            r => r.GetLogsAsync(1, 10, null, null, LogAction.CreacionUsuario),
+            Times.Once
+        );
     }
 
     [Fact]
@@ -164,7 +169,13 @@ public class UserLogServiceTests
         // Arrange
         _mockRepo
             .Setup(r => r.AddLogAsync(It.IsAny<UserLog>()))
-            .ReturnsAsync((UserLog l) => { l.User = _logEjemplo.User; return l; });
+            .ReturnsAsync(
+                (UserLog l) =>
+                {
+                    l.User = _logEjemplo.User;
+                    return l;
+                }
+            );
 
         var dto = new CreateUserLogDto
         {

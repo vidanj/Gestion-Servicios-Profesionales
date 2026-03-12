@@ -14,7 +14,7 @@ public class UserServiceTests
     private readonly Mock<IUserRepository> _mockRepo;
     private readonly Mock<IWebHostEnvironment> _mockEnv;
     private readonly UserService _userService;
-    private readonly Mock<IUserLogService> _mockLogService; 
+    private readonly Mock<IUserLogService> _mockLogService;
 
     // Usuario base reutilizable en las pruebas
     private readonly User _usuarioActivo;
@@ -25,8 +25,8 @@ public class UserServiceTests
         _mockEnv = new Mock<IWebHostEnvironment>();
         _mockLogService = new Mock<IUserLogService>();
         _mockLogService
-        .Setup(l => l.CreateLogAsync(It.IsAny<CreateUserLogDto>()))
-        .ReturnsAsync(new UserLogDto());
+            .Setup(l => l.CreateLogAsync(It.IsAny<CreateUserLogDto>()))
+            .ReturnsAsync(new UserLogDto());
         _userService = new UserService(_mockRepo.Object, _mockEnv.Object, _mockLogService.Object);
 
         _usuarioActivo = new User

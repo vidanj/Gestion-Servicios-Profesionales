@@ -24,16 +24,19 @@ public class UserLogsController : ControllerBase
         [FromQuery] int size = 50,
         [FromQuery] LogStatus? status = null,
         [FromQuery] Guid? userId = null,
-        [FromQuery] LogAction? action = null)
+        [FromQuery] LogAction? action = null
+    )
     {
         var (logs, total) = await _service.GetLogsAsync(page, size, status, userId, action);
-        return Ok(new
-        {
-            Total = total,
-            Page = page,
-            Size = size,
-            Data = logs,
-        });
+        return Ok(
+            new
+            {
+                Total = total,
+                Page = page,
+                Size = size,
+                Data = logs,
+            }
+        );
     }
 
     [HttpPost]

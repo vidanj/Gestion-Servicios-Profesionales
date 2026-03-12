@@ -10,9 +10,11 @@ namespace SistemaServicios.Tests.Unit;
 public class UserRepositoryTests
 {
     private static AppDbContext CreateDbContext() =>
-        new(new DbContextOptionsBuilder<AppDbContext>()
-            .UseInMemoryDatabase($"UserRepo_{Guid.NewGuid()}")
-            .Options);
+        new(
+            new DbContextOptionsBuilder<AppDbContext>()
+                .UseInMemoryDatabase($"UserRepo_{Guid.NewGuid()}")
+                .Options
+        );
 
     private static User CrearUsuario(string email = "test@test.com", bool status = true) =>
         new()
@@ -91,7 +93,7 @@ public class UserRepositoryTests
     public async Task GetUsersAsyncPaginacionRetornaTamanoCorrecto()
     {
         await using var context = CreateDbContext();
-        for(var i = 0; i < 5; i++)
+        for (var i = 0; i < 5; i++)
         {
             context.Users.Add(CrearUsuario($"user{i}@test.com"));
         }
