@@ -13,11 +13,17 @@ public class UserService : IUserService
 
     private readonly IUserRepository _userRepository;
     private readonly IWebHostEnvironment _env;
+    private readonly IUserLogService _logService;
 
-    public UserService(IUserRepository userRepository, IWebHostEnvironment env)
+    public UserService(
+        IUserRepository userRepository,
+        IWebHostEnvironment env,
+        IUserLogService logService
+    )
     {
         _userRepository = userRepository;
         _env = env;
+        _logService = logService;
     }
 
     public async Task<(IEnumerable<UserDto> users, int totalCount)> GetAllUsersAsync(
@@ -59,6 +65,17 @@ public class UserService : IUserService
         };
 
         await _userRepository.AddUserAsync(user);
+
+        await _logService.CreateLogAsync(
+            new CreateUserLogDto
+            {
+                UserId = user.Id,
+                Action = LogAction.CreacionUsuario,
+                Detail = $"Usuario {user.Email} creado.",
+                Status = LogStatus.Exitoso,
+            }
+        );
+
         return MapToDto(user);
     }
 
@@ -78,6 +95,17 @@ public class UserService : IUserService
         user.UpdatedAt = DateTime.UtcNow;
 
         await _userRepository.UpdateUserAsync(user);
+
+        await _logService.CreateLogAsync(
+            new CreateUserLogDto
+            {
+                UserId = user.Id,
+                Action = LogAction.ActualizacionRol,
+                Detail = $"Usuario {user.Email} actualizado.",
+                Status = LogStatus.Exitoso,
+            }
+        );
+
         return true;
     }
 
@@ -92,6 +120,17 @@ public class UserService : IUserService
         // Borrado lógico
         user.Status = false;
         await _userRepository.UpdateUserAsync(user);
+
+        await _logService.CreateLogAsync(
+            new CreateUserLogDto
+            {
+                UserId = user.Id,
+                Action = LogAction.EliminacionUsuario,
+                Detail = $"Usuario {user.Email} eliminado (soft delete).",
+                Status = LogStatus.Alerta,
+            }
+        );
+
         return true;
     }
 
@@ -109,6 +148,17 @@ public class UserService : IUserService
         user.UpdatedAt = DateTime.UtcNow;
 
         await _userRepository.UpdateUserAsync(user);
+
+        await _logService.CreateLogAsync(
+            new CreateUserLogDto
+            {
+                UserId = user.Id,
+                Action = LogAction.ActualizacionPerfil,
+                Detail = $"Perfil de {user.Email} actualizado.",
+                Status = LogStatus.Exitoso,
+            }
+        );
+
         return MapToDto(user);
     }
 
@@ -122,6 +172,16 @@ public class UserService : IUserService
 
         if (!BCrypt.Net.BCrypt.Verify(dto.CurrentPassword, user.PasswordHash))
         {
+            await _logService.CreateLogAsync(
+                new CreateUserLogDto
+                {
+                    UserId = user.Id,
+                    Action = LogAction.CambioContrasena,
+                    Detail = $"Intento fallido de cambio de contraseña para {user.Email}.",
+                    Status = LogStatus.Alerta,
+                }
+            );
+
             throw new InvalidOperationException("La contraseña actual es incorrecta.");
         }
 
@@ -129,6 +189,17 @@ public class UserService : IUserService
         user.UpdatedAt = DateTime.UtcNow;
 
         await _userRepository.UpdateUserAsync(user);
+
+        await _logService.CreateLogAsync(
+            new CreateUserLogDto
+            {
+                UserId = user.Id,
+                Action = LogAction.CambioContrasena,
+                Detail = $"Contraseña de {user.Email} actualizada.",
+                Status = LogStatus.Exitoso,
+            }
+        );
+
         return true;
     }
 
@@ -166,7 +237,28 @@ public class UserService : IUserService
         user.UpdatedAt = DateTime.UtcNow;
 
         await _userRepository.UpdateUserAsync(user);
+
+        await _logService.CreateLogAsync(
+            new CreateUserLogDto
+            {
+                UserId = user.Id,
+                Action = LogAction.ActualizacionPerfil,
+                Detail = $"Imagen de perfil de {user.Email} actualizada.",
+                Status = LogStatus.Exitoso,
+            }
+        );
+
         return MapToDto(user);
+    }
+
+    public async Task<IEnumerable<UserRegistrationStatDto>> GetRegistrationsByDateAsync(int days)
+    {
+        if (days < 1 || days > 365)
+        {
+            days = 30;
+        }
+
+        return await _userRepository.GetRegistrationsByDateAsync(days);
     }
 
     private static UserDto MapToDto(User u) =>

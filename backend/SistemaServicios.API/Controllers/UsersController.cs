@@ -84,4 +84,11 @@ public class UsersController : ControllerBase
 
         return NoContent();
     }
+
+    [HttpGet("stats/registrations")]
+    public async Task<IActionResult> GetRegistrationStats([FromQuery] int days = 30)
+    {
+        var stats = await _userService.GetRegistrationsByDateAsync(days);
+        return Ok(stats);
+    }
 }

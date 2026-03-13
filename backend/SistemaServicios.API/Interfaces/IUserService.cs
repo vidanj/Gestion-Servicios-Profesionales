@@ -20,4 +20,6 @@ public interface IUserService
     public Task<bool> ChangePasswordAsync(Guid userId, ChangePasswordDto dto);
 
     public Task<UserDto?> UpdateProfileImageAsync(Guid userId, IFormFile foto);
+
+    public Task<IEnumerable<UserRegistrationStatDto>> GetRegistrationsByDateAsync(int days);
 }
