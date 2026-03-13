@@ -105,7 +105,7 @@ export function createRequestFromDraft(
     serviceName: selectedService?.name || "Servicio general",
     employerName: draft.employerName.trim(),
     jobTitle: draft.jobTitle.trim(),
-    category: draft.category,
+    category: selectedService?.category || draft.category,
     workMode: draft.workMode,
     level: draft.level,
     status: draft.status,

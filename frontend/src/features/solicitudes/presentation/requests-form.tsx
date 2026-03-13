@@ -1,4 +1,4 @@
-import { Button, ButtonGroup, Card, Field, Input, NativeSelect, Stack, Textarea } from "@chakra-ui/react";
+import { Button, ButtonGroup, Card, Field, Input, NativeSelect, Stack, Text, Textarea } from "@chakra-ui/react";
 
 import { availableServices, RequestDraft, RequestStatus } from "../domain/request.model";
 
@@ -12,6 +12,9 @@ interface RequestsFormProps {
 }
 
 export function RequestsForm({ draft, editingId, onSelectService, onChangeField, onSave, onReset }: RequestsFormProps) {
+  const selectedService = availableServices.find((service) => service.id === draft.serviceId)
+  const dependentCategory = selectedService?.category || draft.category
+
   return (
     <Card.Root>
       <Card.Header>{editingId ? "Editar vacante" : "Publicar vacante"}</Card.Header>
@@ -32,6 +35,9 @@ export function RequestsForm({ draft, editingId, onSelectService, onChangeField,
                 ))}
               </NativeSelect.Field>
             </NativeSelect.Root>
+            <Text fontSize="xs" color="muted">
+              Este combo actualiza la categoría sugerida en tiempo real.
+            </Text>
           </Field.Root>
 
           {/* Bloque: datos principales de la vacante */}
@@ -54,18 +60,11 @@ export function RequestsForm({ draft, editingId, onSelectService, onChangeField,
           </Field.Root>
 
           <Field.Root>
-            <Field.Label>Categoría</Field.Label>
-            <NativeSelect.Root>
-              <NativeSelect.Field
-                value={draft.category}
-                onChange={(event) => onChangeField("category", event.target.value)}
-              >
-                <option>Desarrollo Web</option>
-                <option>Backend</option>
-                <option>Diseño</option>
-                <option>Marketing</option>
-              </NativeSelect.Field>
-            </NativeSelect.Root>
+            <Field.Label>Categoría dependiente</Field.Label>
+            <Input value={dependentCategory} readOnly />
+            <Text fontSize="xs" color="muted">
+              Se actualiza automáticamente según el servicio elegido en tiempo real.
+            </Text>
           </Field.Root>
 
           {/* Bloque: modalidad, nivel y estado de seguimiento */}

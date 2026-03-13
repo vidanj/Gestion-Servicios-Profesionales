@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useDebounce } from "@/hooks/use-debounce";
 
 import {
   availableServices,
@@ -16,6 +17,8 @@ export function useRequestsController() {
   const [requests, setRequests] = useState(getInitialRequests);
   const [draft, setDraft] = useState(emptyRequestDraft);
   const [searchText, setSearchText] = useState("");
+  const debouncedSearchText = useDebounce(searchText, 400);
+  const isSearchDebouncing = searchText !== debouncedSearchText;
   const [statusFilter, setStatusFilter] = useState<"todos" | RequestStatus>("todos");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState("");
@@ -34,9 +37,19 @@ export function useRequestsController() {
     return () => clearInterval(intervalId);
   }, []);
 
+  useEffect(() => {
+    const selectedService = availableServices.find((service) => service.id === draft.serviceId);
+    if (!selectedService || draft.category === selectedService.category) return;
+
+    setDraft((previous) => ({
+      ...previous,
+      category: selectedService.category,
+    }));
+  }, [draft.serviceId, draft.category]);
+
   const visibleRequests = useMemo(
-    () => filterRequests(requests, searchText, statusFilter),
-    [requests, searchText, statusFilter],
+    () => filterRequests(requests, debouncedSearchText, statusFilter),
+    [requests, debouncedSearchText, statusFilter],
   );
 
   const summary = useMemo(() => summarizeRequests(requests), [requests]);
@@ -135,6 +148,7 @@ export function useRequestsController() {
     editingId,
     requests: visibleRequests,
     searchText,
+    isSearchDebouncing,
     statusFilter,
     summary,
     errorMessage,

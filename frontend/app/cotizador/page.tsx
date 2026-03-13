@@ -121,6 +121,7 @@ export default function CotizadorPage() {
                     <Field.Root>
                       <Field.Label>Precio base del profesional</Field.Label>
                       <Input
+                        data-testid="cotizador-precio-base"
                         type="number"
                         value={basePrice}
                         onChange={(event) => setBasePrice(event.target.value)}
@@ -132,6 +133,7 @@ export default function CotizadorPage() {
                       <Field.Label>Complejidad</Field.Label>
                       <NativeSelect.Root>
                         <NativeSelect.Field
+                          data-testid="cotizador-complejidad"
                           value={complexityLevel}
                           onChange={(event) =>
                             setComplexityLevel(event.target.value as "baja" | "media" | "alta")
@@ -148,6 +150,7 @@ export default function CotizadorPage() {
                       <Field.Label>Urgencia</Field.Label>
                       <NativeSelect.Root>
                         <NativeSelect.Field
+                          data-testid="cotizador-urgencia"
                           value={urgencyLevel}
                           onChange={(event) =>
                             setUrgencyLevel(event.target.value as "normal" | "urgente" | "express")
@@ -163,6 +166,7 @@ export default function CotizadorPage() {
                     <Field.Root>
                       <Field.Label>Revisiones extra</Field.Label>
                       <Input
+                        data-testid="cotizador-revisiones"
                         type="number"
                         value={extraRevisions}
                         onChange={(event) => setExtraRevisions(event.target.value)}
@@ -173,6 +177,7 @@ export default function CotizadorPage() {
 
                     <Stack gap="3">
                       <Checkbox.Root
+                        data-testid="cotizador-soporte"
                         checked={includePrioritySupport}
                         onCheckedChange={(details) => setIncludePrioritySupport(details.checked === true)}
                       >
@@ -182,6 +187,7 @@ export default function CotizadorPage() {
                       </Checkbox.Root>
 
                       <Checkbox.Root
+                        data-testid="cotizador-fds"
                         checked={includeWeekendDelivery}
                         onCheckedChange={(details) => setIncludeWeekendDelivery(details.checked === true)}
                       >
@@ -192,7 +198,7 @@ export default function CotizadorPage() {
                     </Stack>
 
                     <HStack justify="flex-end">
-                      <Button type="submit" colorPalette="purple" loading={loading}>
+                      <Button data-testid="cotizador-submit" type="submit" colorPalette="purple" loading={loading}>
                         Calcular estimado
                       </Button>
                     </HStack>
@@ -211,7 +217,7 @@ export default function CotizadorPage() {
                     <Alert.Root status="error">
                       <Alert.Indicator />
                       <Alert.Content>
-                        <Alert.Title>{errorMessage}</Alert.Title>
+                        <Alert.Title data-testid="cotizador-error">{errorMessage}</Alert.Title>
                       </Alert.Content>
                     </Alert.Root>
                   ) : null}
@@ -244,7 +250,7 @@ export default function CotizadorPage() {
 
                       <HStack justify="space-between">
                         <Heading size="sm">Total estimado</Heading>
-                        <Heading size="md" color="purple.500">
+                        <Heading data-testid="cotizador-total" size="md" color="purple.500">
                           ${result.estimatedTotal.toFixed(2)}
                         </Heading>
                       </HStack>
