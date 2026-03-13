@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SistemaServicios.API.DTOs.Requests;
 using SistemaServicios.API.Interfaces;
@@ -24,6 +25,7 @@ public class ServiceRequestsController : ControllerBase
     }
 
     [HttpPut("{id}/status")]
+    [Authorize(Roles = "Professional,Admin")]
     public async Task<IActionResult> UpdateStatus(int id, [FromQuery] StatusEnum newStatus)
     {
         try
