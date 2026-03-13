@@ -123,3 +123,9 @@ backend/SistemaServicios.API/wwwroot/uploads/avatars/*
 .store/
 dotnet-ef.exe
 ""
+
+# ========================
+# Scripts locales de desarrollo
+# ========================
+scripts/build-backend-local.ps1
+scripts/build-frontend-local.ps1

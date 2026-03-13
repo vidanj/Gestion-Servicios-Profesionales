@@ -103,6 +103,11 @@ export default function RequestsPage() {
                     value={controller.searchText}
                     onChange={(event) => controller.setSearchText(event.target.value)}
                   />
+                  {controller.isSearchDebouncing ? (
+                    <Text fontSize="xs" color="muted" mt="1">
+                      Esperando 400 ms para aplicar búsqueda...
+                    </Text>
+                  ) : null}
                 </Field.Root>
                 <Field.Root>
                   <Field.Label>Estado</Field.Label>
