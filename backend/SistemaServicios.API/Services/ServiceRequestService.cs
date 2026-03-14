@@ -8,17 +8,14 @@ public class ServiceRequestService : IServiceRequestService
 {
     private readonly IServiceRequestRepository _repository;
     private readonly IServiceRepository _serviceRepository;
-    private readonly IUserRepository _userRepository;
 
     public ServiceRequestService(
         IServiceRequestRepository repository,
-        IServiceRepository serviceRepository,
-        IUserRepository userRepository
+        IServiceRepository serviceRepository
     )
     {
         _repository = repository;
         _serviceRepository = serviceRepository;
-        _userRepository = userRepository;
     }
 
     public async Task<ServiceRequestDto> CreateRequestAsync(
@@ -32,12 +29,6 @@ public class ServiceRequestService : IServiceRequestService
             throw new KeyNotFoundException(
                 $"El servicio con ID {dto.ServiceId} no existe o no está disponible."
             );
-        }
-
-        var client = await _userRepository.GetByIdAsync(clientId);
-        if (client is null)
-        {
-            throw new KeyNotFoundException($"El cliente con ID {clientId} no existe.");
         }
 
         var request = new Request
