@@ -7,14 +7,42 @@ namespace SistemaServicios.API.Services;
 public class ServiceRequestService : IServiceRequestService
 {
     private readonly IServiceRequestRepository _repository;
+    private readonly IServiceRepository _serviceRepository;
+    private readonly IUserRepository _userRepository;
 
-    public ServiceRequestService(IServiceRequestRepository repository)
+    public ServiceRequestService(
+        IServiceRequestRepository repository,
+        IServiceRepository serviceRepository,
+        IUserRepository userRepository
+    )
     {
         _repository = repository;
+        _serviceRepository = serviceRepository;
+        _userRepository = userRepository;
     }
 
     public async Task<Request> CreateRequestAsync(CreateServiceRequestDto requestDto)
     {
+        var serviceExists = await _serviceRepository.ExistsAsync(requestDto.ServiceId);
+        if (!serviceExists)
+        {
+            throw new KeyNotFoundException($"El servicio con ID {requestDto.ServiceId} no existe.");
+        }
+
+        var client = await _userRepository.GetByIdAsync(requestDto.ClientId);
+        if (client is null)
+        {
+            throw new KeyNotFoundException($"El cliente con ID {requestDto.ClientId} no existe.");
+        }
+
+        var professional = await _userRepository.GetByIdAsync(requestDto.ProfessionalId);
+        if (professional is null)
+        {
+            throw new KeyNotFoundException(
+                $"El profesionista con ID {requestDto.ProfessionalId} no existe."
+            );
+        }
+
         var newRequest = new Request
         {
             ClientId = requestDto.ClientId,
