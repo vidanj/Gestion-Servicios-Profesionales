@@ -21,53 +21,114 @@ public class ServiceRequestService : IServiceRequestService
         _userRepository = userRepository;
     }
 
-    public async Task<Request> CreateRequestAsync(CreateServiceRequestDto requestDto)
+    public async Task<ServiceRequestDto> CreateRequestAsync(
+        Guid clientId,
+        CreateServiceRequestDto dto
+    )
     {
-        var serviceExists = await _serviceRepository.ExistsAsync(requestDto.ServiceId);
-        if (!serviceExists)
-        {
-            throw new KeyNotFoundException($"El servicio con ID {requestDto.ServiceId} no existe.");
-        }
-
-        var client = await _userRepository.GetByIdAsync(requestDto.ClientId);
-        if (client is null)
-        {
-            throw new KeyNotFoundException($"El cliente con ID {requestDto.ClientId} no existe.");
-        }
-
-        var professional = await _userRepository.GetByIdAsync(requestDto.ProfessionalId);
-        if (professional is null)
+        var service = await _serviceRepository.GetByIdAsync(dto.ServiceId);
+        if (service is null || !service.IsActive)
         {
             throw new KeyNotFoundException(
-                $"El profesionista con ID {requestDto.ProfessionalId} no existe."
+                $"El servicio con ID {dto.ServiceId} no existe o no está disponible."
             );
         }
 
-        var newRequest = new Request
+        var client = await _userRepository.GetByIdAsync(clientId);
+        if (client is null)
         {
-            ClientId = requestDto.ClientId,
-            ProfessionalId = requestDto.ProfessionalId,
-            ServiceId = requestDto.ServiceId,
-            Description = requestDto.Description,
+            throw new KeyNotFoundException($"El cliente con ID {clientId} no existe.");
+        }
+
+        var request = new Request
+        {
+            ClientId = clientId,
+            ProfessionalId = service.ProfessionalId,
+            ServiceId = service.Id,
+            QuotedPrice = service.BasePrice,
+            Description = dto.Description,
+            ScheduledDate = dto.ScheduledDate,
             Status = RequestStatus.Pending,
             RequestDate = DateTime.UtcNow,
         };
 
-        var createdRequest = await _repository.CreateAsync(newRequest);
-        return createdRequest;
+        var created = await _repository.CreateAsync(request);
+
+        var withIncludes = await _repository.GetByIdAsync(created.Id);
+        return MapToDto(withIncludes!);
     }
 
-    public async Task<Request> UpdateStatusAsync(int requestId, RequestStatus newStatus)
+    public async Task<ServiceRequestDto> GetRequestByIdAsync(
+        int id,
+        Guid requesterId,
+        string requesterRole
+    )
     {
-        var request =
-            await _repository.GetByIdAsync(requestId)
-            ?? throw new KeyNotFoundException("Solicitud no encontrada.");
-
-        var oldStatus = request.Status;
-
-        if (!IsValidTransition(oldStatus, newStatus))
+        var request = await _repository.GetByIdAsync(id);
+        if (request is null)
         {
-            throw new InvalidOperationException("Transición de estado inválida.");
+            throw new KeyNotFoundException($"Solicitud con ID {id} no encontrada.");
+        }
+
+        var isOwner = request.ClientId == requesterId || request.ProfessionalId == requesterId;
+        if (requesterRole != "Admin" && !isOwner)
+        {
+            throw new UnauthorizedAccessException(
+                "No tienes permiso para consultar esta solicitud."
+            );
+        }
+
+        return MapToDto(request);
+    }
+
+    public async Task<(IEnumerable<ServiceRequestDto> requests, int totalCount)> GetMyRequestsAsync(
+        Guid clientId,
+        int page,
+        int size
+    )
+    {
+        var (requests, totalCount) = await _repository.GetByClientIdAsync(clientId, page, size);
+        return (requests.Select(MapToDto), totalCount);
+    }
+
+    public async Task<(
+        IEnumerable<ServiceRequestDto> requests,
+        int totalCount
+    )> GetProfessionalRequestsAsync(Guid professionalId, int page, int size)
+    {
+        var (requests, totalCount) = await _repository.GetByProfessionalIdAsync(
+            professionalId,
+            page,
+            size
+        );
+        return (requests.Select(MapToDto), totalCount);
+    }
+
+    public async Task<ServiceRequestDto> UpdateStatusAsync(
+        int requestId,
+        RequestStatus newStatus,
+        Guid requesterId,
+        string requesterRole
+    )
+    {
+        var request = await _repository.GetByIdAsync(requestId);
+        if (request is null)
+        {
+            throw new KeyNotFoundException("Solicitud no encontrada.");
+        }
+
+        if (requesterRole != "Admin" && request.ProfessionalId != requesterId)
+        {
+            throw new UnauthorizedAccessException(
+                "Solo el profesionista asignado o un Admin puede cambiar el estado."
+            );
+        }
+
+        if (!IsValidTransition(request.Status, newStatus))
+        {
+            throw new InvalidOperationException(
+                $"Transición de estado inválida: {request.Status} → {newStatus}."
+            );
         }
 
         request.Status = newStatus;
@@ -78,7 +139,9 @@ public class ServiceRequestService : IServiceRequestService
         }
 
         await _repository.UpdateAsync(request);
-        return request;
+
+        var withIncludes = await _repository.GetByIdAsync(request.Id);
+        return MapToDto(withIncludes!);
     }
 
     private static bool IsValidTransition(RequestStatus current, RequestStatus next)
@@ -100,4 +163,26 @@ public class ServiceRequestService : IServiceRequestService
 
         return false;
     }
+
+    private static ServiceRequestDto MapToDto(Request r) =>
+        new()
+        {
+            Id = r.Id,
+            ClientId = r.ClientId,
+            ClientName = r.Client is not null
+                ? $"{r.Client.FirstName} {r.Client.LastName}"
+                : string.Empty,
+            ProfessionalId = r.ProfessionalId,
+            ProfessionalName = r.Professional is not null
+                ? $"{r.Professional.FirstName} {r.Professional.LastName}"
+                : string.Empty,
+            ServiceId = r.ServiceId,
+            ServiceTitle = r.Service?.Title ?? string.Empty,
+            QuotedPrice = r.QuotedPrice,
+            Status = r.Status,
+            Description = r.Description,
+            RequestDate = r.RequestDate,
+            ScheduledDate = r.ScheduledDate,
+            CompletionDate = r.CompletionDate,
+        };
 }
