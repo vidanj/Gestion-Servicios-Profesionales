@@ -21,7 +21,7 @@ public class ServiceRequestsController : ControllerBase
     }
 
     /// <summary>Crear una nueva solicitud de servicio. El ClientId se extrae del JWT.</summary>
-    [Authorize(Roles = "Client")]
+    [Authorize(Roles = "Client,Professional")]
     [HttpPost]
     public async Task<ActionResult<ServiceRequestDto>> CreateRequest(
         [FromBody] CreateServiceRequestDto dto
@@ -87,8 +87,8 @@ public class ServiceRequestsController : ControllerBase
         }
     }
 
-    /// <summary>Solicitudes realizadas por el cliente autenticado.</summary>
-    [Authorize(Roles = "Client")]
+    /// <summary>Solicitudes realizadas por el usuario autenticado (Cliente o Profesionista).</summary>
+    [Authorize(Roles = "Client,Professional")]
     [HttpGet("my")]
     public async Task<ActionResult> GetMyRequests(
         [FromQuery] int page = 1,
