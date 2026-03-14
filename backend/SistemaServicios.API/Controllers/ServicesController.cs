@@ -35,7 +35,15 @@ public class ServicesController : ControllerBase
                 categoryId,
                 professionalId
             );
-            return Ok(new { data = services, totalCount, page, size });
+            return Ok(
+                new
+                {
+                    data = services,
+                    totalCount,
+                    page,
+                    size,
+                }
+            );
         }
         catch (Exception ex)
         {
@@ -89,7 +97,15 @@ public class ServicesController : ControllerBase
                 page,
                 size
             );
-            return Ok(new { data = services, totalCount, page, size });
+            return Ok(
+                new
+                {
+                    data = services,
+                    totalCount,
+                    page,
+                    size,
+                }
+            );
         }
         catch (Exception ex)
         {

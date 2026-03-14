@@ -31,7 +31,10 @@ public class ServiceRequestsController : ControllerBase
         }
         catch (Exception ex)
         {
-            return StatusCode(500, new { message = "Error interno del servidor.", error = ex.Message });
+            return StatusCode(
+                500,
+                new { message = "Error interno del servidor.", error = ex.Message }
+            );
         }
     }
 

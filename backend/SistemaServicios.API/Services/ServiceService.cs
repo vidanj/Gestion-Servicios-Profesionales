@@ -224,9 +224,7 @@ public class ServiceService : IServiceService
 
         if (requesterRole != "Admin" && service.ProfessionalId != requesterId)
         {
-            throw new UnauthorizedAccessException(
-                "No tienes permiso para eliminar este servicio."
-            );
+            throw new UnauthorizedAccessException("No tienes permiso para eliminar este servicio.");
         }
 
         service.IsActive = false;
@@ -250,10 +248,9 @@ public class ServiceService : IServiceService
         {
             Id = s.Id,
             ProfessionalId = s.ProfessionalId,
-            ProfessionalName =
-                s.Professional is not null
-                    ? $"{s.Professional.FirstName} {s.Professional.LastName}"
-                    : string.Empty,
+            ProfessionalName = s.Professional is not null
+                ? $"{s.Professional.FirstName} {s.Professional.LastName}"
+                : string.Empty,
             CategoryId = s.CategoryId,
             CategoryName = s.Category?.Name ?? string.Empty,
             Title = s.Title,

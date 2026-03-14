@@ -26,17 +26,13 @@ public class ServiceRequestService : IServiceRequestService
         var serviceExists = await _serviceRepository.ExistsAsync(requestDto.ServiceId);
         if (!serviceExists)
         {
-            throw new KeyNotFoundException(
-                $"El servicio con ID {requestDto.ServiceId} no existe."
-            );
+            throw new KeyNotFoundException($"El servicio con ID {requestDto.ServiceId} no existe.");
         }
 
         var client = await _userRepository.GetByIdAsync(requestDto.ClientId);
         if (client is null)
         {
-            throw new KeyNotFoundException(
-                $"El cliente con ID {requestDto.ClientId} no existe."
-            );
+            throw new KeyNotFoundException($"El cliente con ID {requestDto.ClientId} no existe.");
         }
 
         var professional = await _userRepository.GetByIdAsync(requestDto.ProfessionalId);
