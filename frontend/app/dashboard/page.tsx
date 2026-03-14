@@ -29,14 +29,6 @@ export default function CatalogoPage() {
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
 
-  {!loading && !error && services.length === 0 && (
-    <p style={{ color: "rgba(255,255,255,0.4)", textAlign: "center", padding: "4rem 0" }}>
-      {search.trim()
-        ? `No se encontraron servicios para "${debouncedSearch}".`
-        : "No hay servicios disponibles."}
-    </p>
-  )}
-
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearch(search);
@@ -173,17 +165,30 @@ export default function CatalogoPage() {
             }}
           >
             {services.map((service) => (
-              <div
+              <Link
                 key={service.id}
-                style={{
-                  background: "rgba(13,19,27,0.95)",
-                  borderRadius: "1.5rem",
-                  border: "1px solid rgba(255,255,255,0.08)",
-                  overflow: "hidden",
-                  boxShadow: "0 20px 40px rgba(0,0,0,0.6)",
-                  transition: "0.3s ease",
-                }}
+                href={`/catalogo/${service.id}`}
+                style={{ textDecoration: "none" }}
               >
+                <div
+                  style={{
+                    background: "rgba(13,19,27,0.95)",
+                    borderRadius: "1.5rem",
+                    border: "1px solid rgba(255,255,255,0.08)",
+                    overflow: "hidden",
+                    boxShadow: "0 20px 40px rgba(0,0,0,0.6)",
+                    transition: "transform 0.2s ease, border-color 0.2s ease",
+                    cursor: "pointer",
+                  }}
+                  onMouseEnter={(e) => {
+                    (e.currentTarget as HTMLDivElement).style.transform = "translateY(-4px)";
+                    (e.currentTarget as HTMLDivElement).style.borderColor = "rgba(124,58,237,0.5)";
+                  }}
+                  onMouseLeave={(e) => {
+                    (e.currentTarget as HTMLDivElement).style.transform = "translateY(0)";
+                    (e.currentTarget as HTMLDivElement).style.borderColor = "rgba(255,255,255,0.08)";
+                  }}
+                >
                 {/* Imagen */}
                 <div
                   style={{
@@ -264,6 +269,7 @@ export default function CatalogoPage() {
                   </div>
                 </div>
               </div>
+              </Link>
             ))}
           </div>
         )}
