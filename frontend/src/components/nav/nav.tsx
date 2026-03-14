@@ -43,6 +43,9 @@ export default function Nav() {
       </Link>
 
       <div style={{ display: "flex", gap: "1.5rem", alignItems: "center" }}>
+        <Link href="/profesionista" style={{ color: "rgba(255,255,255,0.7)", textDecoration: "none" }}>
+          Mis Servicios
+        </Link>
         <Link href="/solicitudes" style={{ color: "rgba(255,255,255,0.7)", textDecoration: "none" }}>
           Solicitudes
         </Link>
