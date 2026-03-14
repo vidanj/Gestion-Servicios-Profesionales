@@ -20,6 +20,9 @@ public enum LogAction
     SuspensionUsuario = 5,
     CreacionUsuario = 6,
     EliminacionUsuario = 7,
+    CreacionServicio = 8,
+    ActualizacionServicio = 9,
+    EliminacionServicio = 10,
 }
 
 public class UserLog

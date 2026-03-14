@@ -20,8 +20,19 @@ public class ServiceRequestsController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> CreateRequest([FromBody] CreateServiceRequestDto requestDto)
     {
-        var result = await _requestService.CreateRequestAsync(requestDto);
-        return Ok(result);
+        try
+        {
+            var result = await _requestService.CreateRequestAsync(requestDto);
+            return Ok(result);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { message = "Error interno del servidor.", error = ex.Message });
+        }
     }
 
     [HttpPut("{id}/status")]
