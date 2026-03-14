@@ -29,6 +29,15 @@ test('Login exitoso redirige al dashboard', async ({ page }) => {
 });
 
 test('Login con credenciales inválidas muestra error', async ({ page }) => {
+    // Intercepta la llamada antes de navegar
+    await page.route('**/api/auth/login', async route => {
+        await route.fulfill({
+            status: 401,
+            contentType: 'application/json',
+            body: JSON.stringify({ message: 'Unauthorized' }),
+        });
+    });
+
     await page.goto('http://localhost:3000/login');
 
     await page.getByTestId('username-input').fill('mal@email.com');

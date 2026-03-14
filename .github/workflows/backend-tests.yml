@@ -33,15 +33,24 @@ jobs:
         with:
           dotnet-version: '9.0.x'
 
-      # ── 3. Restaurar dependencias ──────────────────────────────────
+      # ── 3. Restaurar herramientas locales (ReportGenerator, etc.) ──
+      - name: Restaurar herramientas dotnet
+        run: dotnet tool restore
+
+      # ── 4. Restaurar dependencias ──────────────────────────────────
       - name: Restaurar paquetes NuGet
-        run: dotnet restore backend/SistemaServicios.Tests
+        run: dotnet restore backend/SistemaServicios.sln
 
-      # ── 4. Build ───────────────────────────────────────────────────
-      - name: Compilar solución
-        run: dotnet build backend/SistemaServicios.Tests --no-restore --configuration Release
+      # ── 5. Build ───────────────────────────────────────────────────
+      - name: Compilar solución completa
+        run: dotnet build backend/SistemaServicios.sln --no-restore --configuration Release
 
-      # ── 5. Pruebas + cobertura ─────────────────────────────────────
+      # ── 6. Limpiar resultados de cobertura previos ─────────────────
+      # Evita que archivos XML de ejecuciones anteriores contaminen el merge
+      - name: Limpiar directorio de cobertura
+        run: rm -rf ./coverage && mkdir -p ./coverage
+
+      # ── 7. Pruebas + cobertura ─────────────────────────────────────
       - name: Ejecutar pruebas con recolección de cobertura
         env:
           JWT_KEY: "CIKeyParaGithubActionsTestingPurposesOnly!"
@@ -54,20 +63,22 @@ jobs:
           DB_USER: "fake"
           DB_PASSWORD: "fake"
           ALLOWED_ORIGINS: "http://localhost:3000"
+          SMTP_HOST: "dummy-host"
+          SMTP_PORT: "587"
+          SMTP_USER: "dummy@test.com"
+          SMTP_PASSWORD: "dummy-pass"
+          SMTP_FROM: "dummy@test.com"
         run: |
-          dotnet test backend/SistemaServicios.Tests \
+          dotnet test backend/SistemaServicios.sln \
             --no-build \
             --configuration Release \
             --collect:"XPlat Code Coverage" \
             --settings backend/SistemaServicios.Tests/coverlet.runsettings \
             --results-directory ./coverage \
-            --logger "trx;LogFileName=test-results.trx"
+            --logger "trx;LogFileName=test-results.trx" \
+            --logger "console;verbosity=normal"
 
-      # ── 6. Restaurar herramientas locales (incluye ReportGenerator) ──
-      - name: Restaurar herramientas dotnet
-        run: dotnet tool restore
-
-      # ── 7. Generar reporte HTML ────────────────────────────────────
+      # ── 8. Generar reporte HTML ────────────────────────────────────
       - name: Generar reporte HTML de cobertura
         run: |
           dotnet tool run reportgenerator \
@@ -77,11 +88,16 @@ jobs:
             -assemblyfilters:"+SistemaServicios.API" \
             -classfilters:"-*Migrations*;-*AppDbContext*;-*Program*"
 
-      # ── 8. Mostrar resumen en el log ───────────────────────────────
+      # ── 9. Mostrar resumen en el log y en el Job Summary ──────────
       - name: Mostrar resumen de cobertura
-        run: cat ./coverage/report/Summary.txt
+        run: |
+          cat ./coverage/report/Summary.txt
+          echo "## Resumen de Cobertura" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          cat ./coverage/report/Summary.txt >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
 
-      # ── 9. Publicar reporte como artefacto ─────────────────────────
+      # ── 10. Publicar reporte como artefacto ────────────────────────
       - name: Publicar reporte HTML como artefacto
         uses: actions/upload-artifact@v4
         if: always()
@@ -90,7 +106,7 @@ jobs:
           path: ./coverage/report
           retention-days: 30
 
-      # ── 10. Publicar resultados de pruebas ─────────────────────────
+      # ── 11. Publicar resultados de pruebas ─────────────────────────
       - name: Publicar resultados .trx como artefacto
         uses: actions/upload-artifact@v4
         if: always()

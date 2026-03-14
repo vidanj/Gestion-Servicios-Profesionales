@@ -2,13 +2,16 @@
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useState } from "react";
+import { useAuthStore } from "@/store/auth-store";
 
 export default function LoginPage() {
 
   const router = useRouter();
+  const setFromAuthResponse = useAuthStore((s) => s.setFromAuthResponse);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const apiUrl = process.env.NEXT_PUBLIC_ALLOWED_PATH;
 
   const validateForm = () => {
     if (!email.trim()) {
@@ -40,7 +43,7 @@ export default function LoginPage() {
     if (!validateForm()) return;
 
     try {
-      const res = await fetch("http://localhost:5000/api/auth/login", {
+      const res = await fetch(`${apiUrl}/api/auth/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -58,6 +61,12 @@ export default function LoginPage() {
 
       const data = await res.json();
       localStorage.setItem("token", data.token);
+      setFromAuthResponse({
+        firstName: data.firstName,
+        lastName: data.lastName,
+        email: data.email,
+        role: data.role,
+      });
 
       router.push("/dashboard");
     } catch (error) {

@@ -285,6 +285,35 @@ namespace SistemaServicios.API.Migrations
                     b.ToTable("Users");
                 });
 
+            modelBuilder.Entity("SistemaServicios.API.Models.UserLog", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Action")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Detail")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("UserLogs");
+                });
+
             modelBuilder.Entity("SistemaServicios.API.Models.Verification", b =>
                 {
                     b.Property<int>("Id")
@@ -418,6 +447,17 @@ namespace SistemaServicios.API.Migrations
                     b.Navigation("Category");
 
                     b.Navigation("Professional");
+                });
+
+            modelBuilder.Entity("SistemaServicios.API.Models.UserLog", b =>
+                {
+                    b.HasOne("SistemaServicios.API.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("SistemaServicios.API.Models.Verification", b =>

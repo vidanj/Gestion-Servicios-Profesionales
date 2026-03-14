@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-export type UserRole = "admin" | "manager" | "usuario" | "soporte" | "auditor";
+export type UserRole = "admin" | "cliente" | "profesionista";
 
 export interface User {
   id: string;
@@ -18,73 +18,92 @@ export type UsersUpdater = User[] | ((prev: User[]) => User[]);
 interface UsersStoreSnapshot {
   users: User[];
   setUsers: (value: UsersUpdater) => void;
+  loading: boolean;
+  error: string;
+  refresh: () => Promise<void>;
 }
 
-const initialUsers: User[] = [
-  {
-    id: "u-1001",
-    name: "Andrea Pineda",
-    email: "andrea.pineda@empresa.com",
-    role: "admin",
-    team: "Direccion",
-    permissions: ["gestion_usuarios", "reportes", "configuracion"],
-  },
-  {
-    id: "u-1002",
-    name: "Luis Martinez",
-    email: "luis.martinez@empresa.com",
-    role: "manager",
-    team: "Ventas",
-    permissions: ["clientes", "cotizaciones"],
-  },
-  {
-    id: "u-1003",
-    name: "Camila Sosa",
-    email: "camila.sosa@empresa.com",
-    role: "usuario",
-    team: "Operaciones",
-    permissions: ["ordenes", "inventario"],
-  },
-  {
-    id: "u-1004",
-    name: "Jorge Padilla",
-    email: "jorge.padilla@empresa.com",
-    role: "soporte",
-    team: "Soporte",
-    permissions: ["tickets", "base_conocimiento"],
-  },
-  {
-    id: "u-1005",
-    name: "Paula Reyes",
-    email: "paula.reyes@empresa.com",
-    role: "auditor",
-    team: "Auditoria",
-    permissions: ["logs", "cumplimiento"],
-  },
-];
-
-let usersState = initialUsers;
-const listeners = new Set<(users: User[]) => void>();
-
-const notify = () => {
-  listeners.forEach((listener) => listener(usersState));
+const roleMap: Record<number, UserRole> = {
+  0: "admin",
+  1: "cliente",
+  2: "profesionista",
 };
+
+const apiUrl = process.env.NEXT_PUBLIC_ALLOWED_PATH;
+
+const getToken = () =>
+  typeof window !== "undefined" ? localStorage.getItem("token") : null;
+
+// Estado global compartido entre componentes
+let usersState: User[] = [];
+let loadingState = false;
+let errorState = "";
+const listeners = new Set<() => void>();
+
+const notify = () => listeners.forEach((l) => l());
 
 const setUsers = (value: UsersUpdater) => {
   usersState = typeof value === "function" ? value(usersState) : value;
   notify();
 };
 
+const fetchFromApi = async () => {
+  const token = getToken();
+  if (!token) return;
+
+  loadingState = true;
+  errorState = "";
+  notify();
+
+  try {
+    const res = await fetch(`${apiUrl}/api/Users?page=1&size=50`, {
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!res.ok) throw new Error("Error al cargar usuarios");
+
+    const json = await res.json();
+    const raw: { id: string; firstName: string; lastName: string; email: string; role: number }[] =
+      json.data ?? json.Data ?? [];
+
+    usersState = raw.map((u) => ({
+      id: u.id,
+      name: `${u.firstName} ${u.lastName}`,
+      email: u.email,
+      role: roleMap[u.role] ?? "cliente",
+    }));
+  } catch {
+    errorState = "No se pudieron cargar los usuarios.";
+  } finally {
+    loadingState = false;
+    notify();
+  }
+};
+
 export const useUsersStore = (): UsersStoreSnapshot => {
-  const [users, setUsersState] = useState(usersState);
+  const [, forceUpdate] = useState(0);
 
   useEffect(() => {
-    const listener = (nextUsers: User[]) => setUsersState(nextUsers);
+    const listener = () => forceUpdate((n) => n + 1);
     listeners.add(listener);
+
+    if (usersState.length === 0 && !loadingState) {
+      fetchFromApi();
+    }
+
     return () => {
       listeners.delete(listener);
     };
   }, []);
 
-  return { users, setUsers };
+  return {
+    users: usersState,
+    setUsers,
+    loading: loadingState,
+    error: errorState,
+    refresh: fetchFromApi,
+  };
 };

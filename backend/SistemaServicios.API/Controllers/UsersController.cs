@@ -18,6 +18,7 @@ public class UsersController : ControllerBase
     }
 
     [HttpGet]
+    [Authorize(Roles = "Admin")]
     public async Task<ActionResult> GetUsers([FromQuery] int page = 1, [FromQuery] int size = 10)
     {
         var (users, total) = await _userService.GetAllUsersAsync(page, size);
@@ -45,6 +46,7 @@ public class UsersController : ControllerBase
     }
 
     [HttpPost]
+    [Authorize(Roles = "Admin")]
     public async Task<ActionResult<UserDto>> CreateUser(CreateUserDto createUserDto)
     {
         try
@@ -71,6 +73,7 @@ public class UsersController : ControllerBase
     }
 
     [HttpDelete("{id}")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> DeleteUser(Guid id)
     {
         var result = await _userService.SoftDeleteUserAsync(id);
@@ -80,5 +83,12 @@ public class UsersController : ControllerBase
         }
 
         return NoContent();
+    }
+
+    [HttpGet("stats/registrations")]
+    public async Task<IActionResult> GetRegistrationStats([FromQuery] int days = 30)
+    {
+        var stats = await _userService.GetRegistrationsByDateAsync(days);
+        return Ok(stats);
     }
 }

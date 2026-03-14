@@ -1,9 +1,9 @@
 <Project>
   <PropertyGroup>
-    <!-- Aplica el EditorConfig a toda la solución -->
+    <!-- Aplica el EditorConfig a toda la solucion -->
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
-    <!-- Tratar advertencias de analizadores como errores en CI (controlado por variable de entorno CI) -->
-    <TreatWarningsAsErrors Condition="'$(CI)' == 'true'">false</TreatWarningsAsErrors>
+    <!-- Tratar todas las advertencias como errores -->
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <!-- Conflictos conocidos entre CSharpier y StyleCop -->
     <!-- SA1009: closing paren tras lambda/expresion multilinea -->
     <!-- SA1111: closing paren en linea del ultimo parametro -->
@@ -12,15 +12,23 @@
     <!-- SA1127: restricciones de tipo generico en su propia linea -->
     <!-- SA1128: inicializadores de constructor en su propia linea -->
     <!-- SA1502: elemento no debe estar en una sola linea (conflicto con CSharpier) -->
-    <NoWarn>$(NoWarn);SA1009;SA1111;SA1118;SA1119;SA1127;SA1128;SA1502</NoWarn>
-    <!-- Habilitar análisis de código de .NET en todos los proyectos -->
+    <!-- SA0001: analisis XML deshabilitado (documentacion no requerida) -->
+    <!-- SA1101: no requerir this. en llamadas locales -->
+    <!-- SA1200: using directives manejados por CSharpier -->
+    <!-- SA1309: campos privados con prefijo _ -->
+    <!-- SA1600-SA1602: documentacion de elementos/enums no requerida -->
+    <!-- SA1611/SA1615/SA1616: documentacion de parametros no requerida -->
+    <!-- SA1633: header de archivo no requerido -->
+    <!-- SA1642-SA1643: summary de constructor/destructor no requerido -->
+    <NoWarn>$(NoWarn);SA1009;SA1111;SA1118;SA1119;SA1127;SA1128;SA1502;SA0001;SA1101;SA1200;SA1309;SA1600;SA1601;SA1602;SA1611;SA1615;SA1616;SA1633;SA1642;SA1643</NoWarn>
+    <!-- Habilitar analisis de codigo de .NET en todos los proyectos -->
     <EnableNETAnalyzers>true</EnableNETAnalyzers>
     <AnalysisLevel>latest-recommended</AnalysisLevel>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
 
-  <!-- Archivo de configuración de StyleCop a nivel de solución -->
+  <!-- Archivo de configuracion de StyleCop a nivel de solucion -->
   <ItemGroup>
     <AdditionalFiles Include="$(MSBuildThisFileDirectory)stylecop.json" Link="stylecop.json" />
   </ItemGroup>

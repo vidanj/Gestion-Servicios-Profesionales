@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using SistemaServicios.API.Data;
+using SistemaServicios.API.DTOs;
 using SistemaServicios.API.Interfaces;
 using SistemaServicios.API.Models;
 
@@ -61,5 +62,26 @@ public class UserRepository : IUserRepository
         _context.Users.Add(user);
         await _context.SaveChangesAsync();
         return user;
+    }
+
+    public async Task<IEnumerable<UserRegistrationStatDto>> GetRegistrationsByDateAsync(int days)
+    {
+        var desde = DateTime.UtcNow.Date.AddDays(-days + 1);
+
+        var resultados = await _context
+            .Users.Where(u => u.CreatedAt >= desde)
+            .GroupBy(u => u.CreatedAt.Date)
+            .Select(g => new { Date = g.Key, Count = g.Count() })
+            .ToListAsync();
+
+        // Rellenar días sin registros con 0
+        return Enumerable
+            .Range(0, days)
+            .Select(i => desde.AddDays(i))
+            .Select(fecha => new UserRegistrationStatDto
+            {
+                Date = DateOnly.FromDateTime(fecha),
+                Count = resultados.FirstOrDefault(r => r.Date == fecha)?.Count ?? 0,
+            });
     }
 }

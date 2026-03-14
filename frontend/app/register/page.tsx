@@ -10,7 +10,19 @@ export default function RegisterPage() {
     const [firstName, setFirstName] = useState("");
     const [lastName, setLastName] = useState("");
     const [phoneNumber, setPhoneNumber] = useState("");
+    const [role, setRole] = useState("");
+
+    const [roleOpen, setRoleOpen] = useState(false);
+
+    const roles = [
+        { value: "1", label: "Cliente" },
+        { value: "2", label: "Profesionista" },
+    ];
+
+    const selectedRole = roles.find(r => r.value === role);
+
     const [error, setError] = useState("");
+    const apiUrl = process.env.NEXT_PUBLIC_ALLOWED_PATH;
 
     const validateForm = () => {
         if (!firstName.trim()) {
@@ -19,6 +31,10 @@ export default function RegisterPage() {
         }
         if (!lastName.trim()) {
             setError("El apellido es obligatorio");
+            return false;
+        }
+        if (!role.trim()) {
+            setError("El rol es obligatorio");
             return false;
         }
         if (!email.trim()) {
@@ -50,10 +66,10 @@ export default function RegisterPage() {
         if (!validateForm()) return;
 
         try {
-            const res = await fetch("http://localhost:5000/api/Auth/register", {
+            const res = await fetch(`${apiUrl}/api/Auth/register`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ email, password, firstName, lastName, phoneNumber }),
+                body: JSON.stringify({ email, password, firstName, lastName, phoneNumber, role: parseInt(role) }),
             });
 
             if (!res.ok) {
@@ -176,6 +192,65 @@ export default function RegisterPage() {
                                 onFocus={handleFocus}
                                 onBlur={handleBlur}
                             />
+
+                            <div style={{ position: "relative" }}>
+                                <button
+                                    data-testid="role-button"
+                                    type="button"
+                                    onClick={() => setRoleOpen(!roleOpen)}
+                                    style={{
+                                        ...inputStyle,
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "space-between",
+                                        cursor: "pointer",
+                                        color: selectedRole ? "white" : "rgba(255,255,255,0.4)",
+                                        boxShadow: roleOpen ? "0 0 0 2px #7c3aed" : "none",
+                                        borderColor: roleOpen ? "#7c3aed" : "rgba(255,255,255,0.1)",
+                                    }}
+                                >
+                                    <span>{selectedRole ? selectedRole.label : "rol"}</span>
+                                    <svg
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        width="18" height="18"
+                                        viewBox="0 0 24 24"
+                                        fill="none" stroke="rgba(255,255,255,0.4)"
+                                        strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+                                        style={{ transform: roleOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }}
+                                    >
+                                        <polyline points="6 9 12 15 18 9" />
+                                    </svg>
+                                </button>
+
+                                {roleOpen && (
+                                    <div style={{
+                                        position: "absolute", top: "calc(100% + 8px)", left: 0, right: 0,
+                                        background: "#0d131b", border: "1px solid rgba(255,255,255,0.1)",
+                                        borderRadius: "1.25rem", overflow: "hidden",
+                                        boxShadow: "0 20px 25px -5px rgba(0,0,0,0.6)", zIndex: 50,
+                                    }}>
+                                        {roles.map((r) => (
+                                            <button
+                                                data-testid={`role-option-${r.label.toLowerCase()}`}
+                                                key={r.value}
+                                                type="button"
+                                                onClick={() => { setRole(r.value); setRoleOpen(false); }}
+                                                style={{
+                                                    display: "block", width: "100%", textAlign: "left",
+                                                    padding: "1rem 1.5rem", background: "transparent",
+                                                    border: "none", color: role === r.value ? "#a78bfa" : "white",
+                                                    fontSize: "1.125rem", cursor: "pointer", fontFamily: "inherit",
+                                                    borderBottom: "1px solid rgba(255,255,255,0.05)",
+                                                }}
+                                                onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(124,58,237,0.15)"; }}
+                                                onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+                                            >
+                                                {r.value === role && "✓ "}{r.label}
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
 
                             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: "0.875rem" }}>
                                 <Link href="/login" style={{ color: "rgba(255,255,255,0.8)", textDecoration: "none", fontWeight: 500 }}>

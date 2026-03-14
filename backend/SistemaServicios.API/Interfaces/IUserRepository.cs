@@ -1,3 +1,4 @@
+using SistemaServicios.API.DTOs;
 using SistemaServicios.API.Models;
 
 namespace SistemaServicios.API.Interfaces;
@@ -22,4 +23,6 @@ public interface IUserRepository
     public Task<bool> EmailExistsAsync(string email);
 
     public Task<User> CreateAsync(User user);
+
+    public Task<IEnumerable<UserRegistrationStatDto>> GetRegistrationsByDateAsync(int days);
 }

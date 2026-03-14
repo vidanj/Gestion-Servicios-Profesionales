@@ -13,6 +13,10 @@
 # testing
 /coverage
 
+# Playwright
+/playwright-report/
+/test-results/
+
 
 #public/mockServiceWorker.js
 

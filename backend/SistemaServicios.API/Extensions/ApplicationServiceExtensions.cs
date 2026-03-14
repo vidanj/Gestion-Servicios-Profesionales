@@ -18,7 +18,6 @@ public static class ApplicationServiceExtensions
         IConfiguration config
     )
     {
-        // Busca el .env subiendo desde el directorio actual hasta encontrarlo
         var directory = new DirectoryInfo(Directory.GetCurrentDirectory());
 
         while (directory != null && !File.Exists(Path.Combine(directory.FullName, ".env")))
@@ -26,9 +25,6 @@ public static class ApplicationServiceExtensions
             directory = directory.Parent;
         }
 
-        // clobberExistingVars: false → las variables ya fijadas en el entorno
-        // (sistema operativo, Docker, CI, o la factory de tests) tienen prioridad
-        // sobre las del archivo .env. Sigue el estándar de prioridad de env vars.
         if (directory != null)
         {
             Env.Load(
@@ -37,8 +33,6 @@ public static class ApplicationServiceExtensions
             );
         }
 
-        // Inyecta las variables del .env en el sistema de configuración de ASP.NET Core
-        // Así config["JwtSettings:Key"] se resuelve desde JWT_KEY del .env
         ((IConfigurationBuilder)config).AddInMemoryCollection(
             new Dictionary<string, string?>
             {
@@ -51,6 +45,11 @@ public static class ApplicationServiceExtensions
                 ["CorsSettings:AllowedOrigins"] = Environment.GetEnvironmentVariable(
                     "ALLOWED_ORIGINS"
                 ),
+                ["SmtpSettings:Host"] = Environment.GetEnvironmentVariable("SMTP_HOST"),
+                ["SmtpSettings:Port"] = Environment.GetEnvironmentVariable("SMTP_PORT"),
+                ["SmtpSettings:User"] = Environment.GetEnvironmentVariable("SMTP_USER"),
+                ["SmtpSettings:Password"] = Environment.GetEnvironmentVariable("SMTP_PASSWORD"),
+                ["SmtpSettings:From"] = Environment.GetEnvironmentVariable("SMTP_FROM"),
             }
         );
 
@@ -73,17 +72,23 @@ public static class ApplicationServiceExtensions
 
         services.AddDbContext<AppDbContext>(options => options.UseNpgsql(connectionString));
 
-        // Repositories
         services.AddScoped<IUserRepository, UserRepository>();
+        services.AddScoped<IRatingRepository, RatingRepository>();
 
-        // Services
         services.AddScoped<ITokenService, TokenService>();
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IBackupService, BackupService>();
-        services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IUserService, UserService>();
-
-        // JWT Authentication
+        services.AddScoped<IRatingService, RatingService>();
+        services.AddScoped<IServiceRequestRepository, ServiceRequestRepository>();
+        services.AddScoped<IServiceRequestService, ServiceRequestService>();
+        services.AddScoped<IEmailService, EmailService>();
+        services.AddScoped<IUserLogRepository, UserLogRepository>();
+        services.AddScoped<IUserLogService, UserLogService>();
+        services.AddScoped<ICategoryRepository, CategoryRepository>();
+        services.AddScoped<ICategoryService, CategoryService>();
+        services.AddScoped<IServiceRepository, ServiceRepository>();
+        services.AddScoped<IServiceService, ServiceService>();
         var jwtKey =
             config["JwtSettings:Key"]
             ?? throw new InvalidOperationException("JWT_KEY no definido en el archivo .env");
@@ -107,13 +112,11 @@ public static class ApplicationServiceExtensions
 
         services.AddAuthorization();
 
-        // CORS — orígenes cargados desde ALLOWED_ORIGINS en .env (separados por coma)
         var rawOrigins =
             config["CorsSettings:AllowedOrigins"]
             ?? throw new InvalidOperationException(
                 "ALLOWED_ORIGINS no definido en el archivo .env"
             );
-
         var allowedOrigins = rawOrigins.Split(
             ',',
             StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries
@@ -130,7 +133,6 @@ public static class ApplicationServiceExtensions
             );
         });
 
-        // Swagger con soporte para JWT Bearer
         services.AddSwaggerGen(c =>
         {
             c.SwaggerDoc("v1", new OpenApiInfo { Title = "Sistema Servicios API", Version = "v1" });

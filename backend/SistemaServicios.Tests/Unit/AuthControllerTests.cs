@@ -8,6 +8,7 @@ using Moq;
 using SistemaServicios.API.Controllers;
 using SistemaServicios.API.DTOs.Auth;
 using SistemaServicios.API.Interfaces;
+using SistemaServicios.API.Models;
 using Xunit;
 
 namespace SistemaServicios.Tests.Unit;
@@ -199,5 +200,102 @@ public class AuthControllerTests
         _ = ok.StatusCode.Should().Be(200);
         var json = ToJson(ok.Value);
         _ = json.Should().Contain("null");
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // Register — Role
+    // ─────────────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task RegisterConRoleProfesionalRetorna201()
+    {
+        // Arrange
+        _ = _mockAuthService
+            .Setup(s => s.RegisterAsync(It.IsAny<RegisterRequestDto>()))
+            .ReturnsAsync(
+                new AuthResponseDto
+                {
+                    Token = "jwt",
+                    Email = "pro@test.com",
+                    Role = "Professional",
+                }
+            );
+
+        // Act
+        var result = await _controller.Register(
+            new RegisterRequestDto
+            {
+                Email = "pro@test.com",
+                Password = "pass",
+                FirstName = "Ana",
+                LastName = "Torres",
+                Role = UserRole.Professional,
+            }
+        );
+
+        // Assert
+        var objectResult = result.Should().BeOfType<ObjectResult>().Which;
+        _ = objectResult.StatusCode.Should().Be(201);
+        var json = ToJson(objectResult.Value);
+        _ = json.Should().Contain("Professional");
+    }
+
+    [Fact]
+    public async Task RegisterSinRoleUsaClientePorDefectoRetorna201()
+    {
+        // Arrange
+        _ = _mockAuthService
+            .Setup(s => s.RegisterAsync(It.IsAny<RegisterRequestDto>()))
+            .ReturnsAsync(
+                new AuthResponseDto
+                {
+                    Token = "jwt",
+                    Email = "cliente@test.com",
+                    Role = "Client",
+                }
+            );
+
+        // Act
+        var result = await _controller.Register(
+            new RegisterRequestDto
+            {
+                Email = "cliente@test.com",
+                Password = "pass",
+                FirstName = "Luis",
+                LastName = "Vega",
+                // Role no especificado → default Client
+            }
+        );
+
+        // Assert
+        var objectResult = result.Should().BeOfType<ObjectResult>().Which;
+        _ = objectResult.StatusCode.Should().Be(201);
+        var json = ToJson(objectResult.Value);
+        _ = json.Should().Contain("Client");
+    }
+
+    [Fact]
+    public async Task RegisterErrorInesperadoRetorna500()
+    {
+        // Arrange: cualquier excepción no controlada
+        _ = _mockAuthService
+            .Setup(s => s.RegisterAsync(It.IsAny<RegisterRequestDto>()))
+            .ThrowsAsync(new NotSupportedException("DB caída"));
+
+        // Act
+        var result = await _controller.Register(
+            new RegisterRequestDto
+            {
+                Email = "error@test.com",
+                Password = "pass",
+                FirstName = "A",
+                LastName = "B",
+                Role = UserRole.Professional,
+            }
+        );
+
+        // Assert
+        var objectResult = result.Should().BeOfType<ObjectResult>().Subject;
+        _ = objectResult.StatusCode.Should().Be(500);
     }
 }

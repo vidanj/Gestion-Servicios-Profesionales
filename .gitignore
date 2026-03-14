@@ -103,4 +103,23 @@ PULL_REQUEST_TEMPLATE.md
 # ========================
 backups/*
 !backups/.gitkeep
+
+# ========================
+# Avatares de usuarios (imágenes subidas en runtime)
+# ========================
+backend/SistemaServicios.API/wwwroot/uploads/avatars/*
+
+# ========================
+# Playwright — reportes y resultados de pruebas E2E
+# ========================
+**/playwright-report/
+**/test-results/
+**/testresults/
+!backend/SistemaServicios.API/wwwroot/uploads/avatars/.gitkeep
 *.sql
+# ========================
+# dotnet tools (--tool-path)
+# ========================
+.store/
+dotnet-ef.exe
+""

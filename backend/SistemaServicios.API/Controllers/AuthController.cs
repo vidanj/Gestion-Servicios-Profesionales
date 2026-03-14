@@ -45,6 +45,13 @@ public class AuthController : ControllerBase
         {
             return BadRequest(new { message = ex.Message });
         }
+        catch (Exception)
+        {
+            return StatusCode(
+                500,
+                new { message = "Error al procesar la solicitud. Intenta más tarde." }
+            );
+        }
     }
 
     /// <summary>Devuelve los datos del usuario autenticado (requiere JWT).</summary>
@@ -68,5 +75,35 @@ public class AuthController : ControllerBase
                 lastName,
             }
         );
+    }
+
+    /// <summary>
+    /// Genera una nueva contraseña y la envía al correo registrado.
+    /// </summary>
+    [HttpPost("forgot-password")]
+    public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequestDto dto)
+    {
+        try
+        {
+            await _authService.ForgotPasswordAsync(dto);
+
+            return Ok(
+                new
+                {
+                    message = "Si el correo está registrado, recibirás tu nueva contraseña en breve.",
+                }
+            );
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Ok(new { message = ex.Message }); // 200 intencional: no revelar existencia del email
+        }
+        catch (Exception)
+        {
+            return StatusCode(
+                500,
+                new { message = "Error al procesar la solicitud. Intenta más tarde." }
+            );
+        }
     }
 }

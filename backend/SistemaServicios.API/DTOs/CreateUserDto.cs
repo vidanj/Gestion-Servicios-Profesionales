@@ -21,7 +21,7 @@ public class CreateUserDto
     [MaxLength(255)]
     public required string LastName { get; set; }
 
-    public UserRole Role { get; set; } = UserRole.Client;
+    public UserRole Role { get; set; }
 
     [MaxLength(20)]
     public string? PhoneNumber { get; set; }
