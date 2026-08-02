@@ -5,12 +5,16 @@ import { useState } from "react";
 import { useAuthStore } from "@/store/auth-store";
 
 export default function LoginPage() {
-
   const router = useRouter();
   const setFromAuthResponse = useAuthStore((s) => s.setFromAuthResponse);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [pin, setPin] = useState("");
+  const [mode, setMode] = useState<"password" | "pin">("password");
+  const [pinStep, setPinStep] = useState<"request" | "verify">("request");
   const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
+  const [loadingLabel, setLoadingLabel] = useState("Iniciando sesión...");
   const [isLoading, setIsLoading] = useState(false);
   const [loaderImageError, setLoaderImageError] = useState(false);
   const apiUrl = process.env.NEXT_PUBLIC_ALLOWED_PATH;
@@ -40,10 +44,48 @@ export default function LoginPage() {
     return true;
   };
 
+  const validatePinForm = () => {
+    if (!email.trim()) {
+      setError("El email es obligatorio");
+      return false;
+    }
+
+    if (!email.includes("@")) {
+      setError("El email no es válido");
+      return false;
+    }
+
+    if (!password.trim()) {
+      setError("La contraseña es obligatoria");
+      return false;
+    }
+
+    if (password.length < 6) {
+      setError("La contraseña debe tener al menos 6 caracteres");
+      return false;
+    }
+
+    if (pinStep === "verify") {
+      if (!pin.trim()) {
+        setError("El PIN es obligatorio");
+        return false;
+      }
+
+      if (!/^[0-9]{6}$/.test(pin.trim())) {
+        setError("El PIN debe tener 6 dígitos");
+        return false;
+      }
+    }
+
+    setError("");
+    return true;
+  };
+
   const handleLogin = async () => {
     if (isLoading) return;
 
     setError("");
+    setLoadingLabel("Iniciando sesión...");
     if (!validateForm()) return;
     setIsLoading(true);
 
@@ -82,8 +124,141 @@ export default function LoginPage() {
     }
   };
 
+  const requestPin = async () => {
+    if (isLoading) return;
+
+    setError("");
+    setMessage("");
+    setLoadingLabel("Enviando PIN...");
+    if (!validatePinForm()) return;
+    setIsLoading(true);
+
+    try {
+      const loginRes = await fetch(`${apiUrl}/api/auth/login`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email,
+          password,
+        }),
+      });
+
+      if (!loginRes.ok) {
+        setError("Credenciales inválidas");
+        return;
+      }
+
+      const res = await fetch(`${apiUrl}/api/auth/login-pin/request`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        setError(data?.message ?? "No se pudo enviar el PIN");
+        return;
+      }
+
+      setPinStep("verify");
+      setMessage("Se envió un PIN a tu correo. Revisa tu bandeja de entrada.");
+    } catch (error) {
+      console.error(error);
+      setError("Error de conexión");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const verifyPin = async () => {
+    if (isLoading) return;
+
+    setError("");
+    setMessage("");
+    setLoadingLabel("Verificando PIN...");
+    if (!validatePinForm()) return;
+    setIsLoading(true);
+
+    try {
+      const res = await fetch(`${apiUrl}/api/auth/login-pin/verify`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email,
+          pin,
+        }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        setError(data?.message ?? "No se pudo verificar el PIN");
+        return;
+      }
+
+      const data = await res.json();
+      localStorage.setItem("token", data.token);
+      setFromAuthResponse({
+        firstName: data.firstName,
+        lastName: data.lastName,
+        email: data.email,
+        role: data.role,
+      });
+
+      router.push("/dashboard");
+    } catch (error) {
+      console.error(error);
+      setError("Error de conexión");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSubmit = () => {
+    if (mode === "password") {
+      void handleLogin();
+      return;
+    }
+
+    if (pinStep === "request") {
+      void requestPin();
+      return;
+    }
+
+    void verifyPin();
+  };
+
+  const resendPin = () => {
+    if (isLoading) return;
+
+    setPin("");
+    setPinStep("request");
+    void requestPin();
+  };
+
+  const switchToPassword = () => {
+    setMode("password");
+    setError("");
+    setMessage("");
+    setPin("");
+    setPinStep("request");
+  };
+
+  const switchToPin = () => {
+    setMode("pin");
+    setError("");
+    setMessage("");
+    setLoadingLabel("Enviando PIN...");
+  };
+
   return (
-    <div style={{
+    <div
+      style={{
       minHeight: "100vh",
       width: "100%",
       display: "flex",
@@ -93,7 +268,8 @@ export default function LoginPage() {
       padding: "0 1rem",
       position: "relative",
       overflow: "hidden",
-    }}>
+    }}
+    >
       {/* Gradient backgrounds */}
       <div style={{
         position: "absolute", inset: 0,
@@ -150,7 +326,7 @@ export default function LoginPage() {
                   }}
                 />
               )}
-              <p style={{ margin: 0, color: "white", fontWeight: 600 }}>Iniciando sesión...</p>
+              <p style={{ margin: 0, color: "white", fontWeight: 600 }}>{loadingLabel}</p>
             </div>
           )}
 
@@ -195,8 +371,67 @@ export default function LoginPage() {
 
           {/* Form */}
           <div style={{ padding: "2.5rem 5rem 3.5rem" }}>
-            <form style={{ display: "flex", flexDirection: "column", gap: "1.75rem" }}>
-              {/* Username */}
+            <form style={{ display: "flex", flexDirection: "column", gap: "1.4rem" }}>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr",
+                  gap: "0.75rem",
+                }}
+              >
+                <button
+                  type="button"
+                  onClick={switchToPassword}
+                  style={{
+                    padding: "0.95rem 1rem",
+                    borderRadius: "9999px",
+                    border: "1px solid rgba(255,255,255,0.1)",
+                    background: mode === "password" ? "linear-gradient(to right, #6d28d9, #7c3aed)" : "rgba(255,255,255,0.03)",
+                    color: "white",
+                    fontSize: "0.95rem",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    fontFamily: "inherit",
+                  }}
+                >
+                  Contraseña
+                </button>
+                <button
+                  type="button"
+                  onClick={switchToPin}
+                  style={{
+                    padding: "0.95rem 1rem",
+                    borderRadius: "9999px",
+                    border: "1px solid rgba(255,255,255,0.1)",
+                    background: mode === "pin" ? "linear-gradient(to right, #6d28d9, #7c3aed)" : "rgba(255,255,255,0.03)",
+                    color: "white",
+                    fontSize: "0.95rem",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    fontFamily: "inherit",
+                  }}
+                >
+                  PIN por correo
+                </button>
+              </div>
+
+              {mode === "pin" && (
+                <div
+                  style={{
+                    padding: "1rem 1.25rem",
+                    borderRadius: "1rem",
+                    background: "rgba(255,255,255,0.03)",
+                    border: "1px solid rgba(255,255,255,0.08)",
+                    color: "rgba(255,255,255,0.82)",
+                    fontSize: "0.95rem",
+                    lineHeight: 1.5,
+                  }}
+                >
+                  Primero valida tu contraseña. Después te enviaremos un PIN al correo para confirmar que eres el dueño de la cuenta.
+                </div>
+              )}
+
+              {/* Username / Email */}
               <input
                 data-testid="username-input"
                 type="email"
@@ -219,7 +454,6 @@ export default function LoginPage() {
                 onBlur={e => { e.currentTarget.style.boxShadow = "none"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)"; }}
               />
 
-              {/* Password */}
               <input
                 data-testid="password-input"
                 type="password"
@@ -242,21 +476,80 @@ export default function LoginPage() {
                 onBlur={e => { e.currentTarget.style.boxShadow = "none"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)"; }}
               />
 
+              {mode === "pin" && pinStep === "verify" ? (
+                <input
+                  data-testid="pin-input"
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={6}
+                  placeholder="ingresa tu PIN de 6 dígitos"
+                  value={pin}
+                  onChange={(e) => setPin(e.target.value.replace(/\D/g, ""))}
+                  disabled={isLoading}
+                  style={{
+                    display: "block", width: "100%", boxSizing: "border-box",
+                    padding: "1.25rem 1.5rem",
+                    borderRadius: "9999px",
+                    background: "#05070b",
+                    border: "1px solid rgba(255,255,255,0.1)",
+                    color: "white",
+                    fontSize: "1.125rem",
+                    outline: "none",
+                    fontFamily: "inherit",
+                    letterSpacing: "0.35em",
+                    textAlign: "center",
+                  }}
+                  onFocus={e => { e.currentTarget.style.boxShadow = "0 0 0 2px #7c3aed"; e.currentTarget.style.borderColor = "#7c3aed"; }}
+                  onBlur={e => { e.currentTarget.style.boxShadow = "none"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)"; }}
+                />
+              ) : mode === "pin" ? (
+                <div
+                  style={{
+                    padding: "1rem 1.25rem",
+                    borderRadius: "1rem",
+                    background: "rgba(255,255,255,0.03)",
+                    border: "1px solid rgba(255,255,255,0.08)",
+                    color: "rgba(255,255,255,0.82)",
+                    fontSize: "0.95rem",
+                    lineHeight: 1.5,
+                  }}
+                >
+                  Primero valida tu contraseña y luego escribe el PIN que llegue a tu correo. Expira a los 10 minutos.
+                </div>
+              ) : null}
+
               {/* Remember + Forgot */}
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: "0.875rem" }}>
                   <Link href="/register" style={{ accentColor: "#7c3aed", height: "1rem", cursor: "pointer" }}>
                   Crear Cuenta
                   </Link>
-                <Link href="/recovery" style={{ color: "rgba(255,255,255,0.8)", textDecoration: "none", fontWeight: 500 }}>
-                  ¿Olvidaste tu contraseña?
-                </Link>
+                {mode === "password" ? (
+                  <Link href="/recovery" style={{ color: "rgba(255,255,255,0.8)", textDecoration: "none", fontWeight: 500 }}>
+                    ¿Olvidaste tu contraseña?
+                  </Link>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setPinStep("request")}
+                    style={{
+                      border: "none",
+                      background: "transparent",
+                      color: "rgba(255,255,255,0.8)",
+                      cursor: "pointer",
+                      fontWeight: 500,
+                      padding: 0,
+                    }}
+                  >
+                    ¿No llegó el PIN?
+                  </button>
+                )}
               </div>
 
               {/* Login button */}
               <button
                 data-testid="login-button"
                 type="button"
-                onClick={handleLogin}
+                onClick={handleSubmit}
                 disabled={isLoading}
                 style={{
                   display: "block", width: "100%", boxSizing: "border-box",
@@ -277,9 +570,34 @@ export default function LoginPage() {
                 onMouseEnter={e => { e.currentTarget.style.background = "linear-gradient(to right, #5b21b6, #6d28d9)"; }}
                 onMouseLeave={e => { e.currentTarget.style.background = "linear-gradient(to right, #6d28d9, #7c3aed)"; }}
               >
-                {isLoading ? "INICIANDO..." : "LOGIN"}
+                {isLoading
+                  ? "PROCESANDO..."
+                  : mode === "password"
+                    ? "LOGIN"
+                    : pinStep === "request"
+                      ? "ENVIAR PIN"
+                      : "VERIFICAR PIN"}
               </button>
-              {error && <p data-testid="error-message" style={{ color: "red" }}>{error}</p>}
+              {mode === "pin" && pinStep === "verify" && (
+                <button
+                  type="button"
+                  onClick={resendPin}
+                  disabled={isLoading}
+                  style={{
+                    border: "none",
+                    background: "transparent",
+                    color: "rgba(255,255,255,0.8)",
+                    cursor: "pointer",
+                    fontWeight: 500,
+                    padding: 0,
+                    textAlign: "center",
+                  }}
+                >
+                  Reenviar PIN
+                </button>
+              )}
+              {message && <p data-testid="success-message" style={{ color: "#c4b5fd", margin: 0 }}>{message}</p>}
+              {error && <p data-testid="error-message" style={{ color: "#f87171", margin: 0 }}>{error}</p>}
             </form>
           </div>
 

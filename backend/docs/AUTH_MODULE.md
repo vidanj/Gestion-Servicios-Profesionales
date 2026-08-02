@@ -106,13 +106,13 @@ JWT_AUDIENCE=SistemaServicios.Client
 JWT_EXPIRES_MINUTES=60
 ```
 
-| Variable              | Descripcion                                    | Requerida |
-|-----------------------|------------------------------------------------|-----------|
-| `DB_CONNECTION`       | Cadena de conexion a PostgreSQL                | Si        |
-| `JWT_KEY`             | Clave secreta para firmar los tokens (min 32 chars) | Si   |
-| `JWT_ISSUER`          | Emisor del token (identifica el servidor)      | Si        |
-| `JWT_AUDIENCE`        | Audiencia del token (identifica el cliente)    | Si        |
-| `JWT_EXPIRES_MINUTES` | Duracion del token en minutos                  | No (default: 60) |
+| Variable              | Descripcion                                         | Requerida        |
+| --------------------- | --------------------------------------------------- | ---------------- |
+| `DB_CONNECTION`       | Cadena de conexion a PostgreSQL                     | Si               |
+| `JWT_KEY`             | Clave secreta para firmar los tokens (min 32 chars) | Si               |
+| `JWT_ISSUER`          | Emisor del token (identifica el servidor)           | Si               |
+| `JWT_AUDIENCE`        | Audiencia del token (identifica el cliente)         | Si               |
+| `JWT_EXPIRES_MINUTES` | Duracion del token en minutos                       | No (default: 60) |
 
 > **IMPORTANTE:** El archivo `.env` NUNCA debe subirse a git. Verificar que este en `.gitignore`.
 
@@ -146,43 +146,45 @@ Registra un nuevo usuario en el sistema.
 - **Content-Type:** `application/json`
 
 **Request body:**
+
 ```json
 {
-  "email": "usuario@ejemplo.com",
-  "password": "miPassword123",
-  "firstName": "Juan",
-  "lastName": "Perez",
-  "phoneNumber": "+504 9999-9999",
-  "role": 1
+    "email": "usuario@ejemplo.com",
+    "password": "miPassword123",
+    "firstName": "Juan",
+    "lastName": "Perez",
+    "phoneNumber": "+504 9999-9999",
+    "role": 1
 }
 ```
 
-| Campo         | Tipo     | Requerido | Validacion              | Valores `role`            |
-|---------------|----------|-----------|-------------------------|---------------------------|
-| `email`       | `string` | Si        | Formato email valido    | —                         |
-| `password`    | `string` | Si        | Minimo 6 caracteres     | —                         |
-| `firstName`   | `string` | Si        | Max 255 chars           | —                         |
-| `lastName`    | `string` | Si        | Max 255 chars           | —                         |
-| `phoneNumber` | `string` | No        | Max 20 chars            | —                         |
-| `role`        | `int`    | No        | Default: 1              | `0`=Admin, `1`=Client, `2`=Professional |
+| Campo         | Tipo     | Requerido | Validacion           | Valores `role`                          |
+| ------------- | -------- | --------- | -------------------- | --------------------------------------- |
+| `email`       | `string` | Si        | Formato email valido | —                                       |
+| `password`    | `string` | Si        | Minimo 6 caracteres  | —                                       |
+| `firstName`   | `string` | Si        | Max 255 chars        | —                                       |
+| `lastName`    | `string` | Si        | Max 255 chars        | —                                       |
+| `phoneNumber` | `string` | No        | Max 20 chars         | —                                       |
+| `role`        | `int`    | No        | Default: 1           | `0`=Admin, `1`=Client, `2`=Professional |
 
 **Respuesta exitosa — 201 Created:**
+
 ```json
 {
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "email": "usuario@ejemplo.com",
-  "firstName": "Juan",
-  "lastName": "Perez",
-  "role": "Client"
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "email": "usuario@ejemplo.com",
+    "firstName": "Juan",
+    "lastName": "Perez",
+    "role": "Client"
 }
 ```
 
 **Respuestas de error:**
 
-| Codigo | Condicion                        | Cuerpo                                         |
-|--------|----------------------------------|------------------------------------------------|
-| `400`  | El email ya esta registrado      | `{ "message": "El correo ya está registrado." }` |
-| `400`  | Validacion de campos fallida     | Errores de DataAnnotations de ASP.NET          |
+| Codigo | Condicion                    | Cuerpo                                           |
+| ------ | ---------------------------- | ------------------------------------------------ |
+| `400`  | El email ya esta registrado  | `{ "message": "El correo ya está registrado." }` |
+| `400`  | Validacion de campos fallida | Errores de DataAnnotations de ASP.NET            |
 
 ---
 
@@ -194,32 +196,105 @@ Autentica un usuario existente y retorna un JWT.
 - **Content-Type:** `application/json`
 
 **Request body:**
+
 ```json
 {
-  "email": "usuario@ejemplo.com",
-  "password": "miPassword123"
+    "email": "usuario@ejemplo.com",
+    "password": "miPassword123"
 }
 ```
 
 **Respuesta exitosa — 200 OK:**
+
 ```json
 {
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "email": "usuario@ejemplo.com",
-  "firstName": "Juan",
-  "lastName": "Perez",
-  "role": "Client"
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "email": "usuario@ejemplo.com",
+    "firstName": "Juan",
+    "lastName": "Perez",
+    "role": "Client"
 }
 ```
 
 **Respuestas de error:**
 
-| Codigo | Condicion                               | Cuerpo                                               |
-|--------|-----------------------------------------|------------------------------------------------------|
-| `401`  | Email no existe o password incorrecto   | `{ "message": "Credenciales inválidas." }`           |
-| `401`  | Cuenta desactivada (`Status = false`)   | `{ "message": "La cuenta está desactivada." }`       |
+| Codigo | Condicion                             | Cuerpo                                         |
+| ------ | ------------------------------------- | ---------------------------------------------- |
+| `401`  | Email no existe o password incorrecto | `{ "message": "Credenciales inválidas." }`     |
+| `401`  | Cuenta desactivada (`Status = false`) | `{ "message": "La cuenta está desactivada." }` |
 
 > El mensaje es identico para email inexistente o password incorrecto para no revelar si un email existe en el sistema.
+
+---
+
+### POST `/api/auth/login-pin/request`
+
+Solicita el envio de un PIN temporal al correo registrado.
+
+- **Autenticacion requerida:** No
+- **Content-Type:** `application/json`
+
+\*\*Request body:"
+
+```json
+{
+    "email": "usuario@ejemplo.com"
+}
+```
+
+**Respuesta exitosa — 200 OK:**
+
+```json
+{
+    "message": "Si el correo está registrado y la cuenta está activa, recibirás un PIN en breve."
+}
+```
+
+### POST `/api/auth/login-pin/verify`
+
+Valida el PIN recibido por correo y, si es correcto, devuelve un JWT.
+
+- **Autenticacion requerida:** No
+- **Content-Type:** `application/json`
+
+**Request body:**
+
+```json
+{
+    "email": "usuario@ejemplo.com",
+    "pin": "123456"
+}
+```
+
+**Respuestas de error:**
+
+| Codigo | Condicion                          | Cuerpo                                                                           |
+| ------ | ---------------------------------- | -------------------------------------------------------------------------------- |
+| `400`  | No hay PIN vigente o el PIN expiró | `{ "message": "..." }`                                                           |
+| `401`  | PIN incorrecto                     | `{ "message": "PIN incorrecto." }`                                               |
+| `401`  | Se agotaron los intentos           | `{ "message": "PIN incorrecto. Se agotaron los intentos, solicita uno nuevo." }` |
+
+**Reglas del flujo PIN:**
+
+- El PIN es de 6 dígitos.
+- Expira a los 10 minutos.
+- Se permite reenviar solicitando el PIN otra vez.
+- Si el usuario escribe mal el PIN varias veces, el sistema borra el PIN vigente y obliga a pedir uno nuevo.
+
+### POST `/api/auth/login-pin/resend`
+
+Reenvia un nuevo PIN al correo registrado usando la misma logica de solicitud.
+
+- **Autenticacion requerida:** No
+- **Content-Type:** `application/json`
+
+**Request body:**
+
+```json
+{
+    "email": "usuario@ejemplo.com"
+}
+```
 
 ---
 
@@ -230,25 +305,27 @@ Retorna la informacion del usuario autenticado extraida del JWT.
 - **Autenticacion requerida:** Si — `Authorization: Bearer <token>`
 
 **Headers:**
+
 ```
 Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 ```
 
 **Respuesta exitosa — 200 OK:**
+
 ```json
 {
-  "userId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-  "email": "usuario@ejemplo.com",
-  "role": "Client",
-  "firstName": "Juan",
-  "lastName": "Perez"
+    "userId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    "email": "usuario@ejemplo.com",
+    "role": "Client",
+    "firstName": "Juan",
+    "lastName": "Perez"
 }
 ```
 
 **Respuestas de error:**
 
 | Codigo | Condicion                          |
-|--------|------------------------------------|
+| ------ | ---------------------------------- |
 | `401`  | Token ausente, invalido o expirado |
 
 ---
@@ -339,16 +416,17 @@ ClockSkew: TimeSpan.Zero (sin margen de tolerancia)
 
 ## 7. Seguridad implementada
 
-| Aspecto                  | Implementacion                                                        |
-|--------------------------|-----------------------------------------------------------------------|
-| Hash de passwords        | BCrypt con cost factor 10 (resistente a fuerza bruta)                |
-| Algoritmo JWT            | HS256 (HMAC-SHA256)                                                   |
-| Secretos en codigo       | Ninguno — todo viene del `.env`                                       |
-| Mensaje de error login   | Generico para no revelar si un email existe                           |
-| Expiracion de token      | 60 minutos por defecto, configurable                                  |
-| ClockSkew                | Cero — el token expira exactamente en el tiempo indicado              |
-| Validacion de entrada    | DataAnnotations en DTOs, validadas automaticamente por ASP.NET        |
-| Cuenta desactivada       | `Status = false` bloquea el login antes de verificar el password      |
+| Aspecto                | Implementacion                                                   |
+| ---------------------- | ---------------------------------------------------------------- |
+| Hash de passwords      | BCrypt con cost factor 10 (resistente a fuerza bruta)            |
+| Algoritmo JWT          | HS256 (HMAC-SHA256)                                              |
+| Secretos en codigo     | Ninguno — todo viene del `.env`                                  |
+| Mensaje de error login | Generico para no revelar si un email existe                      |
+| Expiracion de token    | 60 minutos por defecto, configurable                             |
+| ClockSkew              | Cero — el token expira exactamente en el tiempo indicado         |
+| Validacion de entrada  | DataAnnotations en DTOs, validadas automaticamente por ASP.NET   |
+| Cuenta desactivada     | `Status = false` bloquea el login antes de verificar el password |
+| PIN temporal           | 6 digitos, expira en 10 minutos y se invalida al usarlo          |
 
 ---
 
@@ -390,17 +468,20 @@ El servidor arranca en: `http://localhost:5000`
 ### Flujo de prueba en Swagger
 
 **Paso 1 — Registrar un usuario**
+
 - Expandir `POST /api/auth/register`
 - Clic en "Try it out"
 - Pegar el body de ejemplo y ejecutar
 - Copiar el `token` de la respuesta
 
 **Paso 2 — Autorizar Swagger con el token**
+
 - Clic en el boton "Authorize" (candado) en la parte superior
 - Escribir: `Bearer <token_copiado>`
 - Clic en "Authorize" y luego "Close"
 
 **Paso 3 — Probar endpoint protegido**
+
 - Expandir `GET /api/auth/me`
 - Clic en "Try it out" y ejecutar
 - El servidor validara el token y retornara los datos del usuario
@@ -486,30 +567,36 @@ curl -X GET http://localhost:5000/api/auth/me \
 Crear una nueva coleccion llamada `SistemaServicios Auth` y agregar las siguientes requests:
 
 #### Request 1 — Register
+
 - **Method:** POST
 - **URL:** `http://localhost:5000/api/auth/register`
 - **Body → raw → JSON:**
+
 ```json
 {
-  "email": "{{email}}",
-  "password": "{{password}}",
-  "firstName": "Juan",
-  "lastName": "Perez",
-  "role": 1
+    "email": "{{email}}",
+    "password": "{{password}}",
+    "firstName": "Juan",
+    "lastName": "Perez",
+    "role": 1
 }
 ```
 
 #### Request 2 — Login
+
 - **Method:** POST
 - **URL:** `http://localhost:5000/api/auth/login`
 - **Body → raw → JSON:**
+
 ```json
 {
-  "email": "{{email}}",
-  "password": "{{password}}"
+    "email": "{{email}}",
+    "password": "{{password}}"
 }
 ```
+
 - **Tests (captura automatica del token):**
+
 ```javascript
 const res = pm.response.json();
 if (res.token) {
@@ -518,33 +605,34 @@ if (res.token) {
 ```
 
 #### Request 3 — Me (protegido)
+
 - **Method:** GET
 - **URL:** `http://localhost:5000/api/auth/me`
 - **Authorization:** Bearer Token → `{{jwt_token}}`
 
 #### Variables de coleccion recomendadas
 
-| Variable    | Valor de ejemplo       |
-|-------------|------------------------|
-| `email`     | `test@ejemplo.com`     |
-| `password`  | `password123`          |
+| Variable    | Valor de ejemplo                                   |
+| ----------- | -------------------------------------------------- |
+| `email`     | `test@ejemplo.com`                                 |
+| `password`  | `password123`                                      |
 | `jwt_token` | (se llena automaticamente con el script del Login) |
 
 ---
 
 ## 12. Errores esperados y sus causas
 
-| HTTP | Endpoint         | Causa                                   | Respuesta                                              |
-|------|------------------|-----------------------------------------|--------------------------------------------------------|
-| 400  | `/register`      | Email ya registrado                     | `{ "message": "El correo ya está registrado." }`      |
-| 400  | `/register`      | Campo requerido faltante o invalido     | Errores de validacion de ASP.NET ModelState            |
-| 400  | `/login`         | Body mal formado                        | Errores de validacion de ASP.NET ModelState            |
-| 401  | `/login`         | Email no existe o password incorrecto   | `{ "message": "Credenciales inválidas." }`            |
-| 401  | `/login`         | Cuenta desactivada                      | `{ "message": "La cuenta está desactivada." }`        |
-| 401  | `/me`            | Sin header Authorization                | Sin cuerpo (ASP.NET rechaza antes del controlador)     |
-| 401  | `/me`            | Token expirado                          | Sin cuerpo                                             |
-| 401  | `/me`            | Token con firma invalida                | Sin cuerpo                                             |
-| 500  | Cualquiera       | JWT_KEY no definido en .env             | Error de servidor — revisar configuracion del .env     |
+| HTTP | Endpoint    | Causa                                 | Respuesta                                          |
+| ---- | ----------- | ------------------------------------- | -------------------------------------------------- |
+| 400  | `/register` | Email ya registrado                   | `{ "message": "El correo ya está registrado." }`   |
+| 400  | `/register` | Campo requerido faltante o invalido   | Errores de validacion de ASP.NET ModelState        |
+| 400  | `/login`    | Body mal formado                      | Errores de validacion de ASP.NET ModelState        |
+| 401  | `/login`    | Email no existe o password incorrecto | `{ "message": "Credenciales inválidas." }`         |
+| 401  | `/login`    | Cuenta desactivada                    | `{ "message": "La cuenta está desactivada." }`     |
+| 401  | `/me`       | Sin header Authorization              | Sin cuerpo (ASP.NET rechaza antes del controlador) |
+| 401  | `/me`       | Token expirado                        | Sin cuerpo                                         |
+| 401  | `/me`       | Token con firma invalida              | Sin cuerpo                                         |
+| 500  | Cualquiera  | JWT_KEY no definido en .env           | Error de servidor — revisar configuracion del .env |
 
 ---
 
@@ -570,4 +658,4 @@ AuthController
 
 ---
 
-*Documentacion generada para el modulo de autenticacion — SistemaServicios.API v1.0*
+_Documentacion generada para el modulo de autenticacion — SistemaServicios.API v1.0_

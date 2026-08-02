@@ -32,6 +32,55 @@ public class AuthController : ControllerBase
         }
     }
 
+    /// <summary>Solicita el envío de un PIN de acceso al correo registrado.</summary>
+    [HttpPost("login-pin/request")]
+    public async Task<IActionResult> RequestLoginPin([FromBody] LoginPinRequestDto dto)
+    {
+        try
+        {
+            await _authService.RequestLoginPinAsync(dto);
+
+            return Ok(
+                new
+                {
+                    message =
+                        "Si el correo está registrado y la cuenta está activa, recibirás un PIN en breve.",
+                }
+            );
+        }
+        catch (Exception)
+        {
+            return StatusCode(
+                500,
+                new { message = "No se pudo enviar el PIN. Intenta nuevamente en unos minutos." }
+            );
+        }
+    }
+
+    /// <summary>Reenvía un PIN nuevo por correo para el inicio de sesión.</summary>
+    [HttpPost("login-pin/resend")]
+    public async Task<IActionResult> ResendLoginPin([FromBody] LoginPinRequestDto dto) =>
+        await RequestLoginPin(dto);
+
+    /// <summary>Valida el PIN recibido por correo y devuelve un JWT.</summary>
+    [HttpPost("login-pin/verify")]
+    public async Task<IActionResult> VerifyLoginPin([FromBody] VerifyLoginPinDto dto)
+    {
+        try
+        {
+            var result = await _authService.VerifyLoginPinAsync(dto);
+            return Ok(result);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Unauthorized(new { message = ex.Message });
+        }
+    }
+
     /// <summary>Registra un nuevo usuario y devuelve un JWT.</summary>
     [HttpPost("register")]
     public async Task<IActionResult> Register([FromBody] RegisterRequestDto dto)

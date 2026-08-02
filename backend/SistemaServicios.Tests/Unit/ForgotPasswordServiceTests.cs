@@ -13,6 +13,7 @@ public class ForgotPasswordServiceTests
     private readonly Mock<IUserRepository> _mockRepo;
     private readonly Mock<ITokenService> _mockToken;
     private readonly Mock<IEmailService> _mockEmail;
+    private readonly Mock<ILoginPinStore> _mockPinStore;
     private readonly AuthService _authService;
 
     // Usuario base reutilizable en las pruebas
@@ -23,7 +24,13 @@ public class ForgotPasswordServiceTests
         _mockRepo = new Mock<IUserRepository>();
         _mockToken = new Mock<ITokenService>();
         _mockEmail = new Mock<IEmailService>();
-        _authService = new AuthService(_mockRepo.Object, _mockToken.Object, _mockEmail.Object);
+        _mockPinStore = new Mock<ILoginPinStore>();
+        _authService = new AuthService(
+            _mockRepo.Object,
+            _mockToken.Object,
+            _mockEmail.Object,
+            _mockPinStore.Object
+        );
 
         _usuarioActivo = new User
         {

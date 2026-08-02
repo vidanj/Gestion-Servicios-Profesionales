@@ -13,6 +13,7 @@ public class AuthServiceTests
     private readonly Mock<IUserRepository> _mockRepo;
     private readonly Mock<ITokenService> _mockToken;
     private readonly Mock<IEmailService> _mockEmail;
+    private readonly Mock<ILoginPinStore> _mockPinStore;
     private readonly AuthService _authService;
 
     // Usuario base reutilizable en las pruebas
@@ -23,7 +24,13 @@ public class AuthServiceTests
         _mockRepo = new Mock<IUserRepository>();
         _mockToken = new Mock<ITokenService>();
         _mockEmail = new Mock<IEmailService>();
-        _authService = new AuthService(_mockRepo.Object, _mockToken.Object, _mockEmail.Object);
+        _mockPinStore = new Mock<ILoginPinStore>();
+        _authService = new AuthService(
+            _mockRepo.Object,
+            _mockToken.Object,
+            _mockEmail.Object,
+            _mockPinStore.Object
+        );
 
         _usuarioActivo = new User
         {
@@ -136,6 +143,111 @@ public class AuthServiceTests
 
         // Assert: se generó exactamente un token
         _mockToken.Verify(t => t.CreateToken(_usuarioActivo), Times.Once);
+    }
+
+    [Fact]
+    public async Task RequestLoginPinAsyncUsuarioActivoEnvioEmailYGuardaPin()
+    {
+        // Arrange
+        LoginPinChallenge? pinGuardado = null;
+
+        _ = _mockRepo.Setup(r => r.GetByEmailAsync("juan@test.com")).ReturnsAsync(_usuarioActivo);
+        _ = _mockEmail
+            .Setup(e => e.SendLoginPinEmailAsync(It.IsAny<string>(), It.IsAny<string>()))
+            .Returns(Task.CompletedTask);
+        _ = _mockPinStore
+            .Setup(s => s.Save(It.IsAny<string>(), It.IsAny<LoginPinChallenge>()))
+            .Callback<string, LoginPinChallenge>((_, challenge) => pinGuardado = challenge);
+
+        var dto = new LoginPinRequestDto { Email = "juan@test.com" };
+
+        // Act
+        await _authService.RequestLoginPinAsync(dto);
+
+        // Assert
+        _mockEmail.Verify(
+            e => e.SendLoginPinEmailAsync("juan@test.com", It.IsAny<string>()),
+            Times.Once
+        );
+        _ = pinGuardado.Should().NotBeNull();
+        _ = pinGuardado!.ExpiresAtUtc.Should().BeAfter(DateTime.UtcNow);
+        _ = pinGuardado.FailedAttempts.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task VerifyLoginPinAsyncPinCorrectoRetornaAuthResponse()
+    {
+        // Arrange
+        var challenge = new LoginPinChallenge
+        {
+            PinHash = BCrypt.Net.BCrypt.HashPassword("123456"),
+            RequestedAtUtc = DateTime.UtcNow,
+            ExpiresAtUtc = DateTime.UtcNow.AddMinutes(10),
+            FailedAttempts = 0,
+        };
+
+        _ = _mockPinStore.Setup(s => s.Get("juan@test.com")).Returns(challenge);
+        _ = _mockRepo.Setup(r => r.GetByEmailAsync("juan@test.com")).ReturnsAsync(_usuarioActivo);
+        _ = _mockToken.Setup(t => t.CreateToken(_usuarioActivo)).Returns("token-pin");
+
+        var dto = new VerifyLoginPinDto { Email = "juan@test.com", Pin = "123456" };
+
+        // Act
+        var resultado = await _authService.VerifyLoginPinAsync(dto);
+
+        // Assert
+        _ = resultado.Token.Should().Be("token-pin");
+        _mockPinStore.Verify(s => s.Remove("juan@test.com"), Times.Once);
+    }
+
+    [Fact]
+    public async Task VerifyLoginPinAsyncPinIncorrectoLanzaUnauthorizedAccessException()
+    {
+        // Arrange
+        var challenge = new LoginPinChallenge
+        {
+            PinHash = BCrypt.Net.BCrypt.HashPassword("123456"),
+            RequestedAtUtc = DateTime.UtcNow,
+            ExpiresAtUtc = DateTime.UtcNow.AddMinutes(10),
+            FailedAttempts = 0,
+        };
+
+        _ = _mockPinStore.Setup(s => s.Get("juan@test.com")).Returns(challenge);
+
+        var dto = new VerifyLoginPinDto { Email = "juan@test.com", Pin = "654321" };
+
+        // Act & Assert
+        var ex = await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
+            _authService.VerifyLoginPinAsync(dto)
+        );
+
+        _ = ex.Message.Should().Be("PIN incorrecto.");
+        _ = challenge.FailedAttempts.Should().Be(1);
+    }
+
+    [Fact]
+    public async Task VerifyLoginPinAsyncPinExpiradoLanzaInvalidOperationException()
+    {
+        // Arrange
+        var challenge = new LoginPinChallenge
+        {
+            PinHash = BCrypt.Net.BCrypt.HashPassword("123456"),
+            RequestedAtUtc = DateTime.UtcNow.AddMinutes(-11),
+            ExpiresAtUtc = DateTime.UtcNow.AddMinutes(-1),
+            FailedAttempts = 0,
+        };
+
+        _ = _mockPinStore.Setup(s => s.Get("juan@test.com")).Returns(challenge);
+
+        var dto = new VerifyLoginPinDto { Email = "juan@test.com", Pin = "123456" };
+
+        // Act & Assert
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            _authService.VerifyLoginPinAsync(dto)
+        );
+
+        _ = ex.Message.Should().Be("El PIN expiró. Solicita uno nuevo.");
+        _mockPinStore.Verify(s => s.Remove("juan@test.com"), Times.Once);
     }
 
     // ─────────────────────────────────────────────────────────────

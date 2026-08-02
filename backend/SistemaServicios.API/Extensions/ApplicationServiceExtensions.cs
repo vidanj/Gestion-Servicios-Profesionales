@@ -83,6 +83,7 @@ public static class ApplicationServiceExtensions
         services.AddScoped<IServiceRequestRepository, ServiceRequestRepository>();
         services.AddScoped<IServiceRequestService, ServiceRequestService>();
         services.AddScoped<IEmailService, EmailService>();
+        services.AddSingleton<ILoginPinStore, LoginPinStore>();
         services.AddScoped<IUserLogRepository, UserLogRepository>();
         services.AddScoped<IUserLogService, UserLogService>();
         services.AddScoped<ICategoryRepository, CategoryRepository>();

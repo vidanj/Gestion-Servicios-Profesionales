@@ -129,4 +129,19 @@ public class EmailServiceTests
         Assert.Contains("MiPass99", body);
         Assert.Contains("<h2>", body);
     }
+
+    [Fact]
+    public async Task SendLoginPinEmailAsyncEnviaMensajeCorrecto()
+    {
+        var fake = new FakeSmtpClient();
+        var service = new EmailService(BuildConfig(), fake);
+
+        await service.SendLoginPinEmailAsync("dest@test.com", "123456");
+
+        Assert.NotNull(fake.MensajeEnviado);
+        Assert.Equal("dest@test.com", fake.MensajeEnviado!.To[0].Address);
+        Assert.Contains("PIN de acceso", fake.MensajeEnviado.Subject);
+        Assert.True(fake.MensajeEnviado.IsBodyHtml);
+        Assert.Contains("123456", fake.MensajeEnviado.Body);
+    }
 }
