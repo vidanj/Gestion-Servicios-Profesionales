@@ -23,7 +23,4 @@ public class RegisterRequestDto
 
     [MaxLength(20)]
     public string? PhoneNumber { get; set; }
-
-    [Required]
-    public UserRole Role { get; set; } = UserRole.Client;
 }
