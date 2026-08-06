@@ -250,7 +250,8 @@ public class ForgotPasswordServiceTests
             _authService.ForgotPasswordAsync(dto)
         );
 
-        _ = ex.Message.Should().Be("La cuenta está desactivada.");
+        ex.Message.Should()
+            .Be("Si el correo está registrado, recibirás tu nueva contraseña en breve.");
     }
 
     [Fact]

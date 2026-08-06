@@ -103,7 +103,7 @@ public class AuthServiceTests
             _authService.LoginAsync(dto)
         );
 
-        _ = ex.Message.Should().Be("La cuenta está desactivada.");
+        ex.Message.Should().Be("Credenciales inválidas.");
     }
 
     [Fact]
