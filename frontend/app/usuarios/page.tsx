@@ -55,6 +55,11 @@ export default function UsersCrudPage() {
   const [editError, setEditError] = useState("");
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
+  // Paginación y búsqueda
+  const [currentPage, setCurrentPage] = useState(1);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(null);
+
   const selectedRole = roles.find(r => r.value === role);
 
   // ── Helpers ────────────────────────────────────────────────
@@ -73,7 +78,7 @@ export default function UsersCrudPage() {
     setLoading(true);
     setApiError("");
     try {
-      const res = await fetch(`${apiUrl}/api/Users?page=1&size=50`, {
+      const res = await fetch(`${apiUrl}/api/Users?page=${currentPage}&size=50&search=${encodeURIComponent(searchTerm)}`, {
         headers: authHeaders(),
       });
       if (!res.ok) {
@@ -89,7 +94,23 @@ export default function UsersCrudPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [currentPage, searchTerm]);
+
+  // ── Búsqueda con debounce ─────────────────────────────────
+  const handleSearchChange = (value: string) => {
+    setSearchTerm(value);
+    setCurrentPage(1);
+    
+    if (searchTimeout) {
+      clearTimeout(searchTimeout);
+    }
+    
+    const timeout = setTimeout(() => {
+      // El fetch se dispara automáticamente cuando searchTerm o currentPage cambian
+    }, 400);
+    
+    setSearchTimeout(timeout);
+  };
 
   useEffect(() => { setMounted(true); fetchUsers(); }, [fetchUsers]);
   if (!mounted) return null;
@@ -320,6 +341,17 @@ export default function UsersCrudPage() {
                 </HStack>
               </Card.Header>
               <Card.Body>
+                {/* Input de búsqueda */}
+                <Field.Root mb="4">
+                  <Field.Label>Buscar</Field.Label>
+                  <Input
+                    data-testid="search-users-input"
+                    placeholder="Buscar por nombre, correo o rol..."
+                    value={searchTerm}
+                    onChange={e => handleSearchChange(e.target.value)}
+                  />
+                </Field.Root>
+
                 {loading ? (
                   <Text textAlign="center" py="4">Cargando...</Text>
                 ) : (
@@ -387,6 +419,27 @@ export default function UsersCrudPage() {
                     </Card.Body>
                   </Card.Root>
                 </SimpleGrid>
+
+                {/* Controles de paginación */}
+                <HStack justify="center" gap="4" mt="6">
+                  <Button
+                    variant="outline"
+                    disabled={currentPage === 1}
+                    onClick={() => setCurrentPage(currentPage - 1)}
+                  >
+                    ← Anterior
+                  </Button>
+                  <Text fontSize="sm" color="muted" minW="100px" textAlign="center">
+                    Página {currentPage} de {Math.max(1, Math.ceil(total / 50))}
+                  </Text>
+                  <Button
+                    variant="outline"
+                    disabled={currentPage >= Math.ceil(total / 50)}
+                    onClick={() => setCurrentPage(currentPage + 1)}
+                  >
+                    Siguiente →
+                  </Button>
+                </HStack>
               </Card.Body>
             </Card.Root>
 
