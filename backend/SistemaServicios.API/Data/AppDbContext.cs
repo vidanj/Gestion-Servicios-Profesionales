@@ -70,5 +70,9 @@ public class AppDbContext : DbContext
             .WithMany()
             .HasForeignKey(l => l.UserId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        // Índice compuesto: acelera el listado paginado de solicitudes por profesional
+        // ordenado por fecha, evitando table scans a medida que crece el volumen
+        modelBuilder.Entity<Request>().HasIndex(r => new { r.ProfessionalId, r.RequestDate });
     }
 }
