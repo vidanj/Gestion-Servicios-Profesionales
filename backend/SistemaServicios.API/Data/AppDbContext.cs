@@ -70,5 +70,15 @@ public class AppDbContext : DbContext
             .WithMany()
             .HasForeignKey(l => l.UserId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        // Índice parcial en Status: la columna es de baja cardinalidad (bool: activo/inactivo).
+        // Se indexa solo Status = true porque todas las consultas de lectura del sistema
+        // (listado paginado y búsqueda por Id en UserRepository) filtran exclusivamente por
+        // usuarios activos — el borrado es lógico (soft delete) y no existe, a la fecha,
+        // ningún flujo que liste o busque usuarios con Status = false. Si en el futuro Status
+        // deja de ser booleano (ej. se convierte en enum con más estados), este índice debe
+        // revisarse: HasFilter ya no aplicaría tal cual y habría que evaluar qué subconjunto
+        // de estados sigue siendo el "camino caliente" de lectura.
+        modelBuilder.Entity<User>().HasIndex(u => u.Status).HasFilter("\"Status\" = true");
     }
 }

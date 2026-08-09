@@ -76,6 +76,18 @@ dotnet run --project backend/SistemaServicios.API
 #http://localhost:5000/openapi/v1.json
 ```
  
+## 📊 Índices de Base de Datos — Notas de Diseño
+
+### `Users.Status` (índice parcial)
+
+```csharp
+modelBuilder.Entity<User>().HasIndex(u => u.Status).HasFilter("\"Status\" = true");
+```
+
+**Por qué parcial y no un índice normal:** `Status` es un `bool` (baja cardinalidad — solo dos valores posibles), y todas las consultas de lectura del sistema filtran exclusivamente por usuarios activos (`Status = true`) — el listado paginado (`GetUsersAsync`/`GetUserDtosAsync`) y la búsqueda por Id (`GetByIdAsync`/`GetUserDtoByIdAsync`) en `UserRepository.cs`. Un índice completo indexaría también las filas con `Status = false`, que nunca se consultan directamente (el borrado de usuario es lógico —soft delete—, no se filtra por inactivos en ningún flujo actual), desperdiciando espacio y costo de mantenimiento en cada escritura sin beneficio de lectura.
+
+**Vigencia del criterio:** si `Status` deja de ser `bool` y pasa a un enum con más estados, este índice debe reevaluarse — el filtro `"Status" = true` ya no tendría sentido tal cual, y habría que identificar cuál sería el nuevo "camino caliente" de lectura (ej. un estado `Active` entre varios) antes de decidir si el índice parcial se mantiene, se amplía, o se reemplaza por uno completo.
+
 # Pruebas Unitarias e Integración
 
 ## Estructura de las Pruebas
