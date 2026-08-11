@@ -1,18 +1,40 @@
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
 using SistemaServicios.API.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// --- 1. CONFIGURACIÓN LIMPIA (Aquí llamamos a tu clase nueva) ---
+// --- 1. CONFIGURACIÓN LIMPIA ---
 builder.Services.AddApplicationServices(builder.Configuration);
-
 builder.Services.AddControllers();
 
-// --- 2. CONFIGURACIÓN OPENAPI (.NET 9 NATIVO) ---
+// --- 2. CONFIGURACIÓN OPENAPI ---
 builder.Services.AddOpenApi();
 
 var app = builder.Build();
 
 // --- 3. PIPELINE ---
+
+// NUEVO: Manejador global de excepciones manual y a prueba de errores (Issue #140)
+app.Use(
+    async (context, next) =>
+    {
+        try
+        {
+            await next();
+        }
+        catch (Exception)
+        {
+            context.Response.StatusCode = 500;
+            context.Response.ContentType = "application/json";
+
+            var errorJson =
+                "{\"message\":\"Ocurrió un error inesperado en el servidor. Intente más tarde.\"}";
+            await context.Response.WriteAsync(errorJson);
+        }
+    }
+);
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -42,5 +64,4 @@ app.MapControllers();
 
 app.Run();
 
-// Necesario para que WebApplicationFactory<Program> pueda acceder a este ensamblado en los tests
-public partial class Program;
+public partial class Program { }
