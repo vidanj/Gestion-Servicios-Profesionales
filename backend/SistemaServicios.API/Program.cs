@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.RateLimiting;
 using SistemaServicios.API.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -8,6 +9,29 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddApplicationServices(builder.Configuration);
 builder.Services.AddControllers();
 
+// NUEVO: Configuración de Rate Limiting (Issue #139)
+builder.Services.AddRateLimiter(options =>
+{
+    // Creamos una política específica llamada "AuthLimiter"
+    options.AddFixedWindowLimiter(
+        "AuthLimiter",
+        opt =>
+        {
+            opt.PermitLimit = 5; // Máximo 5 peticiones permitidas...
+            opt.Window = TimeSpan.FromMinutes(1); // ...en una ventana de 1 minuto
+            opt.QueueProcessingOrder = System
+                .Threading
+                .RateLimiting
+                .QueueProcessingOrder
+                .OldestFirst;
+            opt.QueueLimit = 0; // Si se pasan de 5, rechazamos inmediatamente
+        }
+    );
+
+    // Si superan el límite, devolvemos el código HTTP 429 (Too Many Requests)
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+});
+
 // --- 2. CONFIGURACIÓN OPENAPI ---
 builder.Services.AddOpenApi();
 
@@ -15,7 +39,7 @@ var app = builder.Build();
 
 // --- 3. PIPELINE ---
 
-// NUEVO: Manejador global de excepciones manual y a prueba de errores (Issue #140)
+// Manejador global de excepciones manual y a prueba de errores (Issue #140)
 app.Use(
     async (context, next) =>
     {
@@ -27,7 +51,6 @@ app.Use(
         {
             context.Response.StatusCode = 500;
             context.Response.ContentType = "application/json";
-
             var errorJson =
                 "{\"message\":\"Ocurrió un error inesperado en el servidor. Intente más tarde.\"}";
             await context.Response.WriteAsync(errorJson);
@@ -58,6 +81,10 @@ app.Use(
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseCors("FrontendPolicy");
+
+// NUEVO: Activar el middleware de Rate Limiting en el pipeline (Issue #139)
+app.UseRateLimiter();
+
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
