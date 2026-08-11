@@ -82,8 +82,11 @@ app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseCors("FrontendPolicy");
 
-// NUEVO: Activar el middleware de Rate Limiting en el pipeline (Issue #139)
-app.UseRateLimiter();
+// Activar el Rate Limiter solo si NO estamos en el entorno de pruebas automatizadas
+if (!app.Environment.IsEnvironment("Testing"))
+{
+    app.UseRateLimiter();
+}
 
 app.UseAuthentication();
 app.UseAuthorization();
