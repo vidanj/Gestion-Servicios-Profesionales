@@ -4,9 +4,9 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Threading.RateLimiting;
 using FluentAssertions;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.AspNetCore.Builder;
 using SistemaServicios.API.DTOs.Auth;
 using Xunit;
 
@@ -23,22 +23,27 @@ public class AuthControllerTests : IClassFixture<CustomWebApplicationFactory>
 
     public AuthControllerTests(CustomWebApplicationFactory factory)
     {
-        // NUEVO: Pase VIP para las pruebas. 
+        // NUEVO: Pase VIP para las pruebas.
         // Sobrescribimos el limitador para que las pruebas automatizadas no sean bloqueadas.
-        _client = factory.WithWebHostBuilder(builder =>
-        {
-            builder.ConfigureServices(services =>
+        _client = factory
+            .WithWebHostBuilder(builder =>
             {
-                services.AddRateLimiter(options =>
+                builder.ConfigureServices(services =>
                 {
-                    options.AddFixedWindowLimiter("AuthLimiter", opt =>
+                    services.AddRateLimiter(options =>
                     {
-                        opt.PermitLimit = 1000; // Límite absurdamente alto para que pasen las pruebas
-                        opt.Window = TimeSpan.FromSeconds(1);
+                        options.AddFixedWindowLimiter(
+                            "AuthLimiter",
+                            opt =>
+                            {
+                                opt.PermitLimit = 1000; // Límite absurdamente alto para que pasen las pruebas
+                                opt.Window = TimeSpan.FromSeconds(1);
+                            }
+                        );
                     });
                 });
-            });
-        }).CreateClient();
+            })
+            .CreateClient();
     }
 
     // ─────────────────────────────────────────────────────────────
