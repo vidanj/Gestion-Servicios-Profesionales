@@ -50,6 +50,7 @@ public static class ApplicationServiceExtensions
                 ["SmtpSettings:User"] = Environment.GetEnvironmentVariable("SMTP_USER"),
                 ["SmtpSettings:Password"] = Environment.GetEnvironmentVariable("SMTP_PASSWORD"),
                 ["SmtpSettings:From"] = Environment.GetEnvironmentVariable("SMTP_FROM"),
+                ["BackupSettings:Directory"] = Environment.GetEnvironmentVariable("BACKUP_DIR"),
             }
         );
 
@@ -77,7 +78,22 @@ public static class ApplicationServiceExtensions
 
         services.AddScoped<ITokenService, TokenService>();
         services.AddScoped<IAuthService, AuthService>();
+        services.AddScoped<IProcessRunner, ProcessRunner>();
         services.AddScoped<IBackupService, BackupService>();
+
+        // Almacenamiento de archivos: la base de datos por defecto, porque el disco
+        // del contenedor es efímero y no se comparte entre réplicas. FILE_STORAGE=local
+        // recupera el comportamiento en disco para desarrollo.
+        var fileStorage = Environment.GetEnvironmentVariable("FILE_STORAGE");
+        if (string.Equals(fileStorage, "local", StringComparison.OrdinalIgnoreCase))
+        {
+            services.AddScoped<IFileStorage, LocalFileStorage>();
+        }
+        else
+        {
+            services.AddScoped<IFileStorage, DbFileStorage>();
+        }
+
         services.AddScoped<IUserService, UserService>();
         services.AddScoped<IRatingService, RatingService>();
         services.AddScoped<IServiceRequestRepository, ServiceRequestRepository>();

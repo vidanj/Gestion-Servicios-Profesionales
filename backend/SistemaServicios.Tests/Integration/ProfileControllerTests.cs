@@ -239,7 +239,16 @@ public class ProfileControllerTests : IClassFixture<CustomWebApplicationFactory>
 
         res.StatusCode.Should().Be(HttpStatusCode.OK);
         var user = await res.Content.ReadFromJsonAsync<UserDto>();
-        user!.ProfileImageUrl.Should().Contain("/uploads/avatars/");
+
+        // La imagen ya no vive en el disco del contenedor: la URL apunta al endpoint
+        // que la sirve desde la base de datos. Antes esta aserción esperaba
+        // "/uploads/avatars/"; se invierte a propósito como parte del issue #125.
+        user!.ProfileImageUrl.Should().StartWith("/api/Files/");
+
+        // Y se comprueba que la imagen se recupera de verdad por esa URL, sin token.
+        var imagen = await _client.GetAsync(new Uri(user.ProfileImageUrl!, UriKind.Relative));
+        imagen.StatusCode.Should().Be(HttpStatusCode.OK);
+        (await imagen.Content.ReadAsByteArrayAsync()).Should().NotBeEmpty();
     }
 
     [Fact]
@@ -260,7 +269,13 @@ public class ProfileControllerTests : IClassFixture<CustomWebApplicationFactory>
 
         res.StatusCode.Should().Be(HttpStatusCode.OK);
         var user = await res.Content.ReadFromJsonAsync<UserDto>();
-        user!.ProfileImageUrl.Should().EndWith(".png");
+
+        // La extensión dejó de formar parte de la URL: el tipo viaja en la cabecera
+        // Content-Type de la respuesta del endpoint, no en el nombre.
+        user!.ProfileImageUrl.Should().StartWith("/api/Files/");
+
+        var imagen = await _client.GetAsync(new Uri(user.ProfileImageUrl!, UriKind.Relative));
+        imagen.Content.Headers.ContentType?.MediaType.Should().Be("image/png");
     }
 
     [Fact]

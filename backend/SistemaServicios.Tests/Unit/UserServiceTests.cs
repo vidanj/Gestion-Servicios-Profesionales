@@ -12,7 +12,7 @@ namespace SistemaServicios.Tests.Unit;
 public class UserServiceTests
 {
     private readonly Mock<IUserRepository> _mockRepo;
-    private readonly Mock<IWebHostEnvironment> _mockEnv;
+    private readonly Mock<IFileStorage> _mockFileStorage;
     private readonly UserService _userService;
     private readonly Mock<IUserLogService> _mockLogService;
 
@@ -22,12 +22,16 @@ public class UserServiceTests
     public UserServiceTests()
     {
         _mockRepo = new Mock<IUserRepository>();
-        _mockEnv = new Mock<IWebHostEnvironment>();
+        _mockFileStorage = new Mock<IFileStorage>();
         _mockLogService = new Mock<IUserLogService>();
         _mockLogService
             .Setup(l => l.CreateLogAsync(It.IsAny<CreateUserLogDto>()))
             .ReturnsAsync(new UserLogDto());
-        _userService = new UserService(_mockRepo.Object, _mockEnv.Object, _mockLogService.Object);
+        _userService = new UserService(
+            _mockRepo.Object,
+            _mockFileStorage.Object,
+            _mockLogService.Object
+        );
 
         _usuarioActivo = new User
         {
@@ -642,21 +646,31 @@ public class UserServiceTests
         _ = ex.Message.Should().Contain("2 MB");
     }
 
+    // La forma de la URL dejo de ser responsabilidad de UserService: ahora la decide
+    // el IFileStorage. Estas pruebas verifican la delegacion, no la ruta en disco.
+
     [Fact]
-    public async Task UpdateProfileImageAsyncArchivoJpegValidoGuardaYRetornaDto()
+    public async Task UpdateProfileImageAsyncArchivoValidoGuardaLaUrlQueDevuelveElAlmacenamiento()
     {
         // Arrange
-        var tempDir = Path.GetTempPath();
-        _ = _mockEnv.Setup(e => e.WebRootPath).Returns(tempDir);
+        const string urlDevuelta = "/api/Files/3f2504e0-4f89-11d3-9a0c-0305e82c3301";
         _ = _mockRepo.Setup(r => r.GetByIdAsync(_usuarioActivo.Id)).ReturnsAsync(_usuarioActivo);
         _ = _mockRepo.Setup(r => r.UpdateUserAsync(It.IsAny<User>())).Returns(Task.CompletedTask);
+        _ = _mockFileStorage
+            .Setup(s =>
+                s.SaveForOwnerAsync(
+                    _usuarioActivo.Id,
+                    It.IsAny<Stream>(),
+                    "image/jpeg",
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(urlDevuelta);
 
         var mockFile = new Mock<Microsoft.AspNetCore.Http.IFormFile>();
         _ = mockFile.Setup(f => f.ContentType).Returns("image/jpeg");
         _ = mockFile.Setup(f => f.Length).Returns(1024);
-        _ = mockFile
-            .Setup(f => f.CopyToAsync(It.IsAny<Stream>(), It.IsAny<CancellationToken>()))
-            .Returns(Task.CompletedTask);
+        _ = mockFile.Setup(f => f.OpenReadStream()).Returns(new MemoryStream([1, 2, 3]));
 
         // Act
         var resultado = await _userService.UpdateProfileImageAsync(
@@ -666,33 +680,72 @@ public class UserServiceTests
 
         // Assert
         _ = resultado.Should().NotBeNull();
-        _ = resultado!.ProfileImageUrl.Should().Contain("/uploads/avatars/");
-        _ = resultado.ProfileImageUrl.Should().EndWith(".jpg");
+        _ = resultado!.ProfileImageUrl.Should().Be(urlDevuelta);
     }
 
     [Fact]
-    public async Task UpdateProfileImageAsyncArchivoPngValidoGuardaUrlConExtensionPng()
+    public async Task UpdateProfileImageAsyncPasaElContentTypeRecibidoAlAlmacenamiento()
     {
         // Arrange
-        var tempDir = Path.GetTempPath();
-        _ = _mockEnv.Setup(e => e.WebRootPath).Returns(tempDir);
         _ = _mockRepo.Setup(r => r.GetByIdAsync(_usuarioActivo.Id)).ReturnsAsync(_usuarioActivo);
         _ = _mockRepo.Setup(r => r.UpdateUserAsync(It.IsAny<User>())).Returns(Task.CompletedTask);
+        _ = _mockFileStorage
+            .Setup(s =>
+                s.SaveForOwnerAsync(
+                    It.IsAny<Guid>(),
+                    It.IsAny<Stream>(),
+                    It.IsAny<string>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync("/api/Files/00000000-0000-0000-0000-000000000001");
 
         var mockFile = new Mock<Microsoft.AspNetCore.Http.IFormFile>();
         _ = mockFile.Setup(f => f.ContentType).Returns("image/png");
         _ = mockFile.Setup(f => f.Length).Returns(512);
-        _ = mockFile
-            .Setup(f => f.CopyToAsync(It.IsAny<Stream>(), It.IsAny<CancellationToken>()))
-            .Returns(Task.CompletedTask);
+        _ = mockFile.Setup(f => f.OpenReadStream()).Returns(new MemoryStream([1, 2, 3]));
 
         // Act
-        var resultado = await _userService.UpdateProfileImageAsync(
-            _usuarioActivo.Id,
-            mockFile.Object
+        _ = await _userService.UpdateProfileImageAsync(_usuarioActivo.Id, mockFile.Object);
+
+        // Assert: el almacenamiento recibe el dueño y el tipo, una sola vez
+        _mockFileStorage.Verify(
+            s =>
+                s.SaveForOwnerAsync(
+                    _usuarioActivo.Id,
+                    It.IsAny<Stream>(),
+                    "image/png",
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Once
+        );
+    }
+
+    [Fact]
+    public async Task UpdateProfileImageAsyncConTipoNoPermitidoNoTocaElAlmacenamiento()
+    {
+        // Arrange: la validacion debe ocurrir antes de escribir nada
+        _ = _mockRepo.Setup(r => r.GetByIdAsync(_usuarioActivo.Id)).ReturnsAsync(_usuarioActivo);
+
+        var mockFile = new Mock<Microsoft.AspNetCore.Http.IFormFile>();
+        _ = mockFile.Setup(f => f.ContentType).Returns("application/pdf");
+        _ = mockFile.Setup(f => f.Length).Returns(1024);
+
+        // Act
+        _ = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            _userService.UpdateProfileImageAsync(_usuarioActivo.Id, mockFile.Object)
         );
 
         // Assert
-        _ = resultado!.ProfileImageUrl.Should().EndWith(".png");
+        _mockFileStorage.Verify(
+            s =>
+                s.SaveForOwnerAsync(
+                    It.IsAny<Guid>(),
+                    It.IsAny<Stream>(),
+                    It.IsAny<string>(),
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Never
+        );
     }
 }

@@ -24,6 +24,8 @@ public class AppDbContext : DbContext
 
     public DbSet<UserLog> UserLogs { get; set; }
 
+    public DbSet<StoredFile> StoredFiles { get; set; }
+
     // Configuración especial de relaciones (Fluent API)
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -80,5 +82,17 @@ public class AppDbContext : DbContext
         // Índice parcial: Status es de baja cardinalidad (bool), solo indexamos los activos
         // que es el filtro que se usa en la mayoría de las consultas (usuarios activos)
         modelBuilder.Entity<User>().HasIndex(u => u.Status).HasFilter("\"Status\" = true");
+        // StoredFile: mismo criterio que el resto, sin borrado en cascada.
+        // El borrado de usuarios es lógico, así que sus archivos se conservan.
+        modelBuilder
+            .Entity<StoredFile>()
+            .HasOne(f => f.Owner)
+            .WithMany()
+            .HasForeignKey(f => f.OwnerUserId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // El reemplazo de avatar busca por dueño: sin índice sería un scan completo
+        // de una tabla que guarda binarios.
+        modelBuilder.Entity<StoredFile>().HasIndex(f => f.OwnerUserId);
     }
 }

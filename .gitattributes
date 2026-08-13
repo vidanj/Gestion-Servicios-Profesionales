@@ -1,5 +1,10 @@
 
 * text=auto
+# Los scripts que corren dentro del contenedor deben conservar LF: con CRLF el
+# shebang queda como "/bin/bash\r" y el contenedor falla con
+# "exec ./entrypoint.sh: no such file or directory".
+*.sh text eol=lf
+
 *.cs text eol=lf
 *.csproj text eol=lf
 *.sln text eol=lf

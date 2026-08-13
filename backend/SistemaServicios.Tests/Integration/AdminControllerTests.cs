@@ -242,7 +242,11 @@ public class AdminControllerTests : IClassFixture<AdminWebApplicationFactory>
         // Assert
         _ = response.StatusCode.Should().Be(HttpStatusCode.InternalServerError);
         var contenido = await response.Content.ReadAsStringAsync();
-        _ = contenido.Should().Contain("pg_dump falló");
+
+        // El detalle interno no viaja al cliente (issue #133): esta aserción estaba
+        // invertida antes, comprobando que "pg_dump falló" SÍ aparecía en la respuesta.
+        _ = contenido.Should().NotContain("pg_dump");
+        _ = contenido.Should().Contain("No se pudo generar el respaldo");
     }
 
     [Fact]
@@ -263,5 +267,151 @@ public class AdminControllerTests : IClassFixture<AdminWebApplicationFactory>
 
         // Assert: el pipeline no genera llamadas duplicadas al servicio
         _backupMock.Verify(s => s.GenerateBackupAsync(), Times.Once);
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // GET /api/admin/backups — listado
+    // ─────────────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task ListBackupsSinTokenRetorna401()
+    {
+        // Arrange
+        var request = BuildRequest("GET", "/api/admin/backups");
+
+        // Act
+        var response = await _client.SendAsync(request);
+
+        // Assert
+        _ = response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact]
+    public async Task ListBackupsConTokenDeClientRetorna403()
+    {
+        // Arrange
+        var token = GenerarToken(UserRole.Client);
+        var request = BuildRequest("GET", "/api/admin/backups", token);
+
+        // Act
+        var response = await _client.SendAsync(request);
+
+        // Assert
+        _ = response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
+    [Fact]
+    public async Task ListBackupsConTokenDeAdminRetornaLaLista()
+    {
+        // Arrange
+        _ = _backupMock
+            .Setup(s => s.ListBackups())
+            .Returns([
+                new BackupResponseDto
+                {
+                    FileName = "backup_20260305_0900.sql",
+                    CreatedAt = DateTime.UtcNow,
+                    FileSizeBytes = 2048,
+                },
+            ]);
+
+        var token = GenerarToken(UserRole.Admin);
+        var request = BuildRequest("GET", "/api/admin/backups", token);
+
+        // Act
+        var response = await _client.SendAsync(request);
+
+        // Assert
+        _ = response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var body = await response.Content.ReadFromJsonAsync<List<BackupResponseDto>>();
+        _ = body.Should().ContainSingle();
+        _ = body![0].FileName.Should().Be("backup_20260305_0900.sql");
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // GET /api/admin/backups/{fileName} — descarga
+    // ─────────────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task DownloadBackupSinTokenRetorna401()
+    {
+        // Arrange
+        var request = BuildRequest("GET", "/api/admin/backups/backup_20260305_0900.sql");
+
+        // Act
+        var response = await _client.SendAsync(request);
+
+        // Assert
+        _ = response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact]
+    public async Task DownloadBackupConTokenDeClientRetorna403()
+    {
+        // Arrange
+        var token = GenerarToken(UserRole.Client);
+        var request = BuildRequest("GET", "/api/admin/backups/backup_20260305_0900.sql", token);
+
+        // Act
+        var response = await _client.SendAsync(request);
+
+        // Assert
+        _ = response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
+    [Fact]
+    public async Task DownloadBackupConTokenDeAdminYArchivoExistenteDevuelveElContenido()
+    {
+        // Arrange
+        var contenidoEsperado = "-- volcado de prueba"u8.ToArray();
+        _ = _backupMock
+            .Setup(s => s.OpenBackup("backup_20260305_0900.sql"))
+            .Returns(() => new MemoryStream(contenidoEsperado));
+
+        var token = GenerarToken(UserRole.Admin);
+        var request = BuildRequest("GET", "/api/admin/backups/backup_20260305_0900.sql", token);
+
+        // Act
+        var response = await _client.SendAsync(request);
+
+        // Assert
+        _ = response.StatusCode.Should().Be(HttpStatusCode.OK);
+        _ = response.Content.Headers.ContentType?.MediaType.Should().Be("application/octet-stream");
+        var body = await response.Content.ReadAsStringAsync();
+        _ = body.Should().Be("-- volcado de prueba");
+    }
+
+    [Fact]
+    public async Task DownloadBackupCuandoElServicioRechazaElNombreRetorna404()
+    {
+        // Arrange: el servicio devuelve null tanto para nombre inválido como para
+        // archivo inexistente; el controller debe traducir ambos al mismo 404.
+        _ = _backupMock.Setup(s => s.OpenBackup(It.IsAny<string>())).Returns((Stream?)null);
+
+        var token = GenerarToken(UserRole.Admin);
+        var request = BuildRequest("GET", "/api/admin/backups/backup_20990101_0000.sql", token);
+
+        // Act
+        var response = await _client.SendAsync(request);
+
+        // Assert
+        _ = response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task DownloadBackupConPathTraversalNoAlcanzaArchivosFueraDelDirectorio()
+    {
+        // Arrange: el enrutamiento debe impedir que ".." salga del segmento, y aunque
+        // llegara al servicio, OpenBackup lo rechazaría (probado en las unitarias).
+        _ = _backupMock.Setup(s => s.OpenBackup(It.IsAny<string>())).Returns((Stream?)null);
+
+        var token = GenerarToken(UserRole.Admin);
+        var request = BuildRequest("GET", "/api/admin/backups/..%2F..%2Fappsettings.json", token);
+
+        // Act
+        var response = await _client.SendAsync(request);
+
+        // Assert: en ningún caso 200
+        _ = response.StatusCode.Should().NotBe(HttpStatusCode.OK);
     }
 }

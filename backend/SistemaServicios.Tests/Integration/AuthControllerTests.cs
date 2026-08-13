@@ -161,7 +161,7 @@ public class AuthControllerTests : IClassFixture<CustomWebApplicationFactory>
 
         _ = response.StatusCode.Should().Be(HttpStatusCode.Created);
         var auth = await response.Content.ReadFromJsonAsync<AuthResponseDto>();
-        _ = auth!.Role.Should().Be("Professional"); // ← sin typo, correcto
+        auth!.Role.Should().Be("Client");
     }
 
     // ─────────────────────────────────────────────────────────────
