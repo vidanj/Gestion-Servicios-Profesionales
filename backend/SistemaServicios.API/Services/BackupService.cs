@@ -45,9 +45,22 @@ public partial class BackupService : IBackupService
         // resolver la dependencia es un efecto secundario en tiempo de arranque.
         _ = Directory.CreateDirectory(_backupDir);
 
-        var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmm", CultureInfo.InvariantCulture);
+        // Con precisión de minuto, dos respaldos del mismo minuto compartían nombre y
+        // el segundo sobrescribía al primero en silencio.
+        var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss", CultureInfo.InvariantCulture);
         var fileName = $"backup_{timestamp}.sql";
         var filePath = Path.Combine(_backupDir, fileName);
+
+        // Los segundos hacen improbable la colisión, pero no la impiden: dos respaldos
+        // dentro del mismo segundo seguirían compartiendo nombre. Se desambigua con un
+        // sufijo para que ningún respaldo pueda sobrescribir a otro.
+        var sufijo = 2;
+        while (File.Exists(filePath))
+        {
+            fileName = $"backup_{timestamp}_{sufijo}.sql";
+            filePath = Path.Combine(_backupDir, fileName);
+            sufijo++;
+        }
 
         var result = await _processRunner.RunAsync(
             "pg_dump",
@@ -126,7 +139,10 @@ public partial class BackupService : IBackupService
         return File.Exists(fullPath) ? File.OpenRead(fullPath) : null;
     }
 
-    // Patron exacto de los nombres que produce GenerateBackupAsync: backup_yyyyMMdd_HHmm.sql
-    [GeneratedRegex(@"^backup_\d{8}_\d{4}\.sql$", RegexOptions.CultureInvariant)]
+    // Patron de los nombres que produce GenerateBackupAsync. Acepta seis digitos
+    // (HHmmss, formato actual) y cuatro (HHmm, formato anterior): sin esa tolerancia,
+    // los respaldos ya generados dejarian de listarse y de poder descargarse.
+    // El sufijo opcional desambigua respaldos creados dentro del mismo segundo.
+    [GeneratedRegex(@"^backup_\d{8}_(\d{6}|\d{4})(_\d+)?\.sql$", RegexOptions.CultureInvariant)]
     private static partial Regex NombreDeRespaldoValido();
 }
