@@ -1,0 +1,50 @@
+# Stack local con un proxy inverso delante de la API.
+#
+# En produccion el proxy lo pone Render, que no es configurable desde este repo. Este
+# compose existe para poder verificar de verdad el comportamiento de las cabeceras
+# reenviadas contra un proxy real, y como base si algun dia se autoaloja.
+#
+#   docker compose up --build
+#   curl -s http://localhost:8080/health/ready
+#
+services:
+  api:
+    build: .
+    environment:
+      # La API no se publica al exterior: solo el proxy habla con ella. Es la misma
+      # topologia que en produccion, donde el contenedor no es accesible directamente.
+      ASPNETCORE_URLS: http://+:10000
+      # Un unico salto en local (solo NGINX), frente a los dos de produccion
+      # (Cloudflare y el edge de Render).
+      FORWARDED_LIMIT: "1"
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT:-5432}
+      DB_NAME: ${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      JWT_KEY: ${JWT_KEY}
+      JWT_ISSUER: ${JWT_ISSUER}
+      JWT_AUDIENCE: ${JWT_AUDIENCE}
+      JWT_EXPIRES_MINUTES: ${JWT_EXPIRES_MINUTES:-60}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:3000}
+      SMTP_HOST: ${SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER}
+      SMTP_PASSWORD: ${SMTP_PASSWORD}
+      SMTP_FROM: ${SMTP_FROM}
+      BACKUP_DIR: /var/backups/gsp
+      # Deja ver en el log la cadena recibida y la direccion resuelta.
+      Logging__LogLevel__SistemaServicios.API.Middleware: Debug
+    volumes:
+      # Sin este montaje los respaldos mueren con el contenedor.
+      - ./backups:/var/backups/gsp
+
+  proxy:
+    image: nginx:1.27-alpine
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "8080:80"
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro

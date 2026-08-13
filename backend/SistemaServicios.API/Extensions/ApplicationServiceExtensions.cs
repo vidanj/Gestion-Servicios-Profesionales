@@ -79,6 +79,18 @@ public static class ApplicationServiceExtensions
         services.AddScoped<ITokenService, TokenService>();
         services.AddScoped<IAuthService, AuthService>();
 
+        // Cabeceras reenviadas: sin esto, detrás de un proxy la dirección del cliente
+        // es siempre la del proxy. Hoy nada la registra, pero el limitador de intentos
+        // del tramo de blindaje contaría todos los intentos contra una sola dirección
+        // y bloquearía a los usuarios legítimos.
+        services.Configure<Microsoft.AspNetCore.Builder.ForwardedHeadersOptions>(options =>
+            ForwardedHeadersConfiguration.Configure(
+                options,
+                Environment.GetEnvironmentVariable("FORWARDED_LIMIT"),
+                Environment.GetEnvironmentVariable("FORWARDED_NETWORKS")
+            )
+        );
+
         // Sondas: la etiqueta "ready" separa lo que decide si la instancia puede recibir
         // tráfico de lo que solo confirma que el proceso sigue vivo.
         _ = services.AddHealthChecks().AddCheck<DatabaseHealthCheck>("postgresql", tags: ["ready"]);
