@@ -42,8 +42,10 @@ RUN apt-get update \
         > /etc/apt/sources.list.d/pgdg.list \
     && apt-get update \
     && apt-get install -y --no-install-recommends postgresql-client-18 \
-    && apt-get purge -y --auto-remove curl gnupg \
+    && apt-get purge -y --auto-remove gnupg \
     && rm -rf /var/lib/apt/lists/*
+# curl se conserva a proposito: lo necesita la instruccion HEALTHCHECK de mas abajo.
+# La imagen base no trae ningun cliente HTTP.
 
 # Destino de los respaldos. Fuera de /app para poder montarlo como volumen:
 # sin un montaje explicito el .sql muere con el contenedor (ver issue #126).
@@ -60,5 +62,12 @@ RUN chmod +x entrypoint.sh efbundle
 # Sin seccion Kestrel en appsettings.json, ASPNETCORE_URLS controla el binding.
 ENV ASPNETCORE_URLS=http://+:10000
 EXPOSE 10000
+
+# Sonda de readiness: la instancia solo se considera sana si ademas alcanza la base.
+# start-period cubre el tiempo que entrypoint.sh dedica a aplicar migraciones con
+# efbundle antes de que Kestrel empiece a escuchar; sin ese margen, el contenedor se
+# marcaria como enfermo durante un arranque perfectamente normal.
+HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
+    CMD curl --fail --silent --show-error http://localhost:10000/health/ready || exit 1
 
 ENTRYPOINT ["./entrypoint.sh"]

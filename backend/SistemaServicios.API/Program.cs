@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using SistemaServicios.API.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -33,11 +34,40 @@ app.Use(
     }
 );
 
-app.UseHttpsRedirection();
+// Las sondas quedan fuera de la redirección a HTTPS. Hoy no redirige porque no hay
+// puerto HTTPS configurado, pero si alguien lo añadiera, la sonda del contenedor
+// recibiría un 307 y el contenedor pasaría a considerarse enfermo sin estarlo.
+app.UseWhen(
+    context => !context.Request.Path.StartsWithSegments("/health"),
+    branch => branch.UseHttpsRedirection()
+);
+
 app.UseStaticFiles();
 app.UseCors("FrontendPolicy");
 app.UseAuthentication();
 app.UseAuthorization();
+
+// Liveness: responde mientras el proceso viva. No consulta dependencias a propósito;
+// si lo hiciera, una base caída provocaría reinicios en bucle de un proceso sano.
+app.MapHealthChecks(
+    "/health/live",
+    new HealthCheckOptions
+    {
+        Predicate = _ => false,
+        ResponseWriter = HealthCheckResponseWriter.WriteAsync,
+    }
+);
+
+// Readiness: solo está listo si además puede alcanzar la base de datos.
+app.MapHealthChecks(
+    "/health/ready",
+    new HealthCheckOptions
+    {
+        Predicate = check => check.Tags.Contains("ready"),
+        ResponseWriter = HealthCheckResponseWriter.WriteAsync,
+    }
+);
+
 app.MapControllers();
 
 app.Run();

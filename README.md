@@ -76,6 +76,26 @@ dotnet run --project backend/SistemaServicios.API
 #http://localhost:5000/openapi/v1.json
 ```
  
+## 🩺 Sondas de Disponibilidad
+
+Dos endpoints anónimos, pensados para orquestadores y balanceadores. Son distintos a propósito: uno responde *"no me reinicies"* y el otro *"puedo recibir tráfico"*.
+
+| Ruta | Comprueba | Respuestas |
+|------|-----------|-----------|
+| `GET /health/live` | Solo que el proceso esté vivo. **No consulta dependencias.** | `200 Healthy` mientras el proceso responda |
+| `GET /health/ready` | Además, que PostgreSQL esté alcanzable (timeout 3 s) | `200 Healthy` / `503 Unhealthy` |
+
+```bash
+curl -i http://localhost:5000/health/live
+curl -i http://localhost:5000/health/ready
+```
+
+**Por qué liveness no mira la base de datos:** si lo hiciera, una caída de PostgreSQL haría que el orquestador reiniciara un proceso perfectamente sano, una y otra vez, sin arreglar nada. Con la separación, una base caída saca la instancia de rotación (`503` en readiness) pero no provoca reinicios.
+
+La respuesta es JSON con el estado y la duración de cada comprobación. **No incluye la cadena de conexión, el host de la base ni trazas de excepción**: los endpoints son anónimos y el detalle va al log.
+
+El `Dockerfile` declara un `HEALTHCHECK` contra `/health/ready` con `start-period` de 60 s, margen que cubre el tiempo que `entrypoint.sh` dedica a aplicar migraciones antes de que Kestrel empiece a escuchar.
+
 ## 📊 Índices de Base de Datos — Notas de Diseño
 
 ### `Users.Status` (índice parcial)
