@@ -29,18 +29,10 @@ public class UserService : IUserService
     public async Task<(IEnumerable<UserDto> users, int totalCount)> GetAllUsersAsync(
         int page,
         int size
-    )
-    {
-        var (users, total) = await _userRepository.GetUsersAsync(page, size);
-        var dtos = users.Select(u => MapToDto(u));
-        return (dtos, total);
-    }
+    ) => await _userRepository.GetUserDtosAsync(page, size);
 
-    public async Task<UserDto?> GetUserByIdAsync(Guid id)
-    {
-        var user = await _userRepository.GetByIdAsync(id);
-        return user == null ? null : MapToDto(user);
-    }
+    public async Task<UserDto?> GetUserByIdAsync(Guid id) =>
+        await _userRepository.GetUserDtoByIdAsync(id);
 
     public async Task<UserDto> CreateUserAsync(CreateUserDto createUserDto)
     {

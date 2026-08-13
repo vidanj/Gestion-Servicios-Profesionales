@@ -25,4 +25,11 @@ public interface IUserRepository
     public Task<User> CreateAsync(User user);
 
     public Task<IEnumerable<UserRegistrationStatDto>> GetRegistrationsByDateAsync(int days);
+
+    public Task<(IEnumerable<UserDto> users, int totalCount)> GetUserDtosAsync(
+        int pageNumber,
+        int pageSize
+    );
+
+    public Task<UserDto?> GetUserDtoByIdAsync(Guid id);
 }

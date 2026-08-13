@@ -1,3 +1,4 @@
+using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore;
 using SistemaServicios.API.Data;
 using SistemaServicios.API.DTOs;
@@ -8,6 +9,20 @@ namespace SistemaServicios.API.Repositories;
 
 public class UserRepository : IUserRepository
 {
+    private static readonly Expression<Func<User, UserDto>> ToDto = u => new UserDto
+    {
+        Id = u.Id,
+        Email = u.Email,
+        FirstName = u.FirstName,
+        LastName = u.LastName,
+        Role = u.Role,
+        PhoneNumber = u.PhoneNumber,
+        AverageRating = u.AverageRating,
+        Status = u.Status,
+        ProfileImageUrl = u.ProfileImageUrl,
+        CreatedAt = u.CreatedAt,
+    };
+
     private readonly AppDbContext _context;
 
     public UserRepository(AppDbContext context)
@@ -84,4 +99,26 @@ public class UserRepository : IUserRepository
                 Count = resultados.FirstOrDefault(r => r.Date == fecha)?.Count ?? 0,
             });
     }
+
+    public async Task<(IEnumerable<UserDto> users, int totalCount)> GetUserDtosAsync(
+        int pageNumber,
+        int pageSize
+    )
+    {
+        var query = _context.Users.Where(u => u.Status == true);
+        int totalCount = await query.CountAsync();
+        var users = await query
+            .OrderByDescending(u => u.CreatedAt)
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .Select(ToDto)
+            .ToListAsync();
+        return (users, totalCount);
+    }
+
+    public async Task<UserDto?> GetUserDtoByIdAsync(Guid id) =>
+        await _context
+            .Users.Where(u => u.Id == id && u.Status == true)
+            .Select(ToDto)
+            .FirstOrDefaultAsync();
 }

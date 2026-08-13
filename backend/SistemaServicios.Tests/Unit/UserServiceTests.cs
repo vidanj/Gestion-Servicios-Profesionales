@@ -48,6 +48,21 @@ public class UserServiceTests
         };
     }
 
+    private static UserDto DtoDe(User u) =>
+        new()
+        {
+            Id = u.Id,
+            Email = u.Email,
+            FirstName = u.FirstName,
+            LastName = u.LastName,
+            Role = u.Role,
+            PhoneNumber = u.PhoneNumber,
+            AverageRating = u.AverageRating,
+            Status = u.Status,
+            ProfileImageUrl = u.ProfileImageUrl,
+            CreatedAt = u.CreatedAt,
+        };
+
     // ─────────────────────────────────────────────────────────────
     // GetAllUsersAsync
     // ─────────────────────────────────────────────────────────────
@@ -56,8 +71,8 @@ public class UserServiceTests
     public async Task GetAllUsersAsyncRetornaListaDeUsuarios()
     {
         // Arrange
-        var usuarios = new List<User> { _usuarioActivo };
-        _ = _mockRepo.Setup(r => r.GetUsersAsync(1, 10)).ReturnsAsync((usuarios, 1));
+        var dtos = new List<UserDto> { DtoDe(_usuarioActivo) };
+        _ = _mockRepo.Setup(r => r.GetUserDtosAsync(1, 10)).ReturnsAsync((dtos, 1));
 
         // Act
         var (resultado, total) = await _userService.GetAllUsersAsync(1, 10);
@@ -69,31 +84,17 @@ public class UserServiceTests
     }
 
     [Fact]
-    public async Task GetAllUsersAsyncListaVaciaRetornaCeroElementos()
-    {
-        // Arrange
-        _ = _mockRepo.Setup(r => r.GetUsersAsync(1, 10)).ReturnsAsync((new List<User>(), 0));
-
-        // Act
-        var (resultado, total) = await _userService.GetAllUsersAsync(1, 10);
-
-        // Assert
-        _ = resultado.Should().BeEmpty();
-        _ = total.Should().Be(0);
-    }
-
-    [Fact]
     public async Task GetAllUsersAsyncMapeaCorrectamenteADto()
     {
         // Arrange
-        var usuarios = new List<User> { _usuarioActivo };
-        _ = _mockRepo.Setup(r => r.GetUsersAsync(1, 10)).ReturnsAsync((usuarios, 1));
+        var dtos = new List<UserDto> { DtoDe(_usuarioActivo) };
+        _ = _mockRepo.Setup(r => r.GetUserDtosAsync(1, 10)).ReturnsAsync((dtos, 1));
 
         // Act
         var (resultado, _) = await _userService.GetAllUsersAsync(1, 10);
         var dto = resultado.First();
 
-        // Assert: todos los campos mapeados correctamente
+        // Assert: el UserRepository proyecta todos los campos correctamente a DTO
         _ = dto.Id.Should().Be(_usuarioActivo.Id);
         _ = dto.Email.Should().Be(_usuarioActivo.Email);
         _ = dto.FirstName.Should().Be(_usuarioActivo.FirstName);
@@ -108,26 +109,24 @@ public class UserServiceTests
     {
         // Arrange: usuario con foto de perfil asignada
         _usuarioActivo.ProfileImageUrl = "/uploads/avatars/test.jpg";
-        var usuarios = new List<User> { _usuarioActivo };
-        _ = _mockRepo.Setup(r => r.GetUsersAsync(1, 10)).ReturnsAsync((usuarios, 1));
+        var dtos = new List<UserDto> { DtoDe(_usuarioActivo) };
+        _ = _mockRepo.Setup(r => r.GetUserDtosAsync(1, 10)).ReturnsAsync((dtos, 1));
 
         // Act
         var (resultado, _) = await _userService.GetAllUsersAsync(1, 10);
         var dto = resultado.First();
 
-        // Assert: el getter get_ProfileImageUrl() del modelo User queda cubierto con valor no nulo
+        // Assert
         _ = dto.ProfileImageUrl.Should().Be("/uploads/avatars/test.jpg");
     }
-
-    // ─────────────────────────────────────────────────────────────
-    // GetUserByIdAsync
-    // ─────────────────────────────────────────────────────────────
 
     [Fact]
     public async Task GetUserByIdAsyncUsuarioExisteRetornaDto()
     {
         // Arrange
-        _ = _mockRepo.Setup(r => r.GetByIdAsync(_usuarioActivo.Id)).ReturnsAsync(_usuarioActivo);
+        _ = _mockRepo
+            .Setup(r => r.GetUserDtoByIdAsync(_usuarioActivo.Id))
+            .ReturnsAsync(DtoDe(_usuarioActivo));
 
         // Act
         var resultado = await _userService.GetUserByIdAsync(_usuarioActivo.Id);
@@ -136,6 +135,20 @@ public class UserServiceTests
         _ = resultado.Should().NotBeNull();
         _ = resultado!.Email.Should().Be("juan@test.com");
         _ = resultado.FirstName.Should().Be("Juan");
+    }
+
+    [Fact]
+    public async Task GetAllUsersAsyncListaVaciaRetornaCeroElementos()
+    {
+        // Arrange
+        _ = _mockRepo.Setup(r => r.GetUsersAsync(1, 10)).ReturnsAsync((new List<User>(), 0));
+
+        // Act
+        var (resultado, total) = await _userService.GetAllUsersAsync(1, 10);
+
+        // Assert
+        _ = resultado.Should().BeEmpty();
+        _ = total.Should().Be(0);
     }
 
     [Fact]
