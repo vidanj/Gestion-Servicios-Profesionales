@@ -98,7 +98,18 @@ public static class ApplicationServiceExtensions
         services.AddScoped<IRatingService, RatingService>();
         services.AddScoped<IServiceRequestRepository, ServiceRequestRepository>();
         services.AddScoped<IServiceRequestService, ServiceRequestService>();
-        services.AddScoped<IEmailService, EmailService>();
+
+        // Cola de trabajos en segundo plano: saca pg_dump y SMTP del ciclo
+        // petición-respuesta. Singleton porque la cola y el estado de los trabajos
+        // se comparten entre peticiones y con el consumidor.
+        services.AddSingleton<IBackgroundTaskDispatcher>(_ => new BackgroundTaskDispatcher());
+        services.AddSingleton<IBackupJobTracker, BackupJobTracker>();
+        services.AddHostedService<QueuedHostedService>();
+
+        // EmailService concreto es el transporte real; QueuedEmailService lo envuelve
+        // para encolarlo. Quien depende de IEmailService no se entera del cambio.
+        services.AddScoped<EmailService>();
+        services.AddScoped<IEmailService, QueuedEmailService>();
         services.AddScoped<IUserLogRepository, UserLogRepository>();
         services.AddScoped<IUserLogService, UserLogService>();
         services.AddScoped<ICategoryRepository, CategoryRepository>();
