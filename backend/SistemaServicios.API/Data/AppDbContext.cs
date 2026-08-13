@@ -76,6 +76,7 @@ public class AppDbContext : DbContext
         // Índice compuesto: acelera el listado paginado de solicitudes por profesional
         // ordenado por fecha, evitando table scans a medida que crece el volumen
         modelBuilder.Entity<Request>().HasIndex(r => new { r.ProfessionalId, r.RequestDate });
+
         // Único: evita condición de carrera en el registro (antes solo se validaba en la app con EmailExistsAsync)
         modelBuilder.Entity<User>().HasIndex(u => u.Email).IsUnique();
 
@@ -91,6 +92,7 @@ public class AppDbContext : DbContext
         // revisarse: HasFilter ya no aplicaría tal cual y habría que evaluar qué subconjunto
         // de estados sigue siendo el "camino caliente" de lectura.
         modelBuilder.Entity<User>().HasIndex(u => u.Status).HasFilter("\"Status\" = true");
+
         // StoredFile: mismo criterio que el resto, sin borrado en cascada.
         // El borrado de usuarios es lógico, así que sus archivos se conservan.
         modelBuilder
@@ -103,6 +105,5 @@ public class AppDbContext : DbContext
         // El reemplazo de avatar busca por dueño: sin índice sería un scan completo
         // de una tabla que guarda binarios.
         modelBuilder.Entity<StoredFile>().HasIndex(f => f.OwnerUserId);
-
     }
 }
