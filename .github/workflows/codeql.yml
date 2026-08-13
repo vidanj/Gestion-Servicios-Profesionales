@@ -45,12 +45,12 @@ jobs:
     steps:
       # ── 1. Checkout ──────────────────────────────────────────────
       - name: Checkout del repositorio
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       # ── 2. .NET 9 (solo para el analisis de C#) ───────────────────
       - name: Configurar .NET 9
         if: matrix.language == 'csharp'
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v6
         with:
           dotnet-version: '9.0.x'
 
