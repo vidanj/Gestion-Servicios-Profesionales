@@ -50,6 +50,7 @@ public static class ApplicationServiceExtensions
                 ["SmtpSettings:User"] = Environment.GetEnvironmentVariable("SMTP_USER"),
                 ["SmtpSettings:Password"] = Environment.GetEnvironmentVariable("SMTP_PASSWORD"),
                 ["SmtpSettings:From"] = Environment.GetEnvironmentVariable("SMTP_FROM"),
+                ["BackupSettings:Directory"] = Environment.GetEnvironmentVariable("BACKUP_DIR"),
             }
         );
 
@@ -77,6 +78,7 @@ public static class ApplicationServiceExtensions
 
         services.AddScoped<ITokenService, TokenService>();
         services.AddScoped<IAuthService, AuthService>();
+        services.AddScoped<IProcessRunner, ProcessRunner>();
         services.AddScoped<IBackupService, BackupService>();
         services.AddScoped<IUserService, UserService>();
         services.AddScoped<IRatingService, RatingService>();
