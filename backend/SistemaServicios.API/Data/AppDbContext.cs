@@ -82,8 +82,14 @@ public class AppDbContext : DbContext
         // Acelera listados/reportes ordenados u filtrados por fecha de alta
         modelBuilder.Entity<User>().HasIndex(u => u.CreatedAt);
 
-        // Índice parcial: Status es de baja cardinalidad (bool), solo indexamos los activos
-        // que es el filtro que se usa en la mayoría de las consultas (usuarios activos)
+        // Índice parcial en Status: la columna es de baja cardinalidad (bool: activo/inactivo).
+        // Se indexa solo Status = true porque todas las consultas de lectura del sistema
+        // (listado paginado y búsqueda por Id en UserRepository) filtran exclusivamente por
+        // usuarios activos — el borrado es lógico (soft delete) y no existe, a la fecha,
+        // ningún flujo que liste o busque usuarios con Status = false. Si en el futuro Status
+        // deja de ser booleano (ej. se convierte en enum con más estados), este índice debe
+        // revisarse: HasFilter ya no aplicaría tal cual y habría que evaluar qué subconjunto
+        // de estados sigue siendo el "camino caliente" de lectura.
         modelBuilder.Entity<User>().HasIndex(u => u.Status).HasFilter("\"Status\" = true");
         // StoredFile: mismo criterio que el resto, sin borrado en cascada.
         // El borrado de usuarios es lógico, así que sus archivos se conservan.
@@ -97,5 +103,6 @@ public class AppDbContext : DbContext
         // El reemplazo de avatar busca por dueño: sin índice sería un scan completo
         // de una tabla que guarda binarios.
         modelBuilder.Entity<StoredFile>().HasIndex(f => f.OwnerUserId);
+
     }
 }
