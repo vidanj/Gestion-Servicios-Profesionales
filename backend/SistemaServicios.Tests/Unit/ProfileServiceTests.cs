@@ -185,7 +185,10 @@ public class ProfileServiceTests
         var mockFile = new Mock<IFormFile>();
         mockFile.Setup(f => f.ContentType).Returns("image/jpeg");
         mockFile.Setup(f => f.Length).Returns(500_000); // 500 KB
-        mockFile.Setup(f => f.OpenReadStream()).Returns(new MemoryStream([1, 2, 3]));
+        // Magic Bytes reales de JPEG (FF D8 FF E0 00 10)
+        mockFile
+            .Setup(f => f.OpenReadStream())
+            .Returns(new MemoryStream([0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x10]));
 
         const string urlAlmacenada = "/api/Files/8a1f0c2e-0000-4000-8000-000000000001";
         _mockFileStorage
@@ -253,7 +256,10 @@ public class ProfileServiceTests
         var mockFile = new Mock<IFormFile>();
         mockFile.Setup(f => f.ContentType).Returns("image/png");
         mockFile.Setup(f => f.Length).Returns(300_000); // 300 KB — dentro del límite
-        mockFile.Setup(f => f.OpenReadStream()).Returns(new MemoryStream([1, 2, 3]));
+        // Magic Bytes reales de PNG (89 50 4E 47 0D 0A 1A 0A)
+        mockFile
+            .Setup(f => f.OpenReadStream())
+            .Returns(new MemoryStream([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]));
 
         _mockFileStorage
             .Setup(s =>
