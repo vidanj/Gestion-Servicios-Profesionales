@@ -1,55 +1,132 @@
 using System.Net.Mail;
 using Microsoft.Extensions.Configuration;
 using SistemaServicios.API.Interfaces;
+using SistemaServicios.API.Services;
+using Xunit;
 
-[assembly: System.Runtime.CompilerServices.InternalsVisibleTo("SistemaServicios.Tests")]
+namespace SistemaServicios.Tests.Unit;
 
-namespace SistemaServicios.API.Services;
-
-public class EmailService : IEmailService
+public class EmailServiceTests
 {
-    private readonly ISmtpClientWrapper _smtpClient;
-    private readonly string _from;
-
-    public EmailService(IConfiguration config, ISmtpClientWrapper? smtpClient = null)
+    private sealed class FakeSmtpClient : ISmtpClientWrapper
     {
-        var host =
-            config["SmtpSettings:Host"]
-            ?? throw new InvalidOperationException("SMTP_HOST no configurado.");
-        var port = int.Parse(
-            config["SmtpSettings:Port"] ?? "587",
-            System.Globalization.CultureInfo.InvariantCulture
-        );
-        var user =
-            config["SmtpSettings:User"]
-            ?? throw new InvalidOperationException("SMTP_USER no configurado.");
-        var password =
-            config["SmtpSettings:Password"]
-            ?? throw new InvalidOperationException("SMTP_PASSWORD no configurado.");
+        public MailMessage? MensajeEnviado { get; private set; }
+        public bool DebeFallar { get; set; }
 
-        _from = config["SmtpSettings:From"] ?? user;
-        _smtpClient = smtpClient ?? new SmtpClientWrapper(host, port, user, password);
-    }
-
-    public async Task SendPasswordResetEmailAsync(string toEmail, string newPassword)
-    {
-        var message = new MailMessage
+        public Task SendMailAsync(MailMessage message)
         {
-            From = new MailAddress(_from, "SistemaServicios"),
-            Subject = "Tu nueva contraseña — SistemaServicios",
-            Body = BuildEmailBody(newPassword),
-            IsBodyHtml = true,
-        };
-        message.To.Add(toEmail);
+            if (DebeFallar)
+            {
+                throw new SmtpException("fallo simulado");
+            }
 
-        await _smtpClient.SendMailAsync(message);
+            MensajeEnviado = message;
+            return Task.CompletedTask;
+        }
+
+        public void Dispose() { }
     }
 
-    internal static string BuildEmailBody(string newPassword) =>
-        $"""
-            <h2>Recuperación de contraseña</h2>
-            <p>Tu nueva contraseña temporal es:</p>
-            <h3 style="letter-spacing:2px">{newPassword}</h3>
-            <p>Te recomendamos cambiarla después de iniciar sesión.</p>
-            """;
+    private static IConfiguration BuildConfig(
+        string? host = "smtp.test.com",
+        string? port = "587",
+        string? user = "user@test.com",
+        string? password = "secret",
+        string? from = null
+    )
+    {
+        var dict = new Dictionary<string, string?>
+        {
+            ["SmtpSettings:Host"] = host,
+            ["SmtpSettings:Port"] = port,
+            ["SmtpSettings:User"] = user,
+            ["SmtpSettings:Password"] = password,
+            ["SmtpSettings:From"] = from,
+        };
+        return new ConfigurationBuilder().AddInMemoryCollection(dict).Build();
+    }
+
+    [Fact]
+    public void ConstructorConfigValidaNoLanzaExcepcion()
+    {
+        var ex = Record.Exception(() => new EmailService(BuildConfig(), new FakeSmtpClient()));
+        Assert.Null(ex);
+    }
+
+    [Fact]
+    public void ConstructorSinHostLanzaInvalidOperation()
+    {
+        var ex = Assert.Throws<InvalidOperationException>(() =>
+            new EmailService(BuildConfig(host: null), new FakeSmtpClient())
+        );
+        Assert.Contains("SMTP_HOST", ex.Message);
+    }
+
+    [Fact]
+    public void ConstructorSinUserLanzaInvalidOperation()
+    {
+        var ex = Assert.Throws<InvalidOperationException>(() =>
+            new EmailService(BuildConfig(user: null), new FakeSmtpClient())
+        );
+        Assert.Contains("SMTP_USER", ex.Message);
+    }
+
+    [Fact]
+    public void ConstructorSinPasswordLanzaInvalidOperation()
+    {
+        var ex = Assert.Throws<InvalidOperationException>(() =>
+            new EmailService(BuildConfig(password: null), new FakeSmtpClient())
+        );
+        Assert.Contains("SMTP_PASSWORD", ex.Message);
+    }
+
+    [Fact]
+    public void ConstructorSinFromUsaUserComoFrom()
+    {
+        var ex = Record.Exception(() =>
+            new EmailService(BuildConfig(from: null), new FakeSmtpClient())
+        );
+        Assert.Null(ex);
+    }
+
+    [Fact]
+    public void ConstructorPuertoInvalidoLanzaFormatException()
+    {
+        Assert.Throws<FormatException>(() =>
+            new EmailService(BuildConfig(port: "abc"), new FakeSmtpClient())
+        );
+    }
+
+    [Fact]
+    public async Task SendPasswordResetEmailAsyncEnviaMensajeCorrecto()
+    {
+        var fake = new FakeSmtpClient();
+        var service = new EmailService(BuildConfig(), fake);
+
+        await service.SendPasswordResetEmailAsync("dest@test.com", "Pass123!");
+
+        Assert.NotNull(fake.MensajeEnviado);
+        Assert.Equal("dest@test.com", fake.MensajeEnviado!.To[0].Address);
+        Assert.Contains("Tu nueva contraseña", fake.MensajeEnviado.Subject);
+        Assert.True(fake.MensajeEnviado.IsBodyHtml);
+    }
+
+    [Fact]
+    public async Task SendPasswordResetEmailAsyncSmtpFallaPropagaExcepcion()
+    {
+        var fake = new FakeSmtpClient { DebeFallar = true };
+        var service = new EmailService(BuildConfig(), fake);
+
+        await Assert.ThrowsAsync<SmtpException>(() =>
+            service.SendPasswordResetEmailAsync("dest@test.com", "Pass123!")
+        );
+    }
+
+    [Fact]
+    public void BuildEmailBodyContienePasswordYHtml()
+    {
+        var body = EmailService.BuildEmailBody("MiPass99");
+        Assert.Contains("MiPass99", body);
+        Assert.Contains("<h2>", body);
+    }
 }
