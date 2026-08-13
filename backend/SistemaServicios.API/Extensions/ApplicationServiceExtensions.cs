@@ -78,6 +78,11 @@ public static class ApplicationServiceExtensions
 
         services.AddScoped<ITokenService, TokenService>();
         services.AddScoped<IAuthService, AuthService>();
+
+        // Sondas: la etiqueta "ready" separa lo que decide si la instancia puede recibir
+        // tráfico de lo que solo confirma que el proceso sigue vivo.
+        _ = services.AddHealthChecks().AddCheck<DatabaseHealthCheck>("postgresql", tags: ["ready"]);
+
         services.AddScoped<IProcessRunner, ProcessRunner>();
         services.AddScoped<IBackupService, BackupService>();
 
