@@ -12,17 +12,17 @@ public class UserService : IUserService
     private static readonly string[] AllowedImageMimeTypes = ["image/jpeg", "image/png"];
 
     private readonly IUserRepository _userRepository;
-    private readonly IWebHostEnvironment _env;
+    private readonly IFileStorage _fileStorage;
     private readonly IUserLogService _logService;
 
     public UserService(
         IUserRepository userRepository,
-        IWebHostEnvironment env,
+        IFileStorage fileStorage,
         IUserLogService logService
     )
     {
         _userRepository = userRepository;
-        _env = env;
+        _fileStorage = fileStorage;
         _logService = logService;
     }
 
@@ -221,19 +221,13 @@ public class UserService : IUserService
             throw new InvalidOperationException("La imagen no puede superar los 2 MB.");
         }
 
-        var ext = foto.ContentType == "image/png" ? ".png" : ".jpg";
-        var uploadsDir = Path.Combine(_env.WebRootPath, "uploads", "avatars");
-        Directory.CreateDirectory(uploadsDir);
-
-        var fileName = $"{userId}{ext}";
-        var filePath = Path.Combine(uploadsDir, fileName);
-
-        await using (var stream = new FileStream(filePath, FileMode.Create))
-        {
-            await foto.CopyToAsync(stream);
-        }
-
-        user.ProfileImageUrl = $"/uploads/avatars/{fileName}";
+        // El servicio no decide dónde vive el archivo: eso es del almacenamiento.
+        await using var contenido = foto.OpenReadStream();
+        user.ProfileImageUrl = await _fileStorage.SaveForOwnerAsync(
+            userId,
+            contenido,
+            foto.ContentType
+        );
         user.UpdatedAt = DateTime.UtcNow;
 
         await _userRepository.UpdateUserAsync(user);
