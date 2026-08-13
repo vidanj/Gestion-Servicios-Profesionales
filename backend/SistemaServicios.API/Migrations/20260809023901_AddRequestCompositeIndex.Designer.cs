@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using SistemaServicios.API.Data;
@@ -11,9 +12,11 @@ using SistemaServicios.API.Data;
 namespace SistemaServicios.API.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260809023901_AddRequestCompositeIndex")]
+    partial class AddRequestCompositeIndex
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -233,37 +236,6 @@ namespace SistemaServicios.API.Migrations
                     b.ToTable("Services");
                 });
 
-            modelBuilder.Entity("SistemaServicios.API.Models.StoredFile", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<byte[]>("Content")
-                        .IsRequired()
-                        .HasColumnType("bytea");
-
-                    b.Property<string>("ContentType")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid>("OwnerUserId")
-                        .HasColumnType("uuid");
-
-                    b.Property<long>("SizeBytes")
-                        .HasColumnType("bigint");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("OwnerUserId");
-
-                    b.ToTable("StoredFiles");
-                });
-
             modelBuilder.Entity("SistemaServicios.API.Models.User", b =>
                 {
                     b.Property<Guid>("Id")
@@ -312,14 +284,6 @@ namespace SistemaServicios.API.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("CreatedAt");
-
-                    b.HasIndex("Email")
-                        .IsUnique();
-
-                    b.HasIndex("Status")
-                        .HasFilter("\"Status\" = true");
 
                     b.ToTable("Users");
                 });
@@ -486,17 +450,6 @@ namespace SistemaServicios.API.Migrations
                     b.Navigation("Category");
 
                     b.Navigation("Professional");
-                });
-
-            modelBuilder.Entity("SistemaServicios.API.Models.StoredFile", b =>
-                {
-                    b.HasOne("SistemaServicios.API.Models.User", "Owner")
-                        .WithMany()
-                        .HasForeignKey("OwnerUserId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Owner");
                 });
 
             modelBuilder.Entity("SistemaServicios.API.Models.UserLog", b =>

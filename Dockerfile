@@ -27,6 +27,29 @@ RUN dotnet ef migrations bundle \
 FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS final
 WORKDIR /app
 
+# pg_dump para el respaldo de base de datos (BackupService).
+# La imagen aspnet:9.0 (Debian bookworm) no lo trae, y el paquete por defecto de
+# bookworm es la version 15: pg_dump SE NIEGA a volcar un servidor de version
+# mayor que la suya, asi que 15 fallaria contra PostgreSQL 16/17/18. Un cliente
+# mas nuevo si puede volcar servidores mas viejos, por eso se fija el 18 desde
+# el repositorio oficial PGDG y no el de bookworm.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends ca-certificates curl gnupg \
+    && install -d /usr/share/postgresql-common/pgdg \
+    && curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc \
+        -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc \
+    && echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt bookworm-pgdg main" \
+        > /etc/apt/sources.list.d/pgdg.list \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends postgresql-client-18 \
+    && apt-get purge -y --auto-remove curl gnupg \
+    && rm -rf /var/lib/apt/lists/*
+
+# Destino de los respaldos. Fuera de /app para poder montarlo como volumen:
+# sin un montaje explicito el .sql muere con el contenedor (ver issue #126).
+ENV BACKUP_DIR=/var/backups/gsp
+RUN mkdir -p /var/backups/gsp
+
 COPY --from=build /app/publish .
 COPY --from=migrations /app/efbundle .
 COPY entrypoint.sh .

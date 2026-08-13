@@ -1,5 +1,6 @@
 using FluentAssertions;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using SistemaServicios.API.Controllers;
 using SistemaServicios.API.DTOs.Admin;
@@ -21,7 +22,10 @@ public class AdminControllerTests
     public AdminControllerTests()
     {
         _mockBackupService = new Mock<IBackupService>();
-        _controller = new AdminController(_mockBackupService.Object);
+        _controller = new AdminController(
+            _mockBackupService.Object,
+            NullLogger<AdminController>.Instance
+        );
     }
 
     // ─────────────────────────────────────────────────────────────
@@ -106,21 +110,29 @@ public class AdminControllerTests
     }
 
     [Fact]
-    public async Task CreateBackupServicioLanzaInvalidOperationExceptionRetornaMensajeDeError()
+    public async Task CreateBackupServicioFallaNoFiltraElDetalleInternoAlCliente()
     {
-        // Arrange
-        const string mensajeEsperado = "pg_dump falló (código 1): conexión rechazada";
+        // Arrange: el mensaje real arrastra rutas del contenedor y la salida de pg_dump.
+        // Esta prueba afirmaba antes lo contrario — que el detalle SÍ se propagaba —;
+        // se invierte a propósito como parte del issue #133.
+        const string mensajeInterno =
+            "pg_dump falló (código 1): /var/backups/gsp/backup.sql conexión rechazada";
 
         _ = _mockBackupService
             .Setup(s => s.GenerateBackupAsync())
-            .ThrowsAsync(new InvalidOperationException(mensajeEsperado));
+            .ThrowsAsync(new InvalidOperationException(mensajeInterno));
 
         // Act
         var result = await _controller.CreateBackup();
 
-        // Assert: el mensaje de error se propaga en el body de la respuesta
+        // Assert
         var objectResult = result.Should().BeOfType<ObjectResult>().Subject;
-        _ = objectResult.Value.Should().BeEquivalentTo(new { message = mensajeEsperado });
+        _ = objectResult.StatusCode.Should().Be(500);
+
+        var cuerpo = objectResult.Value!.ToString();
+        _ = cuerpo.Should().NotContain("pg_dump");
+        _ = cuerpo.Should().NotContain("/var/backups");
+        _ = cuerpo.Should().Contain("No se pudo generar el respaldo");
     }
 
     [Fact]
