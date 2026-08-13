@@ -24,6 +24,8 @@ public class AppDbContext : DbContext
 
     public DbSet<UserLog> UserLogs { get; set; }
 
+    public DbSet<StoredFile> StoredFiles { get; set; }
+
     // Configuración especial de relaciones (Fluent API)
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -70,5 +72,18 @@ public class AppDbContext : DbContext
             .WithMany()
             .HasForeignKey(l => l.UserId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        // StoredFile: mismo criterio que el resto, sin borrado en cascada.
+        // El borrado de usuarios es lógico, así que sus archivos se conservan.
+        modelBuilder
+            .Entity<StoredFile>()
+            .HasOne(f => f.Owner)
+            .WithMany()
+            .HasForeignKey(f => f.OwnerUserId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // El reemplazo de avatar busca por dueño: sin índice sería un scan completo
+        // de una tabla que guarda binarios.
+        modelBuilder.Entity<StoredFile>().HasIndex(f => f.OwnerUserId);
     }
 }
