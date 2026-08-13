@@ -5,6 +5,11 @@
 # "exec ./entrypoint.sh: no such file or directory".
 *.sh text eol=lf
 
+# Configuracion que consumen contenedores Linux: mismo criterio que los scripts,
+# para que un checkout en Windows no introduzca CRLF donde no se espera.
+*.conf text eol=lf
+docker-compose.yml text eol=lf
+
 *.cs text eol=lf
 *.csproj text eol=lf
 *.sln text eol=lf
