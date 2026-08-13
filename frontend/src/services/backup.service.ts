@@ -14,6 +14,17 @@ export type BackupData = {
   fileSizeBytes: number;
 };
 
+/** Estados que devuelve el backend para un trabajo de respaldo. */
+export type BackupJobStatus = "Pendiente" | "EnProceso" | "Completado" | "Fallido";
+
+export type BackupJobData = {
+  id: string;
+  status: BackupJobStatus;
+  fileName?: string;
+  fileSizeBytes?: number;
+  error?: string;
+};
+
 export const backupService = {
   async listBackups(): Promise<BackupData[]> {
     const res = await fetch(`${apiUrl}/api/Admin/backups`, {
@@ -23,7 +34,9 @@ export const backupService = {
     return res.json();
   },
 
-  async generateBackup(): Promise<BackupData> {
+  // Devuelve un trabajo, no el archivo: el respaldo corre en segundo plano y hay
+  // que consultar su estado con getBackupJob hasta que termine.
+  async generateBackup(): Promise<BackupJobData> {
     const res = await fetch(`${apiUrl}/api/Admin/backup`, {
       method: "POST",
       headers: authHeaders(),
@@ -32,6 +45,14 @@ export const backupService = {
       const err = await res.json().catch(() => ({}));
       throw new Error(err.message ?? "Error al generar el respaldo");
     }
+    return res.json();
+  },
+
+  async getBackupJob(jobId: string): Promise<BackupJobData> {
+    const res = await fetch(`${apiUrl}/api/Admin/backup/jobs/${jobId}`, {
+      headers: authHeaders(),
+    });
+    if (!res.ok) throw new Error("No se pudo consultar el estado del respaldo");
     return res.json();
   },
 

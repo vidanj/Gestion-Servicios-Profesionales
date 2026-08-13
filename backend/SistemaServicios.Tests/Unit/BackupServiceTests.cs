@@ -239,7 +239,7 @@ public class BackupServiceTests : IDisposable
         var dto = await service.GenerateBackupAsync();
 
         // Assert
-        _ = dto.FileName.Should().MatchRegex(@"^backup_\d{8}_\d{4}\.sql$");
+        _ = dto.FileName.Should().MatchRegex(@"^backup_\d{8}_\d{6}(_\d+)?\.sql$");
         _ = dto.FileSizeBytes.Should().BeGreaterThan(0);
         _ = File.Exists(Path.Combine(_directorioTemporal, dto.FileName)).Should().BeTrue();
     }
@@ -402,5 +402,56 @@ public class BackupServiceTests : IDisposable
         _ = stream.Should().NotBeNull();
         using var lector = new StreamReader(stream!);
         _ = lector.ReadToEnd().Should().Be("-- contenido");
+    }
+
+    [Fact]
+    public async Task GenerateBackupAsyncDosRespaldosSeguidosNoCompartenNombre()
+    {
+        // Arrange: con precisión de minuto, dos respaldos del mismo minuto producían
+        // el mismo nombre y el segundo sobrescribía al primero sin aviso (issue #162).
+        SetVariablesValidas();
+        SimularPgDumpExitoso();
+        var service = CrearServicio();
+
+        // Act
+        var primero = await service.GenerateBackupAsync();
+        var segundo = await service.GenerateBackupAsync();
+
+        // Assert
+        _ = segundo.FileName.Should().NotBe(primero.FileName);
+        _ = Directory.GetFiles(_directorioTemporal, "*.sql").Should().HaveCount(2);
+    }
+
+    [Fact]
+    public void OpenBackupAceptaElFormatoAntiguoDeCuatroDigitos()
+    {
+        // Arrange: los respaldos creados antes del cambio deben seguir descargándose.
+        // Si la lista blanca solo aceptara seis dígitos, desaparecerían de la lista.
+        _ = Directory.CreateDirectory(_directorioTemporal);
+        const string nombreAntiguo = "backup_20260813_2017.sql";
+        File.WriteAllText(Path.Combine(_directorioTemporal, nombreAntiguo), "-- antiguo");
+        var service = CrearServicio();
+
+        // Act
+        using var stream = service.OpenBackup(nombreAntiguo);
+
+        // Assert
+        _ = stream.Should().NotBeNull();
+    }
+
+    [Fact]
+    public void ListBackupsIncluyeAmbosFormatosDeNombre()
+    {
+        // Arrange
+        _ = Directory.CreateDirectory(_directorioTemporal);
+        File.WriteAllText(Path.Combine(_directorioTemporal, "backup_20260813_2017.sql"), "a");
+        File.WriteAllText(Path.Combine(_directorioTemporal, "backup_20260813_201755.sql"), "b");
+        var service = CrearServicio();
+
+        // Act
+        var resultado = service.ListBackups();
+
+        // Assert
+        _ = resultado.Should().HaveCount(2);
     }
 }

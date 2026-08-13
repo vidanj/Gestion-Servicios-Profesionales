@@ -6,10 +6,27 @@ export interface Backup {
   fileSizeBytes: number;
 }
 
+export type BackupJobStatus = "Pendiente" | "EnProceso" | "Completado" | "Fallido";
+
+export interface BackupJob {
+  id: string;
+  status: BackupJobStatus;
+  fileName?: string;
+  error?: string;
+}
+
+/** Un trabajo terminado ya no cambia de estado: no tiene sentido seguir sondeando. */
+export function esEstadoFinal(status: BackupJobStatus): boolean {
+  return status === "Completado" || status === "Fallido";
+}
+
 // Mismo patron que aplica el backend en BackupService.OpenBackup. Se replica aqui
 // para no llegar a pedir al servidor un nombre que ya sabemos que va a rechazar.
 // No es una medida de seguridad: la autoritativa es la del servidor.
-const BACKUP_FILE_NAME = /^backup_\d{8}_\d{4}\.sql$/;
+// Seis digitos es el formato actual (HHmmss); cuatro es el anterior (HHmm), que se
+// sigue aceptando para que los respaldos ya generados se puedan descargar. El sufijo
+// opcional desambigua dos respaldos creados dentro del mismo segundo.
+const BACKUP_FILE_NAME = /^backup_\d{8}_(\d{6}|\d{4})(_\d+)?\.sql$/;
 
 export function isValidBackupFileName(fileName: string): boolean {
   return BACKUP_FILE_NAME.test(fileName);
