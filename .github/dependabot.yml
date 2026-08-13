@@ -1,0 +1,71 @@
+version: 2
+
+# Tres ecosistemas activos en el repositorio. El de github-actions se olvida a
+# menudo y es de los mas utiles: mantiene al dia actions/checkout, setup-dotnet y
+# setup-node, hoy fijadas en @v4.
+#
+# Sobre el volumen: al activarlo, Dependabot abre una tanda inicial de golpe. El
+# frontend tiene dependencias muy recientes (Next 16, React 19, ESLint 10) y un
+# "overrides" de ajv que indica que ya hubo conflictos de resolucion. Sin limite ni
+# agrupacion, el ruido lleva a ignorar a Dependabot por completo, que es el peor
+# resultado posible: por eso hay open-pull-requests-limit y groups.
+
+updates:
+  # ── Backend (.NET) ───────────────────────────────────────────────
+  - package-ecosystem: nuget
+    directory: /backend
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+      - backend
+    commit-message:
+      prefix: 'chore(deps)'
+    groups:
+      # Menores y parches en una sola PR: son las que casi nunca rompen y las que
+      # mas ruido generan si van por separado.
+      backend-menores:
+        patterns:
+          - '*'
+        update-types:
+          - minor
+          - patch
+
+  # ── Frontend (npm) ───────────────────────────────────────────────
+  - package-ecosystem: npm
+    directory: /frontend
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+      - frontend
+    commit-message:
+      prefix: 'chore(deps)'
+    groups:
+      frontend-menores:
+        patterns:
+          - '*'
+        update-types:
+          - minor
+          - patch
+
+  # ── Workflows de GitHub Actions ──────────────────────────────────
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+      - ci
+    commit-message:
+      prefix: 'chore(deps)'
+    groups:
+      acciones:
+        patterns:
+          - '*'
