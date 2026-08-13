@@ -96,6 +96,53 @@ La respuesta es JSON con el estado y la duración de cada comprobación. **No in
 
 El `Dockerfile` declara un `HEALTHCHECK` contra `/health/ready` con `start-period` de 60 s, margen que cubre el tiempo que `entrypoint.sh` dedica a aplicar migraciones antes de que Kestrel empiece a escuchar.
 
+## 🔀 Proxy Inverso y Dirección Real del Cliente
+
+En producción hay **dos proxies** delante de la API: Cloudflare y el edge de Render. Sin configuración, `HttpContext.Connection.RemoteIpAddress` sería la del proxy, no la del usuario.
+
+| Variable | Por defecto | Qué hace |
+|----------|-------------|----------|
+| `FORWARDED_LIMIT` | `2` | Cuántos proxies de confianza hay delante |
+| `FORWARDED_NETWORKS` | *(vacío)* | Redes CIDR del proxy, separadas por comas |
+
+### Por qué `FORWARDED_LIMIT` es lo que protege
+
+`X-Forwarded-For` se **anexa**, no se reemplaza: un cliente puede enviar una dirección inventada y los proxies añadirán las suyas *a la derecha*. El middleware toma las `N` entradas más a la derecha y descarta el resto.
+
+```
+Cliente envía:   X-Forwarded-For: 9.9.9.9
+NGINX anexa:     X-Forwarded-For: 9.9.9.9, 203.0.113.7
+Con LIMIT=1  ->  dirección resuelta: 203.0.113.7   (la falsificada se descarta)
+```
+
+**Un valor mayor que los saltos reales hace confiar en entradas que controla quien llama.** Uno menor deja la dirección del proxy en lugar de la del cliente.
+
+### Cómo determinar el valor correcto
+
+Subir el nivel del middleware de diagnóstico a `Debug` y leer la cadena tal como llega:
+
+```
+Logging__LogLevel__SistemaServicios.API.Middleware=Debug
+```
+
+```
+X-Forwarded-For recibido: 9.9.9.9, 172.18.0.1 | dirección resuelta: 172.18.0.1
+```
+
+`FORWARDED_LIMIT` debe ser el número de entradas que añaden los proxies de confianza, contando desde la derecha.
+
+### Verificarlo en local
+
+`docker-compose.yml` levanta NGINX delante de la API, con la API **sin publicar al exterior**, igual que en producción:
+
+```bash
+docker compose up --build
+curl -s http://localhost:8080/health/ready
+curl -s -H "X-Forwarded-For: 9.9.9.9" http://localhost:8080/health/ready
+```
+
+En producción el proxy lo pone Render; este compose sirve para verificar el comportamiento y como base si algún día se autoaloja.
+
 ## 📊 Índices de Base de Datos — Notas de Diseño
 
 ### `Users.Status` (índice parcial)

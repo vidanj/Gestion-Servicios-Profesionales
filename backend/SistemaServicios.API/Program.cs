@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using SistemaServicios.API.Extensions;
+using SistemaServicios.API.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -14,6 +15,14 @@ builder.Services.AddOpenApi();
 var app = builder.Build();
 
 // --- 3. PIPELINE ---
+
+// Primero de todo: el resto del pipeline debe ver ya la dirección real del cliente.
+// Registrado más abajo, la autenticación y cualquier limitación por dirección
+// seguirían viendo la del proxy.
+// El diagnóstico va delante para ver la cadena tal como llega, antes de que
+// UseForwardedHeaders consuma las entradas que aplica.
+app.UseMiddleware<ForwardedHeadersDiagnostics>();
+app.UseForwardedHeaders();
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
