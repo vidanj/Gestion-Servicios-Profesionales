@@ -73,6 +73,9 @@ public class AppDbContext : DbContext
             .HasForeignKey(l => l.UserId)
             .OnDelete(DeleteBehavior.Restrict);
 
+        // Índice compuesto: acelera el listado paginado de solicitudes por profesional
+        // ordenado por fecha, evitando table scans a medida que crece el volumen
+        modelBuilder.Entity<Request>().HasIndex(r => new { r.ProfessionalId, r.RequestDate });
         // Único: evita condición de carrera en el registro (antes solo se validaba en la app con EmailExistsAsync)
         modelBuilder.Entity<User>().HasIndex(u => u.Email).IsUnique();
 
