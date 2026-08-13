@@ -213,8 +213,16 @@ public class UserService : IUserService
             throw new InvalidOperationException("La imagen no puede superar los 2 MB.");
         }
 
-        // El servicio no decide dónde vive el archivo: eso es del almacenamiento.
         await using var contenido = foto.OpenReadStream();
+
+        // Validar firma de archivo (magic bytes) antes de procesar
+        if (!IsValidImageSignature(contenido))
+        {
+            throw new InvalidOperationException(
+                "El archivo proporcionado no es una imagen válida o está dañado."
+            );
+        }
+
         user.ProfileImageUrl = await _fileStorage.SaveForOwnerAsync(
             userId,
             contenido,
@@ -245,6 +253,43 @@ public class UserService : IUserService
         }
 
         return await _userRepository.GetRegistrationsByDateAsync(days);
+    }
+
+    /// <summary>
+    /// Valida los Magic Bytes (firma binaria) del stream para verificar que sea JPEG o PNG real.
+    /// </summary>
+    private static bool IsValidImageSignature(Stream stream)
+    {
+        Span<byte> header = stackalloc byte[8];
+        var bytesRead = stream.Read(header);
+
+        if (bytesRead < 4)
+        {
+            return false;
+        }
+
+        // Reiniciar la posición del stream para que el almacenamiento pueda leerlo completo
+        if (stream.CanSeek)
+        {
+            stream.Position = 0;
+        }
+
+        // Firma JPEG: FF D8 FF
+        var isJpeg = header[0] == 0xFF && header[1] == 0xD8 && header[2] == 0xFF;
+
+        // Firma PNG: 89 50 4E 47 0D 0A 1A 0A
+        var isPng =
+            bytesRead >= 8
+            && header[0] == 0x89
+            && header[1] == 0x50
+            && header[2] == 0x4E
+            && header[3] == 0x47
+            && header[4] == 0x0D
+            && header[5] == 0x0A
+            && header[6] == 0x1A
+            && header[7] == 0x0A;
+
+        return isJpeg || isPng;
     }
 
     private static UserDto MapToDto(User u) =>
