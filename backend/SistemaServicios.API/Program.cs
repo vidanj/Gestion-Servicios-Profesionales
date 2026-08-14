@@ -85,11 +85,14 @@ app.Use(
     }
 );
 
-// Las sondas quedan fuera de la redirección a HTTPS. Hoy no redirige porque no hay
-// puerto HTTPS configurado, pero si alguien lo añadiera, la sonda del contenedor
-// recibiría un 307 y el contenedor pasaría a considerarse enfermo sin estarlo.
+// Las rutas de sondeo quedan fuera de la redirección a HTTPS, por dos motivos.
+// Si algún día se configura un puerto HTTPS, la sonda del contenedor recibiría un 307 y
+// el contenedor pasaría a considerarse enfermo sin estarlo. Y hoy, además, el sondeo
+// interno de Render llega sin X-Forwarded-Proto, así que el middleware intentaba redirigir,
+// no encontraba puerto HTTPS y dejaba un aviso por arranque. El tráfico real entra por
+// Cloudflare ya como https y nunca pasa por ahí.
 app.UseWhen(
-    context => !context.Request.Path.StartsWithSegments("/health"),
+    context => !RutasDeSondeo.Es(context.Request.Path),
     branch => branch.UseHttpsRedirection()
 );
 
@@ -118,6 +121,19 @@ app.MapHealthChecks(
         ResponseWriter = HealthCheckResponseWriter.WriteAsync,
     }
 );
+
+// Raíz del servicio. Render y Cloudflare la sondean, y sin mapearla cada sondeo
+// devolvía 404 y quedaba registrado como Warning, porque los 4xx se elevan: el mismo
+// ruido que se evitó en /health colándose por otra puerta.
+// Se mapean GET y HEAD porque el sondeo de la plataforma usa HEAD, y MapGet por sí solo
+// no lo atiende. La respuesta es deliberadamente escueta: el endpoint es anónimo, así
+// que no se exponen versión, entorno ni nada que ayude a perfilar el servicio.
+app.MapMethods(
+        "/",
+        ["GET", "HEAD"],
+        () => Results.Ok(new { service = "SistemaServicios.API", status = "ok" })
+    )
+    .AllowAnonymous();
 
 app.MapControllers();
 

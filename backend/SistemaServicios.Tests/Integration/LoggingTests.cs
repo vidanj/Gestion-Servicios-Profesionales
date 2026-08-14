@@ -184,6 +184,26 @@ public class LoggingTests : IClassFixture<LoggingWebApplicationFactory>
     }
 
     [Fact]
+    public async Task LaRaizRespondeAGetYAHeadSinEnsuciarElLog()
+    {
+        // Render sondea la raíz con HEAD y Cloudflare con GET. Sin ruta mapeada devolvían
+        // 404, y como los 4xx se elevan a Warning, cada sondeo de la plataforma dejaba un
+        // aviso en producción.
+        var antes = _factory.Eventos.Count;
+
+        using var conGet = await _client.GetAsync(new Uri("/", UriKind.Relative));
+        using var peticionHead = new HttpRequestMessage(HttpMethod.Head, "/");
+        using var conHead = await _client.SendAsync(peticionHead);
+
+        // MapGet por sí solo no atiende HEAD: de ahí que se mapeen ambos verbos.
+        _ = conGet.StatusCode.Should().Be(HttpStatusCode.OK);
+        _ = conHead.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var salida = RenderizarComoStdout(_factory.Eventos.Skip(antes));
+        _ = salida.Should().NotContain("\"RequestPath\":\"/\"");
+    }
+
+    [Fact]
     public async Task LasSondasDeSaludNoEnsucianElLog()
     {
         var antes = _factory.Eventos.Count;

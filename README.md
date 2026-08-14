@@ -231,6 +231,30 @@ Se configuran en `appsettings.json` (producción) y `appsettings.Development.jso
 `Information` en producción y `Debug` en desarrollo, con el SQL de EF Core en
 `Warning` en producción para no volcar cada consulta.
 
+### Avisos esperados al arrancar
+
+Dos avisos de **Data Protection** aparecen en cada arranque dentro del contenedor:
+
+```
+Storing keys in a directory '/root/.aspnet/DataProtection-Keys' that may not be
+persisted outside of the container.
+No XML encryptor configured. Key {…} may be persisted to storage in unencrypted form.
+```
+
+**Hoy son inofensivos, y conviene saber por qué.** Nada en esta aplicación usa Data
+Protection: no hay autenticación por cookie, ni antiforgery, ni sesiones, ni ningún
+`IDataProtector`. La autenticación es JWT firmado con `JWT_KEY`, que viene del entorno y
+no tiene relación con esas claves. ASP.NET Core inicializa el subsistema de todos modos,
+y de ahí los avisos. Que las claves se pierdan en cada redespliegue no cuesta nada,
+porque no protegen nada.
+
+**Cuándo dejan de ser inofensivos:** en el momento en que se añada autenticación por
+cookie, antiforgery o cualquier uso de `IDataProtector`. A partir de ahí, perder las
+claves al redesplegar invalidaría las sesiones o los tokens de todos los usuarios en cada
+despliegue. La solución entonces es persistirlas —por ejemplo en PostgreSQL, con
+`Microsoft.AspNetCore.DataProtection.EntityFrameworkCore`— y cifrarlas. No se hizo antes
+porque sería añadir una dependencia para proteger algo que no existe.
+
 ### Trazas
 
 OpenTelemetry instrumenta ASP.NET Core, `HttpClient` y Npgsql. La exportación al

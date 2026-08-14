@@ -61,6 +61,11 @@ RUN chmod +x entrypoint.sh efbundle
 # ASPNETCORE_URLS sobreescribe el Kestrel configurado en appsettings.json.
 # Sin seccion Kestrel en appsettings.json, ASPNETCORE_URLS controla el binding.
 ENV ASPNETCORE_URLS=http://+:10000
+
+# La imagen base aspnet:9.0 trae ASPNETCORE_HTTP_PORTS=8080. ASPNETCORE_URLS gana de
+# todos modos, pero el host avisa en cada arranque de que esta ignorando ese valor.
+# Vaciarlo elimina el aviso sin cambiar el puerto: el binding lo sigue decidiendo URLS.
+ENV ASPNETCORE_HTTP_PORTS=
 EXPOSE 10000
 
 # Sonda de readiness: la instancia solo se considera sana si ademas alcanza la base.
