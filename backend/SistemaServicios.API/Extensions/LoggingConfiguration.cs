@@ -11,15 +11,6 @@ namespace SistemaServicios.API.Extensions;
 /// </summary>
 public static class LoggingConfiguration
 {
-    /// <summary>Rutas que no generan un evento de petición.</summary>
-    /// <remarks>
-    /// Las sondas del contenedor (issue #123) consultan <c>/health/ready</c> cada 30 s. Sin
-    /// esta exclusión, el log de producción sería mayoritariamente ruido de sondas y el
-    /// coste de retención se lo llevaría algo que no informa de nada: si la sonda falla, se
-    /// nota porque el contenedor se reinicia, no porque haya una línea de log.
-    /// </remarks>
-    private static readonly string[] RutasSilenciadas = ["/health"];
-
     public static void Configure(
         LoggerConfiguration logger,
         IConfiguration configuration,
@@ -53,10 +44,10 @@ public static class LoggingConfiguration
     {
         ArgumentNullException.ThrowIfNull(context);
 
-        return !Array.Exists(
-            RutasSilenciadas,
-            ruta => context.Request.Path.StartsWithSegments(ruta)
-        );
+        // Las sondas del contenedor consultan /health cada 30 s y la plataforma sondea la
+        // raíz. Sin excluirlas, el log de producción sería mayoritariamente ruido: si una
+        // sonda falla se nota porque el contenedor se reinicia, no por una línea de log.
+        return !RutasDeSondeo.Es(context.Request.Path);
     }
 
     /// <summary>
