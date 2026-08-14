@@ -14,12 +14,18 @@ export type BackupData = {
   fileSizeBytes: number;
 };
 
-/** Estados que devuelve el backend para un trabajo de respaldo. */
-export type BackupJobStatus = "Pendiente" | "EnProceso" | "Completado" | "Fallido";
-
+/**
+ * El trabajo tal como llega por la red, sin validar.
+ *
+ * `status` es `unknown` a propósito: antes se declaraba con el tipo de estados ya cerrado,
+ * lo que hacía creer al compilador que la respuesta estaba comprobada cuando nadie la había
+ * comprobado. El servidor mandaba un número y TypeScript no podía advertirlo, porque un tipo
+ * declarado sobre un `res.json()` es una afirmación, no una verificación. Quien lo estrecha
+ * es la capa de infraestructura.
+ */
 export type BackupJobData = {
   id: string;
-  status: BackupJobStatus;
+  status: unknown;
   fileName?: string;
   fileSizeBytes?: number;
   error?: string;

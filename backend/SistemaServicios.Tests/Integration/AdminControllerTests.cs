@@ -457,6 +457,74 @@ public class AdminControllerTests : IClassFixture<AdminWebApplicationFactory>
         _ = response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
 
+    // ─────────────────────────────────────────────────────────────
+    // Contrato del cable: el estado viaja como nombre, no como número
+    // ─────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Comprueba el JSON <b>en crudo</b>, no el objeto deserializado.
+    /// Las demás pruebas leen la respuesta con ReadFromJsonAsync&lt;BackupJobDto&gt;, así que
+    /// un estado serializado como entero volvía a convertirse en el enum al leerlo y el
+    /// round-trip pasaba. El cliente no tiene ese lujo: compara contra cadenas, y con un
+    /// número no reconocía nunca el estado final. Esta prueba mira lo que el cliente ve.
+    /// </summary>
+    [Fact]
+    public async Task GetBackupJobSerializaElEstadoComoNombreYNoComoNumero()
+    {
+        // Arrange
+        _ = _backupMock
+            .Setup(s => s.GenerateBackupAsync())
+            .ReturnsAsync(
+                new BackupResponseDto
+                {
+                    FileName = "backup_20260226_120000.sql",
+                    CreatedAt = new DateTime(2026, 2, 26, 12, 0, 0, DateTimeKind.Utc),
+                    FileSizeBytes = 20480,
+                }
+            );
+
+        var token = GenerarToken(UserRole.Admin);
+        var creacion = await _client.SendAsync(BuildRequest("POST", "/api/admin/backup", token));
+        var job = await creacion.Content.ReadFromJsonAsync<BackupJobDto>();
+        _ = await EsperarEstadoFinal(job!.Id, token);
+
+        // Act: se lee el cuerpo tal cual llega, sin deserializar
+        var response = await _client.SendAsync(
+            BuildRequest("GET", $"/api/admin/backup/jobs/{job.Id}", token)
+        );
+        var crudo = await response.Content.ReadAsStringAsync();
+
+        // Assert
+        _ = crudo.Should().Contain("\"status\":\"Completado\"");
+        _ = crudo.Should().NotContain("\"status\":2");
+    }
+
+    [Fact]
+    public async Task CreateBackupSerializaElEstadoComoNombreYNoComoNumero()
+    {
+        // El POST devuelve el trabajo recién encolado, y el cliente lo evalúa antes de
+        // empezar a sondear: si ese primer cuerpo trae un número, arranca ya desalineado.
+        _ = _backupMock
+            .Setup(s => s.GenerateBackupAsync())
+            .ReturnsAsync(
+                new BackupResponseDto
+                {
+                    FileName = "backup_20260226_120000.sql",
+                    CreatedAt = new DateTime(2026, 2, 26, 12, 0, 0, DateTimeKind.Utc),
+                    FileSizeBytes = 20480,
+                }
+            );
+
+        var token = GenerarToken(UserRole.Admin);
+
+        // Act
+        var response = await _client.SendAsync(BuildRequest("POST", "/api/admin/backup", token));
+        var crudo = await response.Content.ReadAsStringAsync();
+
+        // Assert: cualquiera de los estados no finales, pero siempre por su nombre
+        _ = crudo.Should().MatchRegex("\"status\":\"(Pendiente|EnProceso|Completado)\"");
+    }
+
     [Fact]
     public async Task DownloadBackupConPathTraversalNoAlcanzaArchivosFueraDelDirectorio()
     {

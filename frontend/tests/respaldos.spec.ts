@@ -169,6 +169,36 @@ test.describe('Panel de respaldos', () => {
     await expect(page.getByTestId('backups-error')).toContainText('No se pudo generar el respaldo');
   });
 
+  test('avisa de inmediato si el estado del trabajo no se reconoce', async ({ page }) => {
+    // Regresion del fallo visto en produccion. El backend serializaba el enum como
+    // numero (`"status":2`) y esta pantalla comparaba contra nombres, asi que no
+    // reconocia nunca el estado final: sondeaba noventa segundos mientras el respaldo
+    // ya estaba escrito en disco. El resto de mocks de este archivo mandaban cadenas
+    // porque yo asumi ese formato, de modo que ninguna prueba llego a ver el problema.
+    // Aqui se manda a proposito lo que mandaba el servidor de verdad.
+    await authenticate(page);
+    await mockList(page, []);
+
+    await page.route('**/api/Admin/backup', async route => {
+      await route.fulfill({
+        status: 202,
+        contentType: 'application/json',
+        body: JSON.stringify({ id: JOB_ID, status: 0 }),
+      });
+    });
+
+    await mockEstadosDelTrabajo(page, [{ id: JOB_ID, status: 2 }]);
+
+    await page.goto(RESPALDOS_URL);
+    await page.getByTestId('generate-backup-button').click();
+
+    // Lo que se exige no es solo que avise, sino que avise pronto: el tope de sondeo
+    // son 90 s, y agotarlo en silencio fue justo lo que sufrio el administrador.
+    await expect(page.getByTestId('backups-error')).toBeVisible({ timeout: 5000 });
+    await expect(page.getByTestId('backups-error')).toContainText('no reconocido');
+    await expect(page.getByTestId('generate-backup-button')).toBeEnabled();
+  });
+
   test('muestra el error cuando el encolado falla', async ({ page }) => {
     await authenticate(page);
     await mockList(page, []);
