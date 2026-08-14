@@ -20,6 +20,20 @@ export function esEstadoFinal(status: BackupJobStatus): boolean {
   return status === "Completado" || status === "Fallido";
 }
 
+const ESTADOS: readonly string[] = ["Pendiente", "EnProceso", "Completado", "Fallido"];
+
+/**
+ * Comprueba que el estado que llegó del servidor es uno de los que esta pantalla entiende.
+ *
+ * El backend serializaba el estado como número y aquí se comparaba contra nombres, así que
+ * `esEstadoFinal` devolvía siempre false y el sondeo agotaba el tope mientras el respaldo
+ * ya estaba hecho. Lo peor no fue el desajuste sino cómo falló: en silencio y durante minuto
+ * y medio. Un estado que no se reconoce tiene que notarse de inmediato.
+ */
+export function esEstadoConocido(status: unknown): status is BackupJobStatus {
+  return typeof status === "string" && ESTADOS.includes(status);
+}
+
 // Mismo patron que aplica el backend en BackupService.OpenBackup. Se replica aqui
 // para no llegar a pedir al servidor un nombre que ya sabemos que va a rechazar.
 // No es una medida de seguridad: la autoritativa es la del servidor.

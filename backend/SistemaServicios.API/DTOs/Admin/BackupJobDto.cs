@@ -1,5 +1,20 @@
+using System.Text.Json.Serialization;
+
 namespace SistemaServicios.API.DTOs.Admin;
 
+/// <summary>
+/// Estados de un trabajo de respaldo.
+/// </summary>
+/// <remarks>
+/// El converter va sobre este enum y no en la configuración global de JSON a propósito.
+/// Aplicarlo globalmente cambiaría también <c>UserRole</c>, <c>RequestStatus</c> y los
+/// demás enums de la API, que hoy viajan como enteros y así los leen el login, el perfil
+/// y el panel de usuarios. Ese cambio rompería esos módulos de golpe.
+/// Sin el converter, el estado viajaba como número y el cliente, que compara contra
+/// nombres, no reconocía nunca el estado final: la pantalla sondeaba hasta agotar el tope
+/// mientras el respaldo ya estaba hecho.
+/// </remarks>
+[JsonConverter(typeof(JsonStringEnumConverter<BackupJobStatus>))]
 public enum BackupJobStatus
 {
     Pendiente = 0,
