@@ -1,11 +1,17 @@
 using System.Globalization;
+using System.Net;
+using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using FluentAssertions;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Serilog;
 using Serilog.Events;
 using Serilog.Formatting.Compact;
+using SistemaServicios.API.DTOs;
 using SistemaServicios.API.Extensions;
+using SistemaServicios.API.Models;
+using SistemaServicios.API.Services;
 using SistemaServicios.Tests.Unit;
 using Xunit;
 
@@ -57,6 +63,35 @@ public class LoggingTests : IClassFixture<LoggingWebApplicationFactory>
         _client = factory.CreateClient();
     }
 
+    /// <summary>Token de administrador firmado con la clave del entorno de pruebas.</summary>
+    private static string GenerarTokenDeAdmin()
+    {
+        var config = new ConfigurationBuilder()
+            .AddInMemoryCollection(
+                new Dictionary<string, string?>
+                {
+                    ["JwtSettings:Key"] = "ClaveSecretaParaIntegracionTests_32Ch!",
+                    ["JwtSettings:Issuer"] = "TestIssuer",
+                    ["JwtSettings:Audience"] = "TestAudience",
+                    ["JwtSettings:ExpiresInMinutes"] = "60",
+                }
+            )
+            .Build();
+
+        var usuario = new User
+        {
+            Id = Guid.NewGuid(),
+            Email = "admin@test.com",
+            PasswordHash = "hash-no-relevante",
+            FirstName = "Admin",
+            LastName = "Test",
+            Role = UserRole.Admin,
+            Status = true,
+        };
+
+        return new TokenService(config).CreateToken(usuario);
+    }
+
     /// <summary>Renderiza los eventos igual que el formateador que escribe a stdout.</summary>
     private static string RenderizarComoStdout(IEnumerable<LogEvent> eventos)
     {
@@ -103,6 +138,49 @@ public class LoggingTests : IClassFixture<LoggingWebApplicationFactory>
         // incidente; sin ella el log estructurado pierde casi todo su valor.
         _ = conTraza.Should().NotBeEmpty();
         _ = conTraza[0].Properties["TraceId"].ToString().Should().NotBeNullOrWhiteSpace();
+    }
+
+    [Fact]
+    public async Task LaBitacoraDeNegocioQuedaEnlazadaConElLogDeOperacion()
+    {
+        // Es el puente entre las dos bitácoras. UserLog responde "quién hizo qué" y vive
+        // en PostgreSQL; el log de stdout responde "qué pasó por dentro". Sin este enlace
+        // son dos mundos incomunicados: ante una reclamación habría que adivinar qué
+        // líneas del log corresponden a la acción registrada en la tabla.
+        var token = GenerarTokenDeAdmin();
+        var peticion = new HttpRequestMessage(HttpMethod.Post, "/api/UserLogs")
+        {
+            Content = JsonContent.Create(
+                new
+                {
+                    UserId = Guid.NewGuid(),
+                    Action = 6,
+                    Detail = "Usuario creado desde la prueba",
+                    Status = 0,
+                }
+            ),
+        };
+        peticion.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        var respuesta = await _client.SendAsync(peticion);
+        _ = respuesta.StatusCode.Should().Be(HttpStatusCode.Created);
+
+        var creado = await respuesta.Content.ReadFromJsonAsync<UserLogDto>();
+
+        // La entrada guarda la traza de la petición que la originó...
+        _ = creado!.TraceId.Should().NotBeNullOrWhiteSpace();
+
+        // ...y esa traza aparece en el log de operación, que es lo que permite pasar de
+        // una fila del panel a todo lo que ocurrió técnicamente en esa misma petición.
+        var eventosDeLaTraza = _factory
+            .Eventos.Where(e =>
+                e.Properties.TryGetValue("TraceId", out var t)
+                && t.ToString().Contains(creado.TraceId!, StringComparison.Ordinal)
+            )
+            .ToList();
+
+        _ = eventosDeLaTraza.Should().NotBeEmpty();
+        _ = RenderizarComoStdout(eventosDeLaTraza).Should().Contain("/api/UserLogs");
     }
 
     [Fact]

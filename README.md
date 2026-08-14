@@ -158,8 +158,26 @@ responden preguntas diferentes:
 | Retención | permanente, es evidencia | la que decida el agregador |
 
 Si un usuario reclama que le borraron algo, se mira `UserLog`. Si la aplicación
-va lenta o devuelve 500, se miran los logs de operación. Este apartado va de los
-segundos; los primeros no se han tocado.
+va lenta o devuelve 500, se miran los logs de operación.
+
+### El puente entre ambas: `UserLog.TraceId`
+
+Cada entrada de `UserLog` guarda el `TraceId` de la petición que la originó. Es
+lo que permite pasar de una fila del panel —*"Usuario ana@ejemplo.com
+eliminado"*— a **todo lo que ocurrió técnicamente en esa misma petición**:
+
+```bash
+docker logs <contenedor> | grep '"TraceId":"<el de la fila>"'
+```
+
+Sin ese campo las dos bitácoras quedan incomunicadas y, ante una reclamación,
+hay que adivinar qué líneas del log corresponden a la acción registrada.
+
+El valor se toma de la petición en curso, **nunca del cuerpo de la petición**:
+aceptarlo del cliente permitiría apuntar una entrada a la traza de otra y el
+enlace dejaría de ser fiable. Es anulable porque una tarea en segundo plano no
+tiene traza, y porque las filas anteriores a la columna no la tienen; un valor
+inventado sería peor que su ausencia.
 
 ### Formato
 
