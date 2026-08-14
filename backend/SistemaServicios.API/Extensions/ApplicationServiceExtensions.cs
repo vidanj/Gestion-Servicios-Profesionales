@@ -73,6 +73,11 @@ public static class ApplicationServiceExtensions
 
         services.AddDbContext<AppDbContext>(options => options.UseNpgsql(connectionString));
 
+        // Trazas y métricas. La exportación solo se activa si hay colector configurado;
+        // la instrumentación se registra siempre porque de ella sale el TraceId que
+        // correlaciona las líneas de log de una misma petición.
+        _ = services.AddTelemetry(config);
+
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IRatingRepository, RatingRepository>();
 

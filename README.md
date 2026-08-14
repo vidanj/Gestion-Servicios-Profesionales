@@ -143,6 +143,94 @@ curl -s -H "X-Forwarded-For: 9.9.9.9" http://localhost:8080/health/ready
 
 En producción el proxy lo pone Render; este compose sirve para verificar el comportamiento y como base si algún día se autoaloja.
 
+## 📋 Observabilidad — Logs y Telemetría
+
+### Dos bitácoras que no son lo mismo
+
+El sistema escribe en dos sitios distintos y conviene no confundirlos, porque
+responden preguntas diferentes:
+
+|  | `UserLog` (tabla) | Telemetría (stdout) |
+|---|---|---|
+| Responde | *quién hizo qué* | *por qué el sistema respondió mal o lento* |
+| Vive en | PostgreSQL | stdout → recolector de la plataforma |
+| Se consulta | desde el panel de administración | durante un incidente |
+| Retención | permanente, es evidencia | la que decida el agregador |
+
+Si un usuario reclama que le borraron algo, se mira `UserLog`. Si la aplicación
+va lenta o devuelve 500, se miran los logs de operación. Este apartado va de los
+segundos; los primeros no se han tocado.
+
+### Formato
+
+Serilog escribe **JSON compacto a stdout**, nunca a archivo: el contenedor es
+efímero y un archivo se perdería en cada redespliegue. Docker y Render recogen
+stdout sin configurar nada.
+
+```bash
+docker logs -f <contenedor>                 # en local
+# En Render: pestaña "Logs" del servicio
+```
+
+Cada línea lleva `TraceId` y `SpanId`. **Esa es la propiedad que hace útil el
+log**: durante un incidente permite reunir todas las líneas de una misma
+petición en lugar de adivinar cuáles corresponden al usuario que se quejó.
+
+```bash
+# Todas las líneas de una petición concreta
+docker logs <contenedor> | grep '"TraceId":"06ded6db324384e443897587f45aec09"'
+```
+
+Un login fallido en producción deja **un solo evento**, elevado a `Warning` por
+ser 4xx:
+
+```json
+{"@t":"...","@mt":"HTTP {RequestMethod} {RequestPath} responded {StatusCode} in {Elapsed:0.0000} ms",
+ "@l":"Warning","StatusCode":401,"Elapsed":1361.32,"ClientIp":"::1",
+ "TraceId":"06ded6db...","SpanId":"5ed3357b...","Environment":"Production"}
+```
+
+Las sondas de `/health` **no generan ninguna línea**: el contenedor las consulta
+cada 30 s y, sin excluirlas, el log sería sobre todo ruido de sondas. Si una
+sonda falla se nota porque el contenedor se reinicia, no por una línea de log.
+
+### Secretos
+
+Un enricher redacta las propiedades cuyo nombre delata un secreto —contraseñas,
+tokens, `Authorization`, cadenas de conexión, `PGPASSWORD`—, incluso dentro de
+objetos volcados enteros con `{@Dto}`.
+
+**Su alcance tiene un límite que conviene conocer:** actúa sobre las propiedades
+estructuradas, no sobre texto ya interpolado en la plantilla del mensaje. Es
+decir, `_logger.LogInformation($"clave {clave}")` sí filtra el secreto. La regla
+sigue siendo **no meter secretos en la plantilla**; el enricher es la red que
+recoge el descuido habitual, que es volcar el DTO completo. Ambos límites están
+documentados con pruebas en `SecretRedactionEnricherTests`.
+
+### Niveles
+
+Se configuran en `appsettings.json` (producción) y `appsettings.Development.json`:
+`Information` en producción y `Debug` en desarrollo, con el SQL de EF Core en
+`Warning` en producción para no volcar cada consulta.
+
+### Trazas
+
+OpenTelemetry instrumenta ASP.NET Core, `HttpClient` y Npgsql. La exportación al
+colector es **opcional**:
+
+```bash
+OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317
+```
+
+Sin esa variable la aplicación **arranca igual y no exporta nada**, que es la
+situación actual: no hay colector desplegado. La instrumentación sigue activa
+aunque no se exporte, porque de ella sale el `TraceId` de los logs.
+
+No se usa el paquete de instrumentación de EF Core ni el exportador de
+Prometheus: ambos siguen en preestreno y este build trata las advertencias como
+errores. Las trazas de base de datos se obtienen del driver con `AddNpgsql()`,
+que sí es estable.
+
 ## 📊 Índices de Base de Datos — Notas de Diseño
 
 ### `Users.Status` (índice parcial)

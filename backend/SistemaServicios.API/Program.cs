@@ -1,8 +1,24 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Serilog;
+using Serilog.Formatting.Compact;
 using SistemaServicios.API.Extensions;
 using SistemaServicios.API.Middleware;
 
+// Logger mínimo previo a la construcción del host. AddApplicationServices lanza si falta
+// DB_HOST, JWT_KEY o las credenciales SMTP, y esos fallos ocurren antes de que exista el
+// logger definitivo: sin esto, un arranque fallido en producción no deja rastro y solo se
+// ve el contenedor reiniciándose sin explicación.
+Log.Logger = new LoggerConfiguration()
+    .WriteTo.Console(new CompactJsonFormatter())
+    .CreateBootstrapLogger();
+
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Host.UseSerilog(
+    (context, _, logger) =>
+        LoggingConfiguration.Configure(logger, context.Configuration, context.HostingEnvironment)
+);
 
 // --- 1. CONFIGURACIÓN LIMPIA (Aquí llamamos a tu clase nueva) ---
 builder.Services.AddApplicationServices(builder.Configuration);
@@ -23,6 +39,32 @@ var app = builder.Build();
 // UseForwardedHeaders consuma las entradas que aplica.
 app.UseMiddleware<ForwardedHeadersDiagnostics>();
 app.UseForwardedHeaders();
+
+// Después de UseForwardedHeaders y no antes: registrado delante, la dirección que anotaría
+// sería la del proxy y no la del cliente, que es justo lo que resolvió el issue #128.
+app.UseSerilogRequestLogging(options =>
+{
+    options.GetLevel = (context, _, exception) =>
+        LoggingConfiguration.NivelDePeticion(context, exception);
+
+    options.EnrichDiagnosticContext = (diagnostic, context) =>
+    {
+        var clientIp = context.Connection.RemoteIpAddress?.ToString();
+        if (clientIp is not null)
+        {
+            diagnostic.Set("ClientIp", clientIp);
+        }
+
+        // Solo si hay sesión: en las rutas anónimas no existe el reclamo y anotar un
+        // UserId vacío haría creer que la petición venía de alguien identificado.
+        var userId = context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (userId is not null)
+        {
+            diagnostic.Set("UserId", userId);
+        }
+    };
+});
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
