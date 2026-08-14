@@ -111,7 +111,7 @@ public class LoggingTests : IClassFixture<LoggingWebApplicationFactory>
     {
         // Act: da igual que las credenciales sean inválidas; lo que se comprueba es qué
         // deja escrito la petición a su paso, y una que falla registra más, no menos.
-        _ = await _client.PostAsJsonAsync(
+        using var respuestaLogin = await _client.PostAsJsonAsync(
             "/api/auth/login",
             new { Email = "ana@ejemplo.com", Password = Contrasena }
         );
@@ -130,7 +130,7 @@ public class LoggingTests : IClassFixture<LoggingWebApplicationFactory>
     [Fact]
     public async Task CadaPeticionSeRegistraConSuTraceId()
     {
-        _ = await _client.GetAsync(new Uri("/api/auth/login", UriKind.Relative));
+        using var respuesta = await _client.GetAsync(new Uri("/api/auth/login", UriKind.Relative));
 
         var conTraza = _factory.Eventos.Where(e => e.Properties.ContainsKey("TraceId")).ToList();
 
@@ -148,7 +148,7 @@ public class LoggingTests : IClassFixture<LoggingWebApplicationFactory>
         // son dos mundos incomunicados: ante una reclamación habría que adivinar qué
         // líneas del log corresponden a la acción registrada en la tabla.
         var token = GenerarTokenDeAdmin();
-        var peticion = new HttpRequestMessage(HttpMethod.Post, "/api/UserLogs")
+        using var peticion = new HttpRequestMessage(HttpMethod.Post, "/api/UserLogs")
         {
             Content = JsonContent.Create(
                 new
@@ -162,7 +162,7 @@ public class LoggingTests : IClassFixture<LoggingWebApplicationFactory>
         };
         peticion.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
-        var respuesta = await _client.SendAsync(peticion);
+        using var respuesta = await _client.SendAsync(peticion);
         _ = respuesta.StatusCode.Should().Be(HttpStatusCode.Created);
 
         var creado = await respuesta.Content.ReadFromJsonAsync<UserLogDto>();
@@ -188,8 +188,8 @@ public class LoggingTests : IClassFixture<LoggingWebApplicationFactory>
     {
         var antes = _factory.Eventos.Count;
 
-        _ = await _client.GetAsync(new Uri("/health/live", UriKind.Relative));
-        _ = await _client.GetAsync(new Uri("/health/ready", UriKind.Relative));
+        using var live = await _client.GetAsync(new Uri("/health/live", UriKind.Relative));
+        using var ready = await _client.GetAsync(new Uri("/health/ready", UriKind.Relative));
 
         var nuevos = _factory.Eventos.Skip(antes).ToList();
         var salida = RenderizarComoStdout(nuevos);
