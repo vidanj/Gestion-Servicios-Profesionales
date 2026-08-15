@@ -241,8 +241,7 @@ public class ProfileControllerTests : IClassFixture<CustomWebApplicationFactory>
         var user = await res.Content.ReadFromJsonAsync<UserDto>();
 
         // La imagen ya no vive en el disco del contenedor: la URL apunta al endpoint
-        // que la sirve desde la base de datos. Antes esta aserción esperaba
-        // "/uploads/avatars/"; se invierte a propósito como parte del issue #125.
+        // que la sirve desde la base de datos.
         user!.ProfileImageUrl.Should().StartWith("/api/Files/");
 
         // Y se comprueba que la imagen se recupera de verdad por esa URL, sin token.
@@ -257,7 +256,8 @@ public class ProfileControllerTests : IClassFixture<CustomWebApplicationFactory>
         var (token, _) = await RegistrarUsuario();
 
         using var content = new MultipartFormDataContent();
-        var imageBytes = new byte[] { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A }; // cabecera PNG mínima
+        // Cabecera PNG completa oficial (8 bytes): 89 50 4E 47 0D 0A 1A 0A
+        var imageBytes = new byte[] { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A };
         var fileContent = new ByteArrayContent(imageBytes);
         fileContent.Headers.ContentType = new MediaTypeHeaderValue("image/png");
         content.Add(fileContent, "foto", "avatar.png");
@@ -270,8 +270,6 @@ public class ProfileControllerTests : IClassFixture<CustomWebApplicationFactory>
         res.StatusCode.Should().Be(HttpStatusCode.OK);
         var user = await res.Content.ReadFromJsonAsync<UserDto>();
 
-        // La extensión dejó de formar parte de la URL: el tipo viaja en la cabecera
-        // Content-Type de la respuesta del endpoint, no en el nombre.
         user!.ProfileImageUrl.Should().StartWith("/api/Files/");
 
         var imagen = await _client.GetAsync(new Uri(user.ProfileImageUrl!, UriKind.Relative));

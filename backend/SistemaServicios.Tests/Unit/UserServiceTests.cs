@@ -683,7 +683,10 @@ public class UserServiceTests
         var mockFile = new Mock<Microsoft.AspNetCore.Http.IFormFile>();
         _ = mockFile.Setup(f => f.ContentType).Returns("image/jpeg");
         _ = mockFile.Setup(f => f.Length).Returns(1024);
-        _ = mockFile.Setup(f => f.OpenReadStream()).Returns(new MemoryStream([1, 2, 3]));
+        // Magic bytes válidos de JPEG: FF D8 FF E0
+        _ = mockFile
+            .Setup(f => f.OpenReadStream())
+            .Returns(new MemoryStream([0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x10]));
 
         // Act
         var resultado = await _userService.UpdateProfileImageAsync(
@@ -716,7 +719,10 @@ public class UserServiceTests
         var mockFile = new Mock<Microsoft.AspNetCore.Http.IFormFile>();
         _ = mockFile.Setup(f => f.ContentType).Returns("image/png");
         _ = mockFile.Setup(f => f.Length).Returns(512);
-        _ = mockFile.Setup(f => f.OpenReadStream()).Returns(new MemoryStream([1, 2, 3]));
+        // Magic bytes válidos de PNG: 89 50 4E 47 0D 0A 1A 0A
+        _ = mockFile
+            .Setup(f => f.OpenReadStream())
+            .Returns(new MemoryStream([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]));
 
         // Act
         _ = await _userService.UpdateProfileImageAsync(_usuarioActivo.Id, mockFile.Object);
@@ -760,5 +766,27 @@ public class UserServiceTests
                 ),
             Times.Never
         );
+    }
+
+    [Fact]
+    public async Task UpdateProfileImageAsyncMagicBytesInvalidosLanzaExcepcion()
+    {
+        // Arrange
+        _ = _mockRepo.Setup(r => r.GetByIdAsync(_usuarioActivo.Id)).ReturnsAsync(_usuarioActivo);
+
+        var mockFile = new Mock<Microsoft.AspNetCore.Http.IFormFile>();
+        _ = mockFile.Setup(f => f.ContentType).Returns("image/png");
+        _ = mockFile.Setup(f => f.Length).Returns(1024);
+        // Bytes inválidos o corruptos (no coinciden con la firma PNG)
+        _ = mockFile
+            .Setup(f => f.OpenReadStream())
+            .Returns(new MemoryStream([0x00, 0x11, 0x22, 0x33]));
+
+        // Act & Assert
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            _userService.UpdateProfileImageAsync(_usuarioActivo.Id, mockFile.Object)
+        );
+
+        _ = ex.Message.Should().Contain("no es una imagen válida");
     }
 }
