@@ -9,4 +9,6 @@ public interface IAuthService
     public Task<AuthResponseDto> RegisterAsync(RegisterRequestDto dto);
 
     public Task ForgotPasswordAsync(ForgotPasswordRequestDto dto);
+
+    public Task ResetPasswordAsync(ResetPasswordRequestDto dto);
 }

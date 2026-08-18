@@ -1,3 +1,4 @@
+using System.Security.Cryptography;
 using SistemaServicios.API.DTOs.Auth;
 using SistemaServicios.API.Interfaces;
 using SistemaServicios.API.Models;
@@ -70,32 +71,61 @@ public class AuthService : IAuthService
     {
         var user = await _userRepo.GetByEmailAsync(dto.Email);
 
-        // Cuenta inexistente y cuenta desactivada se tratan igual y en silencio.
-        // Antes, la desactivada respondía "La cuenta está desactivada.", lo que
-        // confirmaba que el correo estaba registrado: enumeración de cuentas.
+        // Cuenta inexistente y cuenta desactivada se tratan igual y en silencio para evitar enumeración.
         if (user is null || !user.Status)
         {
-            // Hash de descarte: sin él, el camino sin cuenta terminaría al instante y
-            // la diferencia de tiempo delataría lo que el mensaje ya no delata.
-            _ = BCrypt.Net.BCrypt.HashPassword(GenerateSecurePassword(), workFactor: 10);
+            // Hash de descarte para mitigar ataques de temporización (timing attacks)
+            _ = BCrypt.Net.BCrypt.HashPassword(GenerateSecureResetToken(), workFactor: 10);
             return;
         }
 
-        var newPassword = GenerateSecurePassword();
+        var resetToken = GenerateSecureResetToken();
+        user.PasswordResetToken = resetToken;
+        user.ResetTokenExpiresAt = DateTime.UtcNow.AddMinutes(15);
+        user.UpdatedAt = DateTime.UtcNow;
 
-        user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(newPassword, workFactor: 10);
         await _userRepo.UpdateUserAsync(user);
 
-        // Encolado: retorna sin esperar al servidor SMTP.
-        await _emailService.SendPasswordResetEmailAsync(user.Email, newPassword);
+        // Despacha el correo con el token temporal sin tocar la contraseña actual
+        await _emailService.SendPasswordResetEmailAsync(user.Email, resetToken);
     }
 
-    private static string GenerateSecurePassword()
+    public async Task ResetPasswordAsync(ResetPasswordRequestDto dto)
     {
-        const string chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$";
-        var bytes = new byte[12];
-        System.Security.Cryptography.RandomNumberGenerator.Fill(bytes);
-        return new string(bytes.Select(b => chars[b % chars.Length]).ToArray());
+        if (string.IsNullOrWhiteSpace(dto.Token))
+        {
+            throw new InvalidOperationException(
+                "El token de recuperación es inválido o ha expirado."
+            );
+        }
+
+        var user = await _userRepo.GetByResetTokenAsync(dto.Token);
+
+        if (
+            user is null
+            || !user.Status
+            || user.ResetTokenExpiresAt is null
+            || user.ResetTokenExpiresAt < DateTime.UtcNow
+        )
+        {
+            throw new InvalidOperationException(
+                "El token de recuperación es inválido o ha expirado."
+            );
+        }
+
+        user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.NewPassword);
+        user.PasswordResetToken = null;
+        user.ResetTokenExpiresAt = null;
+        user.UpdatedAt = DateTime.UtcNow;
+
+        await _userRepo.UpdateUserAsync(user);
+    }
+
+    private static string GenerateSecureResetToken()
+    {
+        var bytes = new byte[32];
+        RandomNumberGenerator.Fill(bytes);
+        return Convert.ToHexString(bytes).ToLowerInvariant();
     }
 
     private AuthResponseDto BuildAuthResponse(User user) =>
