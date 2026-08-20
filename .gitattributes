@@ -1,5 +1,15 @@
 
 * text=auto
+# Los scripts que corren dentro del contenedor deben conservar LF: con CRLF el
+# shebang queda como "/bin/bash\r" y el contenedor falla con
+# "exec ./entrypoint.sh: no such file or directory".
+*.sh text eol=lf
+
+# Configuracion que consumen contenedores Linux: mismo criterio que los scripts,
+# para que un checkout en Windows no introduzca CRLF donde no se espera.
+*.conf text eol=lf
+docker-compose.yml text eol=lf
+
 *.cs text eol=lf
 *.csproj text eol=lf
 *.sln text eol=lf

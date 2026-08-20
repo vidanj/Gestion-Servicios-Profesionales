@@ -42,5 +42,21 @@ public class UserLog
 
     public LogStatus Status { get; set; } = LogStatus.Exitoso;
 
+    /// <summary>
+    /// Traza de la petición en la que ocurrió la acción, para enlazar esta entrada con
+    /// las líneas de log de operación que dejó esa misma petición.
+    /// </summary>
+    /// <remarks>
+    /// Es el puente entre las dos bitácoras: esta tabla responde <i>quién hizo qué</i> y
+    /// el log de stdout responde <i>qué pasó por dentro</i>. Sin este campo son dos
+    /// mundos incomunicados y, ante una reclamación, hay que adivinar qué líneas del log
+    /// corresponden a la acción registrada aquí.
+    /// Es anulable porque no toda escritura ocurre dentro de una petición —una tarea en
+    /// segundo plano no tiene traza— y porque las filas anteriores a esta columna no la
+    /// tienen. Un valor inventado sería peor que su ausencia.
+    /// </remarks>
+    [MaxLength(32)]
+    public string? TraceId { get; set; }
+
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }

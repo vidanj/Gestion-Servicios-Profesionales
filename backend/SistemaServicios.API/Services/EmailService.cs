@@ -1,4 +1,5 @@
 using System.Net.Mail;
+using Microsoft.Extensions.Configuration;
 using SistemaServicios.API.Interfaces;
 
 [assembly: System.Runtime.CompilerServices.InternalsVisibleTo("SistemaServicios.Tests")]
@@ -12,6 +13,11 @@ public class EmailService : IEmailService
 
     public EmailService(IConfiguration config, ISmtpClientWrapper? smtpClient = null)
     {
+        // Falla al arrancar si falta configuración, en lugar de caer en valores de
+        // relleno. Con valores por defecto, un SMTP mal configurado en producción no
+        // da ningún síntoma: los correos simplemente no llegan. El entorno de pruebas
+        // aporta su propia configuración (CustomWebApplicationFactory), que es donde
+        // corresponde resolverlo.
         var host =
             config["SmtpSettings:Host"]
             ?? throw new InvalidOperationException("SMTP_HOST no configurado.");

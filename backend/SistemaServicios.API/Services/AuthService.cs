@@ -55,7 +55,7 @@ public class AuthService : IAuthService
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password),
             FirstName = dto.FirstName.Trim(),
             LastName = dto.LastName.Trim(),
-            Role = dto.Role,
+            Role = UserRole.Client,
             PhoneNumber = dto.PhoneNumber?.Trim(),
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow,
@@ -68,15 +68,17 @@ public class AuthService : IAuthService
 
     public async Task ForgotPasswordAsync(ForgotPasswordRequestDto dto)
     {
-        var user =
-            await _userRepo.GetByEmailAsync(dto.Email)
-            ?? throw new InvalidOperationException(
-                "Si el correo está registrado, recibirás tu nueva contraseña en breve."
-            );
+        var user = await _userRepo.GetByEmailAsync(dto.Email);
 
-        if (!user.Status)
+        // Cuenta inexistente y cuenta desactivada se tratan igual y en silencio.
+        // Antes, la desactivada respondía "La cuenta está desactivada.", lo que
+        // confirmaba que el correo estaba registrado: enumeración de cuentas.
+        if (user is null || !user.Status)
         {
-            throw new InvalidOperationException("La cuenta está desactivada.");
+            // Hash de descarte: sin él, el camino sin cuenta terminaría al instante y
+            // la diferencia de tiempo delataría lo que el mensaje ya no delata.
+            _ = BCrypt.Net.BCrypt.HashPassword(GenerateSecurePassword(), workFactor: 10);
+            return;
         }
 
         var newPassword = GenerateSecurePassword();
@@ -84,6 +86,7 @@ public class AuthService : IAuthService
         user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(newPassword, workFactor: 10);
         await _userRepo.UpdateUserAsync(user);
 
+        // Encolado: retorna sin esperar al servidor SMTP.
         await _emailService.SendPasswordResetEmailAsync(user.Email, newPassword);
     }
 

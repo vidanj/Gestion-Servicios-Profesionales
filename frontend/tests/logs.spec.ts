@@ -12,6 +12,7 @@ const mockLogs = [
     action: 6,
     detail: "Usuario juan@test.com creado.",
     status: 0,
+    traceId: "06ded6db324384e443897587f45aec09",
     createdAt: "2026-03-11T10:00:00Z",
   },
   {
@@ -143,4 +144,20 @@ test('Link CRUD navega a /usuarios', async ({ page }) => {
 test('Link Usuarios registrados navega a /usuarios/registrados', async ({ page }) => {
   await page.getByRole('link', { name: 'Usuarios registrados' }).click();
   await expect(page).toHaveURL(/\/usuarios\/registrados/);
+});
+
+test('Logs muestra la traza para enlazar con el log de operacion', async ({ page }) => {
+  // El TraceId es el puente entre la bitacora de negocio y el log de operacion: sin
+  // mostrarlo, el dato existe en la respuesta de la API pero no se puede usar desde
+  // la pantalla, que era justo lo que faltaba.
+  const traza = page.getByTestId('log-trace-id');
+  await expect(traza).toHaveCount(1);
+  await expect(traza).toContainText('06ded6db324384e443897587f45aec09');
+});
+
+test('Logs no muestra traza en registros que no la tienen', async ({ page }) => {
+  // Las filas anteriores a la migracion no tienen traza, y una etiqueta vacia haria
+  // creer que si existe correlacion.
+  await expect(page.getByTestId('log-row')).toHaveCount(2);
+  await expect(page.getByTestId('log-trace-id')).toHaveCount(1);
 });

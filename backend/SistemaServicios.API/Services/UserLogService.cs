@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using SistemaServicios.API.DTOs;
 using SistemaServicios.API.Interfaces;
 using SistemaServicios.API.Models;
@@ -27,6 +28,8 @@ public class UserLogService : IUserLogService
 
     public async Task<UserLogDto> CreateLogAsync(CreateUserLogDto dto)
     {
+        ArgumentNullException.ThrowIfNull(dto);
+
         var log = new UserLog
         {
             Id = Guid.NewGuid(),
@@ -34,6 +37,12 @@ public class UserLogService : IUserLogService
             Action = dto.Action,
             Detail = dto.Detail,
             Status = dto.Status,
+
+            // Se toma de la petición en curso y nunca del DTO. Aceptarlo del cliente
+            // permitiría apuntar una entrada de la bitácora a la traza de otra petición,
+            // y el enlace entre ambas bitácoras dejaría de ser fiable justo cuando más
+            // falta hace. Fuera de una petición no hay traza y queda nulo.
+            TraceId = Activity.Current?.TraceId.ToString(),
             CreatedAt = DateTime.UtcNow,
         };
 
@@ -50,6 +59,7 @@ public class UserLogService : IUserLogService
             Action = l.Action,
             Detail = l.Detail,
             Status = l.Status,
+            TraceId = l.TraceId,
             CreatedAt = l.CreatedAt,
         };
 }

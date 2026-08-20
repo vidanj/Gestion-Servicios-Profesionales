@@ -1,0 +1,169 @@
+name: Imagen Docker — Construcción y arranque
+
+# Los workflows existentes compilan la solucion directamente con `dotnet build`, nunca a
+# traves del Dockerfile. Por eso una imagen rota llegaba al despliegue sin que nada la
+# detectara: el fallo de finales de linea en entrypoint.sh (`exec ./entrypoint.sh: no such
+# file or directory`) paso por toda la CI en verde.
+#
+# Ese fallo tampoco lo habria cazado un `docker build` a secas, porque era de ejecucion y
+# no de construccion. De ahi que este workflow no se limite a construir: levanta el
+# contenedor contra un PostgreSQL de usar y tirar y espera a que la sonda responda sana.
+# Eso ejercita el arranque completo, incluidas las migraciones que aplica efbundle.
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - dev
+      - feat/**
+      - chore/**
+      - fix/**
+      - ci/**
+  pull_request:
+    branches:
+      - main
+      - dev
+    paths:
+      - 'Dockerfile'
+      - 'entrypoint.sh'
+      - 'backend/**'
+      - '.github/workflows/docker-image.yml'
+
+jobs:
+  build-and-smoke:
+    name: Construir y arrancar
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    env:
+      IMAGEN: gsp-api:ci
+      RED: gsp-ci
+      # Credenciales de usar y tirar: la base vive y muere dentro de este job.
+      DB_NAME: gsp_ci
+      DB_USER: gsp_ci
+      DB_PASSWORD: gsp_ci_password
+      PUERTO: 10000
+
+    steps:
+      - name: Checkout del repositorio
+        uses: actions/checkout@v4
+
+      - name: Configurar Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # ── Construcción ─────────────────────────────────────────────
+      # load: true deja la imagen en el daemon local para poder arrancarla.
+      # No se publica en ningun registro: hoy Render construye por su cuenta, asi que
+      # subir la imagen a un registro no desplegaria nada.
+      - name: Construir la imagen
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          load: true
+          push: false
+          tags: ${{ env.IMAGEN }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # ── Dependencias para el arranque ────────────────────────────
+      - name: Crear la red
+        run: docker network create "$RED"
+
+      # PostgreSQL 18 a proposito: es la version que corre en produccion, y el Dockerfile
+      # instala postgresql-client-18 justo por eso. Probar contra otra version dejaria
+      # sin verificar la unica combinacion que importa.
+      - name: Levantar PostgreSQL
+        run: |
+          docker run -d --name gsp-db --network "$RED" \
+            -e POSTGRES_DB="$DB_NAME" \
+            -e POSTGRES_USER="$DB_USER" \
+            -e POSTGRES_PASSWORD="$DB_PASSWORD" \
+            --health-cmd="pg_isready -U $DB_USER -d $DB_NAME" \
+            --health-interval=5s \
+            --health-timeout=3s \
+            --health-retries=12 \
+            postgres:18-alpine
+
+      - name: Esperar a que PostgreSQL acepte conexiones
+        run: |
+          for intento in $(seq 1 24); do
+            estado=$(docker inspect -f '{{.State.Health.Status}}' gsp-db)
+            if [ "$estado" = "healthy" ]; then
+              echo "PostgreSQL listo tras $intento intentos."
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "PostgreSQL no llego a estar sano."
+          docker logs gsp-db
+          exit 1
+
+      # ── Arranque de la aplicación ────────────────────────────────
+      # Las variables SMTP y JWT son obligatorias: la aplicacion falla al arrancar si
+      # faltan, y esa decision es deliberada (mejor no arrancar que arrancar mal
+      # configurada). Los valores son ficticios; aqui no se envia ningun correo.
+      - name: Arrancar el contenedor
+        run: |
+          docker run -d --name gsp-api --network "$RED" -p ${PUERTO}:${PUERTO} \
+            -e DB_HOST=gsp-db \
+            -e DB_PORT=5432 \
+            -e DB_NAME="$DB_NAME" \
+            -e DB_USER="$DB_USER" \
+            -e DB_PASSWORD="$DB_PASSWORD" \
+            -e JWT_KEY="ClaveDePruebaParaIntegracionContinua_32!" \
+            -e JWT_ISSUER=ci \
+            -e JWT_AUDIENCE=ci \
+            -e JWT_EXPIRES_MINUTES=60 \
+            -e ALLOWED_ORIGINS=http://localhost:3000 \
+            -e SMTP_HOST=smtp.invalido.local \
+            -e SMTP_PORT=587 \
+            -e SMTP_USER=ci@invalido.local \
+            -e SMTP_PASSWORD=sin-uso \
+            -e SMTP_FROM=noreply@invalido.local \
+            "$IMAGEN"
+
+      # ── Verificación ─────────────────────────────────────────────
+      # Se sondea /health/ready y no /health/live: ready confirma ademas que la base es
+      # alcanzable, que es lo que demuestra que efbundle aplico las migraciones y que la
+      # cadena de conexion se armo bien.
+      - name: Esperar a que la sonda responda sana
+        run: |
+          for intento in $(seq 1 30); do
+            if ! docker ps --format '{{.Names}}' | grep -q '^gsp-api$'; then
+              echo "El contenedor se detuvo antes de responder."
+              exit 1
+            fi
+
+            respuesta=$(curl -fsS "http://localhost:${PUERTO}/health/ready" 2>/dev/null || true)
+
+            case "$respuesta" in
+              *'"status":"Healthy"'*)
+                echo "Sonda sana tras $intento intentos."
+                echo "$respuesta"
+                exit 0
+                ;;
+            esac
+
+            sleep 5
+          done
+
+          echo "La sonda nunca respondio Healthy en 150 s."
+          exit 1
+
+      # ── Diagnóstico ──────────────────────────────────────────────
+      # Los logs se publican siempre: hacen falta justo cuando el paso anterior falla, y
+      # sin ellos habria que reproducir el fallo a mano para averiguar por que.
+      - name: Registro del contenedor
+        if: always()
+        run: |
+          echo "── API ────────────────────────────────────────────"
+          docker logs gsp-api 2>&1 || echo "(el contenedor no llego a existir)"
+          echo "── PostgreSQL ─────────────────────────────────────"
+          docker logs gsp-db 2>&1 || echo "(el contenedor no llego a existir)"
+
+      - name: Limpiar
+        if: always()
+        run: |
+          docker rm -f gsp-api gsp-db 2>/dev/null || true
+          docker network rm "$RED" 2>/dev/null || true

@@ -12,7 +12,7 @@ namespace SistemaServicios.Tests.Unit;
 public class UserServiceTests
 {
     private readonly Mock<IUserRepository> _mockRepo;
-    private readonly Mock<IWebHostEnvironment> _mockEnv;
+    private readonly Mock<IFileStorage> _mockFileStorage;
     private readonly UserService _userService;
     private readonly Mock<IUserLogService> _mockLogService;
 
@@ -22,12 +22,16 @@ public class UserServiceTests
     public UserServiceTests()
     {
         _mockRepo = new Mock<IUserRepository>();
-        _mockEnv = new Mock<IWebHostEnvironment>();
+        _mockFileStorage = new Mock<IFileStorage>();
         _mockLogService = new Mock<IUserLogService>();
         _mockLogService
             .Setup(l => l.CreateLogAsync(It.IsAny<CreateUserLogDto>()))
             .ReturnsAsync(new UserLogDto());
-        _userService = new UserService(_mockRepo.Object, _mockEnv.Object, _mockLogService.Object);
+        _userService = new UserService(
+            _mockRepo.Object,
+            _mockFileStorage.Object,
+            _mockLogService.Object
+        );
 
         _usuarioActivo = new User
         {
@@ -44,6 +48,21 @@ public class UserServiceTests
         };
     }
 
+    private static UserDto DtoDe(User u) =>
+        new()
+        {
+            Id = u.Id,
+            Email = u.Email,
+            FirstName = u.FirstName,
+            LastName = u.LastName,
+            Role = u.Role,
+            PhoneNumber = u.PhoneNumber,
+            AverageRating = u.AverageRating,
+            Status = u.Status,
+            ProfileImageUrl = u.ProfileImageUrl,
+            CreatedAt = u.CreatedAt,
+        };
+
     // ─────────────────────────────────────────────────────────────
     // GetAllUsersAsync
     // ─────────────────────────────────────────────────────────────
@@ -52,8 +71,8 @@ public class UserServiceTests
     public async Task GetAllUsersAsyncRetornaListaDeUsuarios()
     {
         // Arrange
-        var usuarios = new List<User> { _usuarioActivo };
-        _ = _mockRepo.Setup(r => r.GetUsersAsync(1, 10)).ReturnsAsync((usuarios, 1));
+        var dtos = new List<UserDto> { DtoDe(_usuarioActivo) };
+        _ = _mockRepo.Setup(r => r.GetUserDtosAsync(1, 10)).ReturnsAsync((dtos, 1));
 
         // Act
         var (resultado, total) = await _userService.GetAllUsersAsync(1, 10);
@@ -65,31 +84,17 @@ public class UserServiceTests
     }
 
     [Fact]
-    public async Task GetAllUsersAsyncListaVaciaRetornaCeroElementos()
-    {
-        // Arrange
-        _ = _mockRepo.Setup(r => r.GetUsersAsync(1, 10)).ReturnsAsync((new List<User>(), 0));
-
-        // Act
-        var (resultado, total) = await _userService.GetAllUsersAsync(1, 10);
-
-        // Assert
-        _ = resultado.Should().BeEmpty();
-        _ = total.Should().Be(0);
-    }
-
-    [Fact]
     public async Task GetAllUsersAsyncMapeaCorrectamenteADto()
     {
         // Arrange
-        var usuarios = new List<User> { _usuarioActivo };
-        _ = _mockRepo.Setup(r => r.GetUsersAsync(1, 10)).ReturnsAsync((usuarios, 1));
+        var dtos = new List<UserDto> { DtoDe(_usuarioActivo) };
+        _ = _mockRepo.Setup(r => r.GetUserDtosAsync(1, 10)).ReturnsAsync((dtos, 1));
 
         // Act
         var (resultado, _) = await _userService.GetAllUsersAsync(1, 10);
         var dto = resultado.First();
 
-        // Assert: todos los campos mapeados correctamente
+        // Assert: el UserRepository proyecta todos los campos correctamente a DTO
         _ = dto.Id.Should().Be(_usuarioActivo.Id);
         _ = dto.Email.Should().Be(_usuarioActivo.Email);
         _ = dto.FirstName.Should().Be(_usuarioActivo.FirstName);
@@ -104,26 +109,24 @@ public class UserServiceTests
     {
         // Arrange: usuario con foto de perfil asignada
         _usuarioActivo.ProfileImageUrl = "/uploads/avatars/test.jpg";
-        var usuarios = new List<User> { _usuarioActivo };
-        _ = _mockRepo.Setup(r => r.GetUsersAsync(1, 10)).ReturnsAsync((usuarios, 1));
+        var dtos = new List<UserDto> { DtoDe(_usuarioActivo) };
+        _ = _mockRepo.Setup(r => r.GetUserDtosAsync(1, 10)).ReturnsAsync((dtos, 1));
 
         // Act
         var (resultado, _) = await _userService.GetAllUsersAsync(1, 10);
         var dto = resultado.First();
 
-        // Assert: el getter get_ProfileImageUrl() del modelo User queda cubierto con valor no nulo
+        // Assert
         _ = dto.ProfileImageUrl.Should().Be("/uploads/avatars/test.jpg");
     }
-
-    // ─────────────────────────────────────────────────────────────
-    // GetUserByIdAsync
-    // ─────────────────────────────────────────────────────────────
 
     [Fact]
     public async Task GetUserByIdAsyncUsuarioExisteRetornaDto()
     {
         // Arrange
-        _ = _mockRepo.Setup(r => r.GetByIdAsync(_usuarioActivo.Id)).ReturnsAsync(_usuarioActivo);
+        _ = _mockRepo
+            .Setup(r => r.GetUserDtoByIdAsync(_usuarioActivo.Id))
+            .ReturnsAsync(DtoDe(_usuarioActivo));
 
         // Act
         var resultado = await _userService.GetUserByIdAsync(_usuarioActivo.Id);
@@ -132,6 +135,20 @@ public class UserServiceTests
         _ = resultado.Should().NotBeNull();
         _ = resultado!.Email.Should().Be("juan@test.com");
         _ = resultado.FirstName.Should().Be("Juan");
+    }
+
+    [Fact]
+    public async Task GetAllUsersAsyncListaVaciaRetornaCeroElementos()
+    {
+        // Arrange
+        _ = _mockRepo.Setup(r => r.GetUsersAsync(1, 10)).ReturnsAsync((new List<User>(), 0));
+
+        // Act
+        var (resultado, total) = await _userService.GetAllUsersAsync(1, 10);
+
+        // Assert
+        _ = resultado.Should().BeEmpty();
+        _ = total.Should().Be(0);
     }
 
     [Fact]
@@ -642,21 +659,34 @@ public class UserServiceTests
         _ = ex.Message.Should().Contain("2 MB");
     }
 
+    // La forma de la URL dejo de ser responsabilidad de UserService: ahora la decide
+    // el IFileStorage. Estas pruebas verifican la delegacion, no la ruta en disco.
+
     [Fact]
-    public async Task UpdateProfileImageAsyncArchivoJpegValidoGuardaYRetornaDto()
+    public async Task UpdateProfileImageAsyncArchivoValidoGuardaLaUrlQueDevuelveElAlmacenamiento()
     {
         // Arrange
-        var tempDir = Path.GetTempPath();
-        _ = _mockEnv.Setup(e => e.WebRootPath).Returns(tempDir);
+        const string urlDevuelta = "/api/Files/3f2504e0-4f89-11d3-9a0c-0305e82c3301";
         _ = _mockRepo.Setup(r => r.GetByIdAsync(_usuarioActivo.Id)).ReturnsAsync(_usuarioActivo);
         _ = _mockRepo.Setup(r => r.UpdateUserAsync(It.IsAny<User>())).Returns(Task.CompletedTask);
+        _ = _mockFileStorage
+            .Setup(s =>
+                s.SaveForOwnerAsync(
+                    _usuarioActivo.Id,
+                    It.IsAny<Stream>(),
+                    "image/jpeg",
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(urlDevuelta);
 
         var mockFile = new Mock<Microsoft.AspNetCore.Http.IFormFile>();
         _ = mockFile.Setup(f => f.ContentType).Returns("image/jpeg");
         _ = mockFile.Setup(f => f.Length).Returns(1024);
+        // Magic bytes válidos de JPEG: FF D8 FF E0
         _ = mockFile
-            .Setup(f => f.CopyToAsync(It.IsAny<Stream>(), It.IsAny<CancellationToken>()))
-            .Returns(Task.CompletedTask);
+            .Setup(f => f.OpenReadStream())
+            .Returns(new MemoryStream([0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x10]));
 
         // Act
         var resultado = await _userService.UpdateProfileImageAsync(
@@ -666,33 +696,97 @@ public class UserServiceTests
 
         // Assert
         _ = resultado.Should().NotBeNull();
-        _ = resultado!.ProfileImageUrl.Should().Contain("/uploads/avatars/");
-        _ = resultado.ProfileImageUrl.Should().EndWith(".jpg");
+        _ = resultado!.ProfileImageUrl.Should().Be(urlDevuelta);
     }
 
     [Fact]
-    public async Task UpdateProfileImageAsyncArchivoPngValidoGuardaUrlConExtensionPng()
+    public async Task UpdateProfileImageAsyncPasaElContentTypeRecibidoAlAlmacenamiento()
     {
         // Arrange
-        var tempDir = Path.GetTempPath();
-        _ = _mockEnv.Setup(e => e.WebRootPath).Returns(tempDir);
         _ = _mockRepo.Setup(r => r.GetByIdAsync(_usuarioActivo.Id)).ReturnsAsync(_usuarioActivo);
         _ = _mockRepo.Setup(r => r.UpdateUserAsync(It.IsAny<User>())).Returns(Task.CompletedTask);
+        _ = _mockFileStorage
+            .Setup(s =>
+                s.SaveForOwnerAsync(
+                    It.IsAny<Guid>(),
+                    It.IsAny<Stream>(),
+                    It.IsAny<string>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync("/api/Files/00000000-0000-0000-0000-000000000001");
 
         var mockFile = new Mock<Microsoft.AspNetCore.Http.IFormFile>();
         _ = mockFile.Setup(f => f.ContentType).Returns("image/png");
         _ = mockFile.Setup(f => f.Length).Returns(512);
+        // Magic bytes válidos de PNG: 89 50 4E 47 0D 0A 1A 0A
         _ = mockFile
-            .Setup(f => f.CopyToAsync(It.IsAny<Stream>(), It.IsAny<CancellationToken>()))
-            .Returns(Task.CompletedTask);
+            .Setup(f => f.OpenReadStream())
+            .Returns(new MemoryStream([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]));
 
         // Act
-        var resultado = await _userService.UpdateProfileImageAsync(
-            _usuarioActivo.Id,
-            mockFile.Object
+        _ = await _userService.UpdateProfileImageAsync(_usuarioActivo.Id, mockFile.Object);
+
+        // Assert: el almacenamiento recibe el dueño y el tipo, una sola vez
+        _mockFileStorage.Verify(
+            s =>
+                s.SaveForOwnerAsync(
+                    _usuarioActivo.Id,
+                    It.IsAny<Stream>(),
+                    "image/png",
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Once
+        );
+    }
+
+    [Fact]
+    public async Task UpdateProfileImageAsyncConTipoNoPermitidoNoTocaElAlmacenamiento()
+    {
+        // Arrange: la validacion debe ocurrir antes de escribir nada
+        _ = _mockRepo.Setup(r => r.GetByIdAsync(_usuarioActivo.Id)).ReturnsAsync(_usuarioActivo);
+
+        var mockFile = new Mock<Microsoft.AspNetCore.Http.IFormFile>();
+        _ = mockFile.Setup(f => f.ContentType).Returns("application/pdf");
+        _ = mockFile.Setup(f => f.Length).Returns(1024);
+
+        // Act
+        _ = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            _userService.UpdateProfileImageAsync(_usuarioActivo.Id, mockFile.Object)
         );
 
         // Assert
-        _ = resultado!.ProfileImageUrl.Should().EndWith(".png");
+        _mockFileStorage.Verify(
+            s =>
+                s.SaveForOwnerAsync(
+                    It.IsAny<Guid>(),
+                    It.IsAny<Stream>(),
+                    It.IsAny<string>(),
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Never
+        );
+    }
+
+    [Fact]
+    public async Task UpdateProfileImageAsyncMagicBytesInvalidosLanzaExcepcion()
+    {
+        // Arrange
+        _ = _mockRepo.Setup(r => r.GetByIdAsync(_usuarioActivo.Id)).ReturnsAsync(_usuarioActivo);
+
+        var mockFile = new Mock<Microsoft.AspNetCore.Http.IFormFile>();
+        _ = mockFile.Setup(f => f.ContentType).Returns("image/png");
+        _ = mockFile.Setup(f => f.Length).Returns(1024);
+        // Bytes inválidos o corruptos (no coinciden con la firma PNG)
+        _ = mockFile
+            .Setup(f => f.OpenReadStream())
+            .Returns(new MemoryStream([0x00, 0x11, 0x22, 0x33]));
+
+        // Act & Assert
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            _userService.UpdateProfileImageAsync(_usuarioActivo.Id, mockFile.Object)
+        );
+
+        _ = ex.Message.Should().Contain("no es una imagen válida");
     }
 }
