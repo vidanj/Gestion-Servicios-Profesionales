@@ -14,15 +14,17 @@ public interface IUserRepository
 
     public Task<User?> GetUserByEmailAsync(string email);
 
-    public Task<User> AddUserAsync(User user);
-
-    public Task UpdateUserAsync(User user);
-
     public Task<User?> GetByEmailAsync(string email);
+
+    public Task<User?> GetByResetTokenAsync(string token);
 
     public Task<bool> EmailExistsAsync(string email);
 
+    public Task<User> AddUserAsync(User user);
+
     public Task<User> CreateAsync(User user);
+
+    public Task UpdateUserAsync(User user);
 
     public Task<IEnumerable<UserRegistrationStatDto>> GetRegistrationsByDateAsync(int days);
 

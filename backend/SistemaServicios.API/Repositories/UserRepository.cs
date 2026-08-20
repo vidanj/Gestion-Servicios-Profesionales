@@ -30,7 +30,6 @@ public class UserRepository : IUserRepository
         _context = context;
     }
 
-    // --- TUS MÃ‰TODOS DEL CRUD ---
     public async Task<(IEnumerable<User> users, int totalCount)> GetUsersAsync(
         int pageNumber,
         int pageSize
@@ -49,10 +48,28 @@ public class UserRepository : IUserRepository
     public async Task<User?> GetByIdAsync(Guid id) =>
         await _context.Users.FirstOrDefaultAsync(u => u.Id == id && u.Status == true);
 
+    public async Task<User?> GetByResetTokenAsync(string token) =>
+        await _context.Users.FirstOrDefaultAsync(u =>
+            u.PasswordResetToken == token && u.Status == true
+        );
+
     public async Task<User?> GetUserByEmailAsync(string email) =>
         await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
 
+    public async Task<User?> GetByEmailAsync(string email) =>
+        await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
+
+    public async Task<bool> EmailExistsAsync(string email) =>
+        await _context.Users.AnyAsync(u => u.Email == email);
+
     public async Task<User> AddUserAsync(User user)
+    {
+        _context.Users.Add(user);
+        await _context.SaveChangesAsync();
+        return user;
+    }
+
+    public async Task<User> CreateAsync(User user)
     {
         _context.Users.Add(user);
         await _context.SaveChangesAsync();
@@ -65,20 +82,6 @@ public class UserRepository : IUserRepository
         await _context.SaveChangesAsync();
     }
 
-    // --- MÃ‰TODOS RECUPERADOS PARA EL AUTHSERVICE ---
-    public async Task<User?> GetByEmailAsync(string email) =>
-        await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
-
-    public async Task<bool> EmailExistsAsync(string email) =>
-        await _context.Users.AnyAsync(u => u.Email == email);
-
-    public async Task<User> CreateAsync(User user)
-    {
-        _context.Users.Add(user);
-        await _context.SaveChangesAsync();
-        return user;
-    }
-
     public async Task<IEnumerable<UserRegistrationStatDto>> GetRegistrationsByDateAsync(int days)
     {
         var desde = DateTime.UtcNow.Date.AddDays(-days + 1);
@@ -89,7 +92,6 @@ public class UserRepository : IUserRepository
             .Select(g => new { Date = g.Key, Count = g.Count() })
             .ToListAsync();
 
-        // Rellenar días sin registros con 0
         return Enumerable
             .Range(0, days)
             .Select(i => desde.AddDays(i))

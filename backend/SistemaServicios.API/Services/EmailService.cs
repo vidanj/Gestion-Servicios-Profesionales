@@ -13,11 +13,6 @@ public class EmailService : IEmailService
 
     public EmailService(IConfiguration config, ISmtpClientWrapper? smtpClient = null)
     {
-        // Falla al arrancar si falta configuración, en lugar de caer en valores de
-        // relleno. Con valores por defecto, un SMTP mal configurado en producción no
-        // da ningún síntoma: los correos simplemente no llegan. El entorno de pruebas
-        // aporta su propia configuración (CustomWebApplicationFactory), que es donde
-        // corresponde resolverlo.
         var host =
             config["SmtpSettings:Host"]
             ?? throw new InvalidOperationException("SMTP_HOST no configurado.");
@@ -36,13 +31,13 @@ public class EmailService : IEmailService
         _smtpClient = smtpClient ?? new SmtpClientWrapper(host, port, user, password);
     }
 
-    public async Task SendPasswordResetEmailAsync(string toEmail, string newPassword)
+    public async Task SendPasswordResetEmailAsync(string toEmail, string resetToken)
     {
         var message = new MailMessage
         {
             From = new MailAddress(_from, "SistemaServicios"),
-            Subject = "Tu nueva contraseña — SistemaServicios",
-            Body = BuildEmailBody(newPassword),
+            Subject = "Recuperación de contraseña — SistemaServicios",
+            Body = BuildEmailBody(resetToken),
             IsBodyHtml = true,
         };
         message.To.Add(toEmail);
@@ -50,11 +45,11 @@ public class EmailService : IEmailService
         await _smtpClient.SendMailAsync(message);
     }
 
-    internal static string BuildEmailBody(string newPassword) =>
+    internal static string BuildEmailBody(string resetToken) =>
         $"""
             <h2>Recuperación de contraseña</h2>
-            <p>Tu nueva contraseña temporal es:</p>
-            <h3 style="letter-spacing:2px">{newPassword}</h3>
-            <p>Te recomendamos cambiarla después de iniciar sesión.</p>
+            <p>Has solicitado restablecer tu contraseña. Utiliza el siguiente token para definir tu nueva clave (válido por 15 minutos):</p>
+            <h3 style="letter-spacing:2px;background:#f4f4f4;padding:10px;display:inline-block">{resetToken}</h3>
+            <p>Si no solicitaste este cambio, puedes ignorar este mensaje; tu contraseña actual no ha sido modificada.</p>
             """;
 }

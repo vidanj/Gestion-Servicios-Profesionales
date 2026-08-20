@@ -15,7 +15,6 @@ public class ForgotPasswordServiceTests
     private readonly Mock<IEmailService> _mockEmail;
     private readonly AuthService _authService;
 
-    // Usuario base reutilizable en las pruebas
     private readonly User _usuarioActivo;
 
     public ForgotPasswordServiceTests()
@@ -38,13 +37,12 @@ public class ForgotPasswordServiceTests
     }
 
     // ─────────────────────────────────────────────────────────────
-    // ForgotPasswordAsync — flujo exitoso
+    // ForgotPasswordAsync — flujo exitoso y mitigación DoS
     // ─────────────────────────────────────────────────────────────
 
     [Fact]
     public async Task ForgotPasswordAsyncEmailExistenteCompletaFlujoPrincipal()
     {
-        // Arrange
         _ = _mockRepo.Setup(r => r.GetByEmailAsync("juan@test.com")).ReturnsAsync(_usuarioActivo);
         _ = _mockRepo.Setup(r => r.UpdateUserAsync(It.IsAny<User>())).Returns(Task.CompletedTask);
         _ = _mockEmail
@@ -53,58 +51,14 @@ public class ForgotPasswordServiceTests
 
         var dto = new ForgotPasswordRequestDto { Email = "juan@test.com" };
 
-        // Act
         var act = async () => await _authService.ForgotPasswordAsync(dto);
 
-        // Assert: no lanza excepción
         await act.Should().NotThrowAsync();
     }
 
     [Fact]
-    public async Task ForgotPasswordAsyncLlamaUpdateUserAsyncUnaVez()
+    public async Task ForgotPasswordAsyncNoModificaPasswordHashActual()
     {
-        // Arrange
-        _ = _mockRepo.Setup(r => r.GetByEmailAsync("juan@test.com")).ReturnsAsync(_usuarioActivo);
-        _ = _mockRepo.Setup(r => r.UpdateUserAsync(It.IsAny<User>())).Returns(Task.CompletedTask);
-        _ = _mockEmail
-            .Setup(e => e.SendPasswordResetEmailAsync(It.IsAny<string>(), It.IsAny<string>()))
-            .Returns(Task.CompletedTask);
-
-        var dto = new ForgotPasswordRequestDto { Email = "juan@test.com" };
-
-        // Act
-        await _authService.ForgotPasswordAsync(dto);
-
-        // Assert: el repositorio recibió exactamente una llamada a Update
-        _mockRepo.Verify(r => r.UpdateUserAsync(_usuarioActivo), Times.Once);
-    }
-
-    [Fact]
-    public async Task ForgotPasswordAsyncLlamaEnvioEmailUnaVez()
-    {
-        // Arrange
-        _ = _mockRepo.Setup(r => r.GetByEmailAsync("juan@test.com")).ReturnsAsync(_usuarioActivo);
-        _ = _mockRepo.Setup(r => r.UpdateUserAsync(It.IsAny<User>())).Returns(Task.CompletedTask);
-        _ = _mockEmail
-            .Setup(e => e.SendPasswordResetEmailAsync(It.IsAny<string>(), It.IsAny<string>()))
-            .Returns(Task.CompletedTask);
-
-        var dto = new ForgotPasswordRequestDto { Email = "juan@test.com" };
-
-        // Act
-        await _authService.ForgotPasswordAsync(dto);
-
-        // Assert: se envió exactamente un email al correo correcto
-        _mockEmail.Verify(
-            e => e.SendPasswordResetEmailAsync("juan@test.com", It.IsAny<string>()),
-            Times.Once
-        );
-    }
-
-    [Fact]
-    public async Task ForgotPasswordAsyncActualizaPasswordHashEnElUsuario()
-    {
-        // Arrange
         var hashOriginal = _usuarioActivo.PasswordHash;
         User? usuarioActualizado = null;
 
@@ -119,19 +73,19 @@ public class ForgotPasswordServiceTests
 
         var dto = new ForgotPasswordRequestDto { Email = "juan@test.com" };
 
-        // Act
         await _authService.ForgotPasswordAsync(dto);
 
-        // Assert: el hash cambió (nueva contraseña generada)
+        // Assert: No se altera la contraseña actual para prevenir DoS
         _ = usuarioActualizado.Should().NotBeNull();
-        _ = usuarioActualizado!.PasswordHash.Should().NotBe(hashOriginal);
+        _ = usuarioActualizado!.PasswordHash.Should().Be(hashOriginal);
+        _ = usuarioActualizado.PasswordResetToken.Should().NotBeNullOrEmpty();
+        _ = usuarioActualizado.ResetTokenExpiresAt.Should().BeAfter(DateTime.UtcNow);
     }
 
     [Fact]
-    public async Task ForgotPasswordAsyncNuevaPasswordEsHashDeBcrypt()
+    public async Task ForgotPasswordAsyncGeneraTokenYLoEnviaPorEmail()
     {
-        // Arrange
-        string? passwordEnviada = null;
+        string? tokenEnviado = null;
         User? usuarioActualizado = null;
 
         _ = _mockRepo.Setup(r => r.GetByEmailAsync("juan@test.com")).ReturnsAsync(_usuarioActivo);
@@ -141,81 +95,31 @@ public class ForgotPasswordServiceTests
             .Returns(Task.CompletedTask);
         _ = _mockEmail
             .Setup(e => e.SendPasswordResetEmailAsync(It.IsAny<string>(), It.IsAny<string>()))
-            .Callback<string, string>((_, pwd) => passwordEnviada = pwd)
+            .Callback<string, string>((_, token) => tokenEnviado = token)
             .Returns(Task.CompletedTask);
 
         var dto = new ForgotPasswordRequestDto { Email = "juan@test.com" };
 
-        // Act
         await _authService.ForgotPasswordAsync(dto);
 
-        // Assert: la contraseña guardada en DB es el hash BCrypt de la que se envió por email
-        _ = passwordEnviada.Should().NotBeNullOrEmpty();
-        _ = BCrypt
-            .Net.BCrypt.Verify(passwordEnviada!, usuarioActualizado!.PasswordHash)
-            .Should()
-            .BeTrue();
-    }
-
-    [Fact]
-    public async Task ForgotPasswordAsyncNuevaPasswordNoEsTextoPlano()
-    {
-        // Arrange
-        User? usuarioActualizado = null;
-
-        _ = _mockRepo.Setup(r => r.GetByEmailAsync("juan@test.com")).ReturnsAsync(_usuarioActivo);
-        _ = _mockRepo
-            .Setup(r => r.UpdateUserAsync(It.IsAny<User>()))
-            .Callback<User>(u => usuarioActualizado = u)
-            .Returns(Task.CompletedTask);
-        _ = _mockEmail
-            .Setup(e => e.SendPasswordResetEmailAsync(It.IsAny<string>(), It.IsAny<string>()))
-            .Returns(Task.CompletedTask);
-
-        var dto = new ForgotPasswordRequestDto { Email = "juan@test.com" };
-
-        // Act
-        await _authService.ForgotPasswordAsync(dto);
-
-        // Assert: el hash guardado empieza con $2 (prefijo BCrypt)
-        _ = usuarioActualizado!.PasswordHash.Should().StartWith("$2");
+        _ = tokenEnviado.Should().NotBeNullOrEmpty();
+        _ = usuarioActualizado!.PasswordResetToken.Should().Be(tokenEnviado);
     }
 
     // ─────────────────────────────────────────────────────────────
-    // ForgotPasswordAsync — errores esperados
+    // ForgotPasswordAsync — protección contra enumeración
     // ─────────────────────────────────────────────────────────────
-
-    // Antes, estas rutas lanzaban excepciones con mensajes distintos y el controller
-    // las devolvía al cliente. La de cuenta desactivada confirmaba que el correo
-    // estaba registrado: enumeración de cuentas. Ahora ambas terminan en silencio.
 
     [Fact]
     public async Task ForgotPasswordAsyncEmailNoRegistradoTerminaEnSilencio()
     {
-        // Arrange: el repositorio devuelve null (usuario no encontrado)
         _ = _mockRepo.Setup(r => r.GetByEmailAsync(It.IsAny<string>())).ReturnsAsync((User?)null);
 
         var dto = new ForgotPasswordRequestDto { Email = "noexiste@test.com" };
 
-        // Act
         var ex = await Record.ExceptionAsync(() => _authService.ForgotPasswordAsync(dto));
 
-        // Assert: no lanza, para que la respuesta no dependa de si la cuenta existe
         _ = ex.Should().BeNull();
-    }
-
-    [Fact]
-    public async Task ForgotPasswordAsyncEmailNoRegistradoNuncaLlamaUpdateNiEmail()
-    {
-        // Arrange
-        _ = _mockRepo.Setup(r => r.GetByEmailAsync(It.IsAny<string>())).ReturnsAsync((User?)null);
-
-        var dto = new ForgotPasswordRequestDto { Email = "noexiste@test.com" };
-
-        // Act
-        await _authService.ForgotPasswordAsync(dto);
-
-        // Assert: nunca se actualiza la DB ni se envía email
         _mockRepo.Verify(r => r.UpdateUserAsync(It.IsAny<User>()), Times.Never);
         _mockEmail.Verify(
             e => e.SendPasswordResetEmailAsync(It.IsAny<string>(), It.IsAny<string>()),
@@ -226,7 +130,6 @@ public class ForgotPasswordServiceTests
     [Fact]
     public async Task ForgotPasswordAsyncCuentaDesactivadaTerminaEnSilencio()
     {
-        // Arrange: usuario con Status = false
         var usuarioInactivo = new User
         {
             Id = Guid.NewGuid(),
@@ -244,43 +147,100 @@ public class ForgotPasswordServiceTests
 
         var dto = new ForgotPasswordRequestDto { Email = "inactivo@test.com" };
 
-        // Act
         var ex = await Record.ExceptionAsync(() => _authService.ForgotPasswordAsync(dto));
 
-        // Assert: no lanza y no revela que la cuenta existe. Esta prueba afirmaba antes
-        // lo contrario, que el mensaje era "La cuenta está desactivada."
         _ = ex.Should().BeNull();
-    }
-
-    [Fact]
-    public async Task ForgotPasswordAsyncCuentaDesactivadaNuncaLlamaUpdateNiEmail()
-    {
-        // Arrange
-        var usuarioInactivo = new User
-        {
-            Id = Guid.NewGuid(),
-            Email = "inactivo@test.com",
-            PasswordHash = BCrypt.Net.BCrypt.HashPassword("Password123!"),
-            FirstName = "Ana",
-            LastName = "López",
-            Role = UserRole.Client,
-            Status = false,
-        };
-
-        _ = _mockRepo
-            .Setup(r => r.GetByEmailAsync("inactivo@test.com"))
-            .ReturnsAsync(usuarioInactivo);
-
-        var dto = new ForgotPasswordRequestDto { Email = "inactivo@test.com" };
-
-        // Act
-        await _authService.ForgotPasswordAsync(dto);
-
-        // Assert: nada se ejecuta después de detectar cuenta desactivada
         _mockRepo.Verify(r => r.UpdateUserAsync(It.IsAny<User>()), Times.Never);
         _mockEmail.Verify(
             e => e.SendPasswordResetEmailAsync(It.IsAny<string>(), It.IsAny<string>()),
             Times.Never
         );
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // ResetPasswordAsync — validación y cambio de clave
+    // ─────────────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task ResetPasswordAsyncTokenValidoActualizaPasswordHashYLimpiaToken()
+    {
+        var usuarioConToken = new User
+        {
+            Id = Guid.NewGuid(),
+            Email = "juan@test.com",
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword("PasswordVieja123!"),
+            FirstName = "Juan",
+            LastName = "Pérez",
+            Role = UserRole.Client,
+            Status = true,
+            PasswordResetToken = "token_valido_123",
+            ResetTokenExpiresAt = DateTime.UtcNow.AddMinutes(10),
+        };
+
+        User? usuarioGuardado = null;
+        _ = _mockRepo
+            .Setup(r => r.GetByResetTokenAsync("token_valido_123"))
+            .ReturnsAsync(usuarioConToken);
+        _ = _mockRepo
+            .Setup(r => r.UpdateUserAsync(It.IsAny<User>()))
+            .Callback<User>(u => usuarioGuardado = u)
+            .Returns(Task.CompletedTask);
+
+        var dto = new ResetPasswordRequestDto("token_valido_123", "NuevaPasswordSegura456!");
+
+        await _authService.ResetPasswordAsync(dto);
+
+        _ = usuarioGuardado.Should().NotBeNull();
+        _ = usuarioGuardado!.PasswordResetToken.Should().BeNull();
+        _ = usuarioGuardado.ResetTokenExpiresAt.Should().BeNull();
+        _ = BCrypt
+            .Net.BCrypt.Verify("NuevaPasswordSegura456!", usuarioGuardado.PasswordHash)
+            .Should()
+            .BeTrue();
+    }
+
+    [Fact]
+    public async Task ResetPasswordAsyncTokenExpiradoLanzaInvalidOperationException()
+    {
+        var usuarioTokenVencido = new User
+        {
+            Id = Guid.NewGuid(),
+            Email = "juan@test.com",
+            PasswordHash = "hash",
+            FirstName = "Juan",
+            LastName = "Pérez",
+            Role = UserRole.Client,
+            Status = true,
+            PasswordResetToken = "token_vencido",
+            ResetTokenExpiresAt = DateTime.UtcNow.AddMinutes(-5), // Expirado
+        };
+
+        _ = _mockRepo
+            .Setup(r => r.GetByResetTokenAsync("token_vencido"))
+            .ReturnsAsync(usuarioTokenVencido);
+
+        var dto = new ResetPasswordRequestDto("token_vencido", "NuevaPassword123!");
+
+        var act = () => _authService.ResetPasswordAsync(dto);
+
+        await act.Should()
+            .ThrowAsync<InvalidOperationException>()
+            .WithMessage("*inválido o ha expirado*");
+    }
+
+    [Fact]
+    public async Task ResetPasswordAsyncTokenInexistenteLanzaInvalidOperationException()
+    {
+        _ = _mockRepo
+            .Setup(r => r.GetByResetTokenAsync(It.IsAny<string>()))
+            .ReturnsAsync((User?)null);
+
+        var dto = new ResetPasswordRequestDto("token_fantasma", "NuevaPassword123!");
+
+        var act = () => _authService.ResetPasswordAsync(dto);
+
+        await act.Should()
+            .ThrowAsync<InvalidOperationException>()
+            .WithMessage("*inválido o ha expirado*");
     }
 }

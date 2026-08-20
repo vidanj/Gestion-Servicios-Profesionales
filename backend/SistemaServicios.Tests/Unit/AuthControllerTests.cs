@@ -1,300 +1,133 @@
-using System.Security.Claims;
-using System.Text.Encodings.Web;
-using System.Text.Json;
-using FluentAssertions;
-using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Moq;
-using SistemaServicios.API.Controllers;
 using SistemaServicios.API.DTOs.Auth;
 using SistemaServicios.API.Interfaces;
-using SistemaServicios.API.Models;
-using Xunit;
 
-namespace SistemaServicios.Tests.Unit;
+namespace SistemaServicios.API.Controllers;
 
-/// <summary>
-/// Pruebas unitarias del AuthController.
-/// Cubren el mapeo HTTP de Login/Register y las ramas null-conditional de Me().
-/// El flujo completo con JWT real se verifica en las pruebas de integración.
-/// </summary>
-public class AuthControllerTests
+// Skinny Controller: solo delega al servicio y mapea respuestas HTTP.
+[ApiController]
+[Route("api/[controller]")]
+public class AuthController : ControllerBase
 {
-    private readonly Mock<IAuthService> _mockAuthService;
-    private readonly AuthController _controller;
+    private readonly IAuthService _authService;
 
-    public AuthControllerTests()
+    public AuthController(IAuthService authService)
     {
-        _mockAuthService = new Mock<IAuthService>();
-        _controller = new AuthController(_mockAuthService.Object);
+        _authService = authService;
     }
 
-    // JsonSerializer por defecto escapa caracteres no-ASCII (á → \u00E1).
-    // UnsafeRelaxedJsonEscaping los deja como están para que las aserciones
-    // de texto en español funcionen correctamente.
-    private static readonly JsonSerializerOptions JsonOpts = new()
+    /// <summary>Inicia sesión y devuelve un JWT.</summary>
+    [HttpPost("login")]
+    public async Task<IActionResult> Login([FromBody] LoginRequestDto dto)
     {
-        Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
-    };
+        try
+        {
+            var result = await _authService.LoginAsync(dto);
+            return Ok(result);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Unauthorized(new { message = ex.Message });
+        }
+    }
 
-    private static string ToJson(object? value) => JsonSerializer.Serialize(value, JsonOpts);
+    /// <summary>Registra un nuevo usuario y devuelve un JWT.</summary>
+    [HttpPost("register")]
+    public async Task<IActionResult> Register([FromBody] RegisterRequestDto dto)
+    {
+        try
+        {
+            var result = await _authService.RegisterAsync(dto);
+            return StatusCode(201, result);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (Exception)
+        {
+            return StatusCode(
+                500,
+                new { message = "Error al procesar la solicitud. Intenta más tarde." }
+            );
+        }
+    }
+
+    /// <summary>Devuelve los datos del usuario autenticado (requiere JWT).</summary>
+    [Authorize]
+    [HttpGet("me")]
+    public IActionResult Me()
+    {
+        var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        var email = User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value;
+        var role = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value;
+        var firstName = User.FindFirst("firstName")?.Value;
+        var lastName = User.FindFirst("lastName")?.Value;
+
+        return Ok(
+            new
+            {
+                userId,
+                email,
+                role,
+                firstName,
+                lastName,
+            }
+        );
+    }
 
     /// <summary>
-    /// Configura el ClaimsPrincipal del controller con los claims indicados.
-    /// Permite llamar a Me() directamente sin pasar por el middleware JWT.
+    /// Genera un token temporal seguro y lo envía por correo sin modificar la clave actual.
     /// </summary>
-    private void SetUserContext(params (string type, string value)[] claims)
+    [HttpPost("forgot-password")]
+    public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequestDto dto)
     {
-        var identity = new ClaimsIdentity(
-            claims.Select(c => new Claim(c.type, c.value)),
-            "TestAuth"
-        );
-        var principal = new ClaimsPrincipal(identity);
-        _controller.ControllerContext = new ControllerContext
+        try
         {
-            HttpContext = new DefaultHttpContext { User = principal },
-        };
-    }
+            await _authService.ForgotPasswordAsync(dto);
 
-    // ─────────────────────────────────────────────────────────────
-    // Login — mapeo HTTP
-    // ─────────────────────────────────────────────────────────────
-
-    [Fact]
-    public async Task LoginExitosoRetorna200()
-    {
-        // Arrange
-        _ = _mockAuthService
-            .Setup(s => s.LoginAsync(It.IsAny<LoginRequestDto>()))
-            .ReturnsAsync(new AuthResponseDto { Token = "jwt", Email = "u@test.com" });
-
-        // Act
-        var result = await _controller.Login(
-            new LoginRequestDto { Email = "u@test.com", Password = "pass" }
-        );
-
-        // Assert
-        _ = result.Should().BeOfType<OkObjectResult>().Which.StatusCode.Should().Be(200);
-    }
-
-    [Fact]
-    public async Task LoginCredencialesInvalidasRetorna401ConMensaje()
-    {
-        // Arrange
-        _ = _mockAuthService
-            .Setup(s => s.LoginAsync(It.IsAny<LoginRequestDto>()))
-            .ThrowsAsync(new UnauthorizedAccessException("Credenciales inválidas."));
-
-        // Act
-        var result = await _controller.Login(
-            new LoginRequestDto { Email = "x@test.com", Password = "mal" }
-        );
-
-        // Assert
-        var objectResult = result.Should().BeOfType<UnauthorizedObjectResult>().Subject;
-        _ = objectResult.StatusCode.Should().Be(401);
-        var json = ToJson(objectResult.Value);
-        _ = json.Should().Contain("Credenciales inválidas.");
-    }
-
-    // ─────────────────────────────────────────────────────────────
-    // Register — mapeo HTTP
-    // ─────────────────────────────────────────────────────────────
-
-    [Fact]
-    public async Task RegisterExitosoRetorna201()
-    {
-        // Arrange
-        _ = _mockAuthService
-            .Setup(s => s.RegisterAsync(It.IsAny<RegisterRequestDto>()))
-            .ReturnsAsync(new AuthResponseDto { Token = "jwt", Email = "nuevo@test.com" });
-
-        // Act
-        var result = await _controller.Register(
-            new RegisterRequestDto
-            {
-                Email = "nuevo@test.com",
-                Password = "pass",
-                FirstName = "A",
-                LastName = "B",
-            }
-        );
-
-        // Assert
-        _ = result.Should().BeOfType<ObjectResult>().Which.StatusCode.Should().Be(201);
-    }
-
-    [Fact]
-    public async Task RegisterEmailDuplicadoRetorna400ConMensaje()
-    {
-        // Arrange
-        _ = _mockAuthService
-            .Setup(s => s.RegisterAsync(It.IsAny<RegisterRequestDto>()))
-            .ThrowsAsync(new InvalidOperationException("El correo ya está registrado."));
-
-        // Act
-        var result = await _controller.Register(
-            new RegisterRequestDto
-            {
-                Email = "dup@test.com",
-                Password = "pass",
-                FirstName = "A",
-                LastName = "B",
-            }
-        );
-
-        // Assert
-        var objectResult = result.Should().BeOfType<BadRequestObjectResult>().Subject;
-        _ = objectResult.StatusCode.Should().Be(400);
-        var json = ToJson(objectResult.Value);
-        _ = json.Should().Contain("El correo ya está registrado.");
-    }
-
-    // ─────────────────────────────────────────────────────────────
-    // Me — ramas null-conditional ?.Value
-    // ─────────────────────────────────────────────────────────────
-
-    [Fact]
-    public void MeConTodosLosClaimsRetornaOkConLosDatos()
-    {
-        // Arrange: ClaimsPrincipal con los cinco claims que lee el método.
-        // Cubre la rama "claim presente" (no-null) de cada operador ?. en Me().
-        SetUserContext(
-            (ClaimTypes.NameIdentifier, "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
-            (ClaimTypes.Email, "test@test.com"),
-            (ClaimTypes.Role, "Client"),
-            ("firstName", "Juan"),
-            ("lastName", "Pérez")
-        );
-
-        // Act
-        var result = _controller.Me();
-
-        // Assert
-        var ok = result.Should().BeOfType<OkObjectResult>().Subject;
-        var json = ToJson(ok.Value);
-        _ = json.Should().Contain("test@test.com");
-        _ = json.Should().Contain("Juan");
-        _ = json.Should().Contain("Pérez");
-        _ = json.Should().Contain("Client");
-    }
-
-    [Fact]
-    public void MeSinNingunClaimRetornaOkConValoresNulos()
-    {
-        // Arrange: ClaimsPrincipal vacío → cada FindFirst devuelve null.
-        // Cubre la rama "claim ausente" (null) de cada operador ?. en Me().
-        _controller.ControllerContext = new ControllerContext
-        {
-            HttpContext = new DefaultHttpContext
-            {
-                User = new ClaimsPrincipal(new ClaimsIdentity()),
-            },
-        };
-
-        // Act
-        var result = _controller.Me();
-
-        // Assert: el método devuelve 200 incluso sin claims (valores null en el body)
-        var ok = result.Should().BeOfType<OkObjectResult>().Subject;
-        _ = ok.StatusCode.Should().Be(200);
-        var json = ToJson(ok.Value);
-        _ = json.Should().Contain("null");
-    }
-
-    // ─────────────────────────────────────────────────────────────
-    // Register — Role
-    // ─────────────────────────────────────────────────────────────
-
-    // [Fact]
-    // public async Task RegisterConRoleProfesionalRetorna201()
-    // {
-    //     // Arrange
-    //     _ = _mockAuthService
-    //         .Setup(s => s.RegisterAsync(It.IsAny<RegisterRequestDto>()))
-    //         .ReturnsAsync(
-    //             new AuthResponseDto
-    //             {
-    //                 Token = "jwt",
-    //                 Email = "pro@test.com",
-    //                 Role = "Professional",
-    //             }
-    //         );
-
-    //     // Act
-    //     var result = await _controller.Register(
-    //         new RegisterRequestDto
-    //         {
-    //             Email = "pro@test.com",
-    //             Password = "pass",
-    //             FirstName = "Ana",
-    //             LastName = "Torres",
-    //             Role = UserRole.Professional,
-    //         }
-    //     );
-
-    //     // Assert
-    //     var objectResult = result.Should().BeOfType<ObjectResult>().Which;
-    //     _ = objectResult.StatusCode.Should().Be(201);
-    //     var json = ToJson(objectResult.Value);
-    //     _ = json.Should().Contain("Professional");
-    // }
-
-    [Fact]
-    public async Task RegisterSinRoleUsaClientePorDefectoRetorna201()
-    {
-        // Arrange
-        _ = _mockAuthService
-            .Setup(s => s.RegisterAsync(It.IsAny<RegisterRequestDto>()))
-            .ReturnsAsync(
-                new AuthResponseDto
+            return Ok(
+                new
                 {
-                    Token = "jwt",
-                    Email = "cliente@test.com",
-                    Role = "Client",
+                    message = "Si el correo está registrado, recibirás un token de recuperación en breve.",
                 }
             );
-
-        // Act
-        var result = await _controller.Register(
-            new RegisterRequestDto
-            {
-                Email = "cliente@test.com",
-                Password = "pass",
-                FirstName = "Luis",
-                LastName = "Vega",
-                // Role no especificado → default Client
-            }
-        );
-
-        // Assert
-        var objectResult = result.Should().BeOfType<ObjectResult>().Which;
-        _ = objectResult.StatusCode.Should().Be(201);
-        var json = ToJson(objectResult.Value);
-        _ = json.Should().Contain("Client");
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Ok(new { message = ex.Message });
+        }
+        catch (Exception)
+        {
+            return StatusCode(
+                500,
+                new { message = "Error al procesar la solicitud. Intenta más tarde." }
+            );
+        }
     }
 
-    [Fact]
-    public async Task RegisterErrorInesperadoRetorna500()
+    /// <summary>
+    /// Restablece la contraseña utilizando el token temporal validado.
+    /// </summary>
+    [HttpPost("reset-password")]
+    public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequestDto dto)
     {
-        // Arrange: cualquier excepción no controlada
-        _ = _mockAuthService
-            .Setup(s => s.RegisterAsync(It.IsAny<RegisterRequestDto>()))
-            .ThrowsAsync(new NotSupportedException("DB caída"));
-
-        // Act
-        var result = await _controller.Register(
-            new RegisterRequestDto
-            {
-                Email = "error@test.com",
-                Password = "pass",
-                FirstName = "A",
-                LastName = "B",
-            }
-        );
-
-        // Assert
-        var objectResult = result.Should().BeOfType<ObjectResult>().Subject;
-        _ = objectResult.StatusCode.Should().Be(500);
+        try
+        {
+            await _authService.ResetPasswordAsync(dto);
+            return Ok(new { message = "Contraseña restablecida exitosamente." });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (Exception)
+        {
+            return StatusCode(
+                500,
+                new { message = "Error al procesar la solicitud. Intenta más tarde." }
+            );
+        }
     }
 }

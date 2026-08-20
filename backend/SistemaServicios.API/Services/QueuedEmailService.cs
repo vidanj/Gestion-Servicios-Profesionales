@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using SistemaServicios.API.Interfaces;
 
 namespace SistemaServicios.API.Services;
@@ -16,10 +17,8 @@ public partial class QueuedEmailService : IEmailService
     private readonly ILogger<QueuedEmailService> _logger;
     private readonly TimeSpan _esperaBase;
 
-    /// <param name="esperaBase">
-    /// Base del backoff exponencial. Es inyectable para que las pruebas puedan
-    /// ejercitar los reintentos sin esperar segundos reales.
-    /// </param>
+    // Base del backoff exponencial. Es inyectable para que las pruebas puedan
+    // ejercitar los reintentos sin esperar segundos reales.
     public QueuedEmailService(
         IBackgroundTaskDispatcher queue,
         ILogger<QueuedEmailService> logger,
@@ -31,7 +30,7 @@ public partial class QueuedEmailService : IEmailService
         _esperaBase = esperaBase ?? TimeSpan.FromSeconds(1);
     }
 
-    public async Task SendPasswordResetEmailAsync(string toEmail, string newPassword)
+    public async Task SendPasswordResetEmailAsync(string toEmail, string resetToken)
     {
         await _queue.EnqueueAsync(
             async (serviceProvider, cancellationToken) =>
@@ -42,7 +41,7 @@ public partial class QueuedEmailService : IEmailService
                 {
                     try
                     {
-                        await sender.SendPasswordResetEmailAsync(toEmail, newPassword);
+                        await sender.SendPasswordResetEmailAsync(toEmail, resetToken);
                         return;
                     }
                     catch (Exception ex)

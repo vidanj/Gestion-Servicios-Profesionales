@@ -103,11 +103,11 @@ public class EmailServiceTests
         var fake = new FakeSmtpClient();
         var service = new EmailService(BuildConfig(), fake);
 
-        await service.SendPasswordResetEmailAsync("dest@test.com", "Pass123!");
+        await service.SendPasswordResetEmailAsync("dest@test.com", "token_123");
 
         Assert.NotNull(fake.MensajeEnviado);
         Assert.Equal("dest@test.com", fake.MensajeEnviado!.To[0].Address);
-        Assert.Contains("Tu nueva contraseña", fake.MensajeEnviado.Subject);
+        Assert.Contains("Recuperación de contraseña", fake.MensajeEnviado.Subject);
         Assert.True(fake.MensajeEnviado.IsBodyHtml);
     }
 
@@ -118,15 +118,15 @@ public class EmailServiceTests
         var service = new EmailService(BuildConfig(), fake);
 
         await Assert.ThrowsAsync<SmtpException>(() =>
-            service.SendPasswordResetEmailAsync("dest@test.com", "Pass123!")
+            service.SendPasswordResetEmailAsync("dest@test.com", "token_123")
         );
     }
 
     [Fact]
-    public void BuildEmailBodyContienePasswordYHtml()
+    public void BuildEmailBodyContieneTokenYHtml()
     {
-        var body = EmailService.BuildEmailBody("MiPass99");
-        Assert.Contains("MiPass99", body);
+        var body = EmailService.BuildEmailBody("token_abc_123");
+        Assert.Contains("token_abc_123", body);
         Assert.Contains("<h2>", body);
     }
 }
