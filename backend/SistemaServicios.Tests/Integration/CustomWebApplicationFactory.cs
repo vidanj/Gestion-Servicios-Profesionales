@@ -39,6 +39,14 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
         Environment.SetEnvironmentVariable("DB_PASSWORD", "fake");
         // CORS: origen de prueba que CorsTests utilizará para verificar la política FrontendPolicy.
         Environment.SetEnvironmentVariable("ALLOWED_ORIGINS", "http://localhost:3000");
+        // SMTP: el entorno de pruebas aporta la configuración, igual que con JWT y BD.
+        // Es aquí donde debe resolverse, y no haciendo que EmailService invente valores
+        // por defecto: eso ocultaría una mala configuración en producción.
+        Environment.SetEnvironmentVariable("SMTP_HOST", "smtp.test.com");
+        Environment.SetEnvironmentVariable("SMTP_PORT", "587");
+        Environment.SetEnvironmentVariable("SMTP_USER", "test@test.com");
+        Environment.SetEnvironmentVariable("SMTP_PASSWORD", "password");
+        Environment.SetEnvironmentVariable("SMTP_FROM", "noreply@test.com");
     }
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)

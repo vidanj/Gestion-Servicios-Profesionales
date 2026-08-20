@@ -50,28 +50,16 @@ public class RatingService : IRatingService
 
     public async Task<double> GetProfessionalAverageRatingAsync(Guid professionalId)
     {
-        var ratings = await _ratingRepository.GetByProfessionalIdAsync(professionalId);
+        var scores = await _ratingRepository.GetProfessionalScoresAsync(professionalId);
 
-        if (!ratings.Any())
+        if (!scores.Any())
         {
             return 0;
         }
 
-        return Math.Round(ratings.Average(r => r.Score), 1);
+        return Math.Round(scores.Average(), 1);
     }
 
-    public async Task<IEnumerable<RatingDto>> GetProfessionalRatingsAsync(Guid professionalId)
-    {
-        var ratings = await _ratingRepository.GetByProfessionalIdAsync(professionalId);
-        return ratings.Select(r => new RatingDto
-        {
-            Id = r.Id,
-            RequestId = r.RequestId,
-            ClientId = r.ClientId,
-            ProfessionalId = r.ProfessionalId,
-            Score = r.Score,
-            Comment = r.Comment,
-            CreatedAt = r.CreatedAt,
-        });
-    }
+    public async Task<IEnumerable<RatingDto>> GetProfessionalRatingsAsync(Guid professionalId) =>
+        await _ratingRepository.GetProfessionalRatingDtosAsync(professionalId);
 }

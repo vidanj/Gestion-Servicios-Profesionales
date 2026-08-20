@@ -50,6 +50,7 @@ public static class ApplicationServiceExtensions
                 ["SmtpSettings:User"] = Environment.GetEnvironmentVariable("SMTP_USER"),
                 ["SmtpSettings:Password"] = Environment.GetEnvironmentVariable("SMTP_PASSWORD"),
                 ["SmtpSettings:From"] = Environment.GetEnvironmentVariable("SMTP_FROM"),
+                ["BackupSettings:Directory"] = Environment.GetEnvironmentVariable("BACKUP_DIR"),
             }
         );
 
@@ -72,17 +73,65 @@ public static class ApplicationServiceExtensions
 
         services.AddDbContext<AppDbContext>(options => options.UseNpgsql(connectionString));
 
+        // Trazas y métricas. La exportación solo se activa si hay colector configurado;
+        // la instrumentación se registra siempre porque de ella sale el TraceId que
+        // correlaciona las líneas de log de una misma petición.
+        _ = services.AddTelemetry(config);
+
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IRatingRepository, RatingRepository>();
 
         services.AddScoped<ITokenService, TokenService>();
         services.AddScoped<IAuthService, AuthService>();
+
+        // Cabeceras reenviadas: sin esto, detrás de un proxy la dirección del cliente
+        // es siempre la del proxy. Hoy nada la registra, pero el limitador de intentos
+        // del tramo de blindaje contaría todos los intentos contra una sola dirección
+        // y bloquearía a los usuarios legítimos.
+        services.Configure<Microsoft.AspNetCore.Builder.ForwardedHeadersOptions>(options =>
+            ForwardedHeadersConfiguration.Configure(
+                options,
+                Environment.GetEnvironmentVariable("FORWARDED_LIMIT"),
+                Environment.GetEnvironmentVariable("FORWARDED_NETWORKS")
+            )
+        );
+
+        // Sondas: la etiqueta "ready" separa lo que decide si la instancia puede recibir
+        // tráfico de lo que solo confirma que el proceso sigue vivo.
+        _ = services.AddHealthChecks().AddCheck<DatabaseHealthCheck>("postgresql", tags: ["ready"]);
+
+        services.AddScoped<IProcessRunner, ProcessRunner>();
         services.AddScoped<IBackupService, BackupService>();
+
+        // Almacenamiento de archivos: la base de datos por defecto, porque el disco
+        // del contenedor es efímero y no se comparte entre réplicas. FILE_STORAGE=local
+        // recupera el comportamiento en disco para desarrollo.
+        var fileStorage = Environment.GetEnvironmentVariable("FILE_STORAGE");
+        if (string.Equals(fileStorage, "local", StringComparison.OrdinalIgnoreCase))
+        {
+            services.AddScoped<IFileStorage, LocalFileStorage>();
+        }
+        else
+        {
+            services.AddScoped<IFileStorage, DbFileStorage>();
+        }
+
         services.AddScoped<IUserService, UserService>();
         services.AddScoped<IRatingService, RatingService>();
         services.AddScoped<IServiceRequestRepository, ServiceRequestRepository>();
         services.AddScoped<IServiceRequestService, ServiceRequestService>();
-        services.AddScoped<IEmailService, EmailService>();
+
+        // Cola de trabajos en segundo plano: saca pg_dump y SMTP del ciclo
+        // petición-respuesta. Singleton porque la cola y el estado de los trabajos
+        // se comparten entre peticiones y con el consumidor.
+        services.AddSingleton<IBackgroundTaskDispatcher>(_ => new BackgroundTaskDispatcher());
+        services.AddSingleton<IBackupJobTracker, BackupJobTracker>();
+        services.AddHostedService<QueuedHostedService>();
+
+        // EmailService concreto es el transporte real; QueuedEmailService lo envuelve
+        // para encolarlo. Quien depende de IEmailService no se entera del cambio.
+        services.AddScoped<EmailService>();
+        services.AddScoped<IEmailService, QueuedEmailService>();
         services.AddScoped<IUserLogRepository, UserLogRepository>();
         services.AddScoped<IUserLogService, UserLogService>();
         services.AddScoped<ICategoryRepository, CategoryRepository>();

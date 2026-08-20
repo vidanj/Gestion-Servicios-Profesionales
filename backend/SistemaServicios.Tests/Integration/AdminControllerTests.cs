@@ -164,48 +164,47 @@ public class AdminControllerTests : IClassFixture<AdminWebApplicationFactory>
         _ = response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
+    /// <summary>
+    /// Espera a que el trabajo llegue a un estado final. El respaldo corre en segundo
+    /// plano, así que consultar el estado justo tras aceptar la petición es una carrera.
+    /// </summary>
+    private async Task<BackupJobDto> EsperarEstadoFinal(Guid jobId, string token)
+    {
+        for (var intento = 0; intento < 50; intento++)
+        {
+            var res = await _client.SendAsync(
+                BuildRequest("GET", $"/api/admin/backup/jobs/{jobId}", token)
+            );
+            var job = await res.Content.ReadFromJsonAsync<BackupJobDto>();
+
+            if (job!.Status is BackupJobStatus.Completado or BackupJobStatus.Fallido)
+            {
+                return job;
+            }
+
+            await Task.Delay(100);
+        }
+
+        throw new TimeoutException("El trabajo de respaldo no terminó a tiempo.");
+    }
+
     // ─────────────────────────────────────────────────────────────
     // POST /api/admin/backup — flujo de negocio (con token Admin)
     // ─────────────────────────────────────────────────────────────
 
     [Fact]
-    public async Task CreateBackupConTokenDeAdminBackupExitosoRetorna201()
+    public async Task CreateBackupConTokenDeAdminRetorna202YNoEsperaAlVolcado()
     {
-        // Arrange
-        var backupEsperado = new BackupResponseDto
-        {
-            FileName = "backup_20260226_1200.sql",
-            CreatedAt = new DateTime(2026, 2, 26, 12, 0, 0, DateTimeKind.Utc),
-            FileSizeBytes = 20480,
-        };
-
-        _ = _backupMock.Setup(s => s.GenerateBackupAsync()).ReturnsAsync(backupEsperado);
-
-        var token = GenerarToken(UserRole.Admin);
-        var request = BuildRequest("POST", "/api/admin/backup", token);
-
-        // Act
-        var response = await _client.SendAsync(request);
-
-        // Assert
-        _ = response.StatusCode.Should().Be(HttpStatusCode.Created);
-        var body = await response.Content.ReadFromJsonAsync<BackupResponseDto>();
-        _ = body!.FileName.Should().Be("backup_20260226_1200.sql");
-        _ = body.FileSizeBytes.Should().Be(20480);
-    }
-
-    [Fact]
-    public async Task CreateBackupConTokenDeAdminBackupExitosoRetornaJsonConFileName()
-    {
-        // Arrange
+        // Arrange: el respaldo pasó a segundo plano (issue #126). Antes esta prueba
+        // esperaba 201 con el archivo ya generado.
         _ = _backupMock
             .Setup(s => s.GenerateBackupAsync())
             .ReturnsAsync(
                 new BackupResponseDto
                 {
-                    FileName = "backup_20260226_1430.sql",
-                    CreatedAt = DateTime.UtcNow,
-                    FileSizeBytes = 1024,
+                    FileName = "backup_20260226_1200.sql",
+                    CreatedAt = new DateTime(2026, 2, 26, 12, 0, 0, DateTimeKind.Utc),
+                    FileSizeBytes = 20480,
                 }
             );
 
@@ -214,19 +213,25 @@ public class AdminControllerTests : IClassFixture<AdminWebApplicationFactory>
 
         // Act
         var response = await _client.SendAsync(request);
-        var contenido = await response.Content.ReadAsStringAsync();
 
-        // Assert
-        _ = response.StatusCode.Should().Be(HttpStatusCode.Created);
-        _ = contenido.Should().Contain("backup_20260226_1430.sql");
-        _ = contenido.Should().Contain("fileSizeBytes");
-        _ = contenido.Should().Contain("createdAt");
+        // Assert: la petición se acepta de inmediato
+        _ = response.StatusCode.Should().Be(HttpStatusCode.Accepted);
+        var job = await response.Content.ReadFromJsonAsync<BackupJobDto>();
+        _ = job!.Id.Should().NotBeEmpty();
+
+        // Y el trabajo se completa después, ya fuera de la petición: esto verifica
+        // la tubería entera, incluido el consumidor en segundo plano.
+        var final = await EsperarEstadoFinal(job.Id, token);
+        _ = final.Status.Should().Be(BackupJobStatus.Completado);
+        _ = final.FileName.Should().Be("backup_20260226_1200.sql");
+        _ = final.FileSizeBytes.Should().Be(20480);
     }
 
     [Fact]
-    public async Task CreateBackupConTokenDeAdminBackupFallaRetorna500()
+    public async Task CreateBackupConTokenDeAdminAceptaAunqueElVolcadoVayaAFallar()
     {
-        // Arrange: el servicio lanza una excepción de operación inválida (pg_dump falló)
+        // Arrange: el fallo ocurre en segundo plano, así que la petición se acepta igual.
+        // Antes devolvía 500 porque esperaba a pg_dump dentro de la petición.
         _ = _backupMock
             .Setup(s => s.GenerateBackupAsync())
             .ThrowsAsync(
@@ -238,30 +243,302 @@ public class AdminControllerTests : IClassFixture<AdminWebApplicationFactory>
 
         // Act
         var response = await _client.SendAsync(request);
+        var contenido = await response.Content.ReadAsStringAsync();
+
+        // Assert: nunca 500, y el detalle interno tampoco viaja al cliente
+        _ = response.StatusCode.Should().Be(HttpStatusCode.Accepted);
+        _ = contenido.Should().NotContain("pg_dump");
+
+        // El fallo queda registrado en el estado del trabajo, sin filtrar el detalle
+        var job = await response.Content.ReadFromJsonAsync<BackupJobDto>();
+        var final = await EsperarEstadoFinal(job!.Id, token);
+        _ = final.Status.Should().Be(BackupJobStatus.Fallido);
+        _ = final.Error.Should().NotContain("pg_dump");
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // GET /api/admin/backup/jobs/{id} — estado del trabajo
+    // ─────────────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task GetBackupJobSinTokenRetorna401()
+    {
+        // Arrange
+        var request = BuildRequest("GET", $"/api/admin/backup/jobs/{Guid.NewGuid()}");
+
+        // Act
+        var response = await _client.SendAsync(request);
 
         // Assert
-        _ = response.StatusCode.Should().Be(HttpStatusCode.InternalServerError);
-        var contenido = await response.Content.ReadAsStringAsync();
-        _ = contenido.Should().Contain("pg_dump falló");
+        _ = response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
     [Fact]
-    public async Task CreateBackupConTokenDeAdminLlamaAlServicioUnaVez()
+    public async Task GetBackupJobConTokenDeClientRetorna403()
     {
-        // Arrange: el mock es compartido por IClassFixture; se limpian las invocaciones
-        // previas para que Times.Once solo cuente la llamada de este test.
-        _backupMock.Invocations.Clear();
-        _ = _backupMock
-            .Setup(s => s.GenerateBackupAsync())
-            .ReturnsAsync(new BackupResponseDto { FileName = "backup.sql" });
-
-        var token = GenerarToken(UserRole.Admin);
-        var request = BuildRequest("POST", "/api/admin/backup", token);
+        // Arrange
+        var token = GenerarToken(UserRole.Client);
+        var request = BuildRequest("GET", $"/api/admin/backup/jobs/{Guid.NewGuid()}", token);
 
         // Act
-        _ = await _client.SendAsync(request);
+        var response = await _client.SendAsync(request);
 
-        // Assert: el pipeline no genera llamadas duplicadas al servicio
-        _backupMock.Verify(s => s.GenerateBackupAsync(), Times.Once);
+        // Assert
+        _ = response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
+    [Fact]
+    public async Task GetBackupJobConIdInexistenteRetorna404()
+    {
+        // Arrange
+        var token = GenerarToken(UserRole.Admin);
+        var request = BuildRequest("GET", $"/api/admin/backup/jobs/{Guid.NewGuid()}", token);
+
+        // Act
+        var response = await _client.SendAsync(request);
+
+        // Assert
+        _ = response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task GetBackupJobDelTrabajoRecienCreadoRetorna200()
+    {
+        // Arrange
+        _ = _backupMock
+            .Setup(s => s.GenerateBackupAsync())
+            .ReturnsAsync(new BackupResponseDto { FileName = "backup_20260226_1200.sql" });
+
+        var token = GenerarToken(UserRole.Admin);
+        var creado = await _client.SendAsync(BuildRequest("POST", "/api/admin/backup", token));
+        var job = await creado.Content.ReadFromJsonAsync<BackupJobDto>();
+
+        // Act
+        var response = await _client.SendAsync(
+            BuildRequest("GET", $"/api/admin/backup/jobs/{job!.Id}", token)
+        );
+
+        // Assert
+        _ = response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var consultado = await response.Content.ReadFromJsonAsync<BackupJobDto>();
+        _ = consultado!.Id.Should().Be(job.Id);
+
+        // Se drena el trabajo para no dejarlo activo y afectar a otras pruebas:
+        // el guardia de concurrencia devolvería este mismo trabajo.
+        _ = await EsperarEstadoFinal(job.Id, token);
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // GET /api/admin/backups — listado
+    // ─────────────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task ListBackupsSinTokenRetorna401()
+    {
+        // Arrange
+        var request = BuildRequest("GET", "/api/admin/backups");
+
+        // Act
+        var response = await _client.SendAsync(request);
+
+        // Assert
+        _ = response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact]
+    public async Task ListBackupsConTokenDeClientRetorna403()
+    {
+        // Arrange
+        var token = GenerarToken(UserRole.Client);
+        var request = BuildRequest("GET", "/api/admin/backups", token);
+
+        // Act
+        var response = await _client.SendAsync(request);
+
+        // Assert
+        _ = response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
+    [Fact]
+    public async Task ListBackupsConTokenDeAdminRetornaLaLista()
+    {
+        // Arrange
+        _ = _backupMock
+            .Setup(s => s.ListBackups())
+            .Returns([
+                new BackupResponseDto
+                {
+                    FileName = "backup_20260305_0900.sql",
+                    CreatedAt = DateTime.UtcNow,
+                    FileSizeBytes = 2048,
+                },
+            ]);
+
+        var token = GenerarToken(UserRole.Admin);
+        var request = BuildRequest("GET", "/api/admin/backups", token);
+
+        // Act
+        var response = await _client.SendAsync(request);
+
+        // Assert
+        _ = response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var body = await response.Content.ReadFromJsonAsync<List<BackupResponseDto>>();
+        _ = body.Should().ContainSingle();
+        _ = body![0].FileName.Should().Be("backup_20260305_0900.sql");
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // GET /api/admin/backups/{fileName} — descarga
+    // ─────────────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task DownloadBackupSinTokenRetorna401()
+    {
+        // Arrange
+        var request = BuildRequest("GET", "/api/admin/backups/backup_20260305_0900.sql");
+
+        // Act
+        var response = await _client.SendAsync(request);
+
+        // Assert
+        _ = response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact]
+    public async Task DownloadBackupConTokenDeClientRetorna403()
+    {
+        // Arrange
+        var token = GenerarToken(UserRole.Client);
+        var request = BuildRequest("GET", "/api/admin/backups/backup_20260305_0900.sql", token);
+
+        // Act
+        var response = await _client.SendAsync(request);
+
+        // Assert
+        _ = response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
+    [Fact]
+    public async Task DownloadBackupConTokenDeAdminYArchivoExistenteDevuelveElContenido()
+    {
+        // Arrange
+        var contenidoEsperado = "-- volcado de prueba"u8.ToArray();
+        _ = _backupMock
+            .Setup(s => s.OpenBackup("backup_20260305_0900.sql"))
+            .Returns(() => new MemoryStream(contenidoEsperado));
+
+        var token = GenerarToken(UserRole.Admin);
+        var request = BuildRequest("GET", "/api/admin/backups/backup_20260305_0900.sql", token);
+
+        // Act
+        var response = await _client.SendAsync(request);
+
+        // Assert
+        _ = response.StatusCode.Should().Be(HttpStatusCode.OK);
+        _ = response.Content.Headers.ContentType?.MediaType.Should().Be("application/octet-stream");
+        var body = await response.Content.ReadAsStringAsync();
+        _ = body.Should().Be("-- volcado de prueba");
+    }
+
+    [Fact]
+    public async Task DownloadBackupCuandoElServicioRechazaElNombreRetorna404()
+    {
+        // Arrange: el servicio devuelve null tanto para nombre inválido como para
+        // archivo inexistente; el controller debe traducir ambos al mismo 404.
+        _ = _backupMock.Setup(s => s.OpenBackup(It.IsAny<string>())).Returns((Stream?)null);
+
+        var token = GenerarToken(UserRole.Admin);
+        var request = BuildRequest("GET", "/api/admin/backups/backup_20990101_0000.sql", token);
+
+        // Act
+        var response = await _client.SendAsync(request);
+
+        // Assert
+        _ = response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // Contrato del cable: el estado viaja como nombre, no como número
+    // ─────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Comprueba el JSON <b>en crudo</b>, no el objeto deserializado.
+    /// Las demás pruebas leen la respuesta con ReadFromJsonAsync&lt;BackupJobDto&gt;, así que
+    /// un estado serializado como entero volvía a convertirse en el enum al leerlo y el
+    /// round-trip pasaba. El cliente no tiene ese lujo: compara contra cadenas, y con un
+    /// número no reconocía nunca el estado final. Esta prueba mira lo que el cliente ve.
+    /// </summary>
+    [Fact]
+    public async Task GetBackupJobSerializaElEstadoComoNombreYNoComoNumero()
+    {
+        // Arrange
+        _ = _backupMock
+            .Setup(s => s.GenerateBackupAsync())
+            .ReturnsAsync(
+                new BackupResponseDto
+                {
+                    FileName = "backup_20260226_120000.sql",
+                    CreatedAt = new DateTime(2026, 2, 26, 12, 0, 0, DateTimeKind.Utc),
+                    FileSizeBytes = 20480,
+                }
+            );
+
+        var token = GenerarToken(UserRole.Admin);
+        var creacion = await _client.SendAsync(BuildRequest("POST", "/api/admin/backup", token));
+        var job = await creacion.Content.ReadFromJsonAsync<BackupJobDto>();
+        _ = await EsperarEstadoFinal(job!.Id, token);
+
+        // Act: se lee el cuerpo tal cual llega, sin deserializar
+        var response = await _client.SendAsync(
+            BuildRequest("GET", $"/api/admin/backup/jobs/{job.Id}", token)
+        );
+        var crudo = await response.Content.ReadAsStringAsync();
+
+        // Assert
+        _ = crudo.Should().Contain("\"status\":\"Completado\"");
+        _ = crudo.Should().NotContain("\"status\":2");
+    }
+
+    [Fact]
+    public async Task CreateBackupSerializaElEstadoComoNombreYNoComoNumero()
+    {
+        // El POST devuelve el trabajo recién encolado, y el cliente lo evalúa antes de
+        // empezar a sondear: si ese primer cuerpo trae un número, arranca ya desalineado.
+        _ = _backupMock
+            .Setup(s => s.GenerateBackupAsync())
+            .ReturnsAsync(
+                new BackupResponseDto
+                {
+                    FileName = "backup_20260226_120000.sql",
+                    CreatedAt = new DateTime(2026, 2, 26, 12, 0, 0, DateTimeKind.Utc),
+                    FileSizeBytes = 20480,
+                }
+            );
+
+        var token = GenerarToken(UserRole.Admin);
+
+        // Act
+        var response = await _client.SendAsync(BuildRequest("POST", "/api/admin/backup", token));
+        var crudo = await response.Content.ReadAsStringAsync();
+
+        // Assert: cualquiera de los estados no finales, pero siempre por su nombre
+        _ = crudo.Should().MatchRegex("\"status\":\"(Pendiente|EnProceso|Completado)\"");
+    }
+
+    [Fact]
+    public async Task DownloadBackupConPathTraversalNoAlcanzaArchivosFueraDelDirectorio()
+    {
+        // Arrange: el enrutamiento debe impedir que ".." salga del segmento, y aunque
+        // llegara al servicio, OpenBackup lo rechazaría (probado en las unitarias).
+        _ = _backupMock.Setup(s => s.OpenBackup(It.IsAny<string>())).Returns((Stream?)null);
+
+        var token = GenerarToken(UserRole.Admin);
+        var request = BuildRequest("GET", "/api/admin/backups/..%2F..%2Fappsettings.json", token);
+
+        // Act
+        var response = await _client.SendAsync(request);
+
+        // Assert: en ningún caso 200
+        _ = response.StatusCode.Should().NotBe(HttpStatusCode.OK);
     }
 }

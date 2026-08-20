@@ -44,9 +44,7 @@ public class ServiceRequestService : IServiceRequestService
         };
 
         var created = await _repository.CreateAsync(request);
-
-        var withIncludes = await _repository.GetByIdAsync(created.Id);
-        return MapToDto(withIncludes!);
+        return (await _repository.GetRequestDtoByIdAsync(created.Id))!;
     }
 
     public async Task<ServiceRequestDto> GetRequestByIdAsync(
@@ -55,7 +53,7 @@ public class ServiceRequestService : IServiceRequestService
         string requesterRole
     )
     {
-        var request = await _repository.GetByIdAsync(id);
+        var request = await _repository.GetRequestDtoByIdAsync(id);
         if (request is null)
         {
             throw new KeyNotFoundException($"Solicitud con ID {id} no encontrada.");
@@ -69,31 +67,20 @@ public class ServiceRequestService : IServiceRequestService
             );
         }
 
-        return MapToDto(request);
+        return request;
     }
 
     public async Task<(IEnumerable<ServiceRequestDto> requests, int totalCount)> GetMyRequestsAsync(
         Guid clientId,
         int page,
         int size
-    )
-    {
-        var (requests, totalCount) = await _repository.GetByClientIdAsync(clientId, page, size);
-        return (requests.Select(MapToDto), totalCount);
-    }
+    ) => await _repository.GetDtosByClientIdAsync(clientId, page, size);
 
     public async Task<(
         IEnumerable<ServiceRequestDto> requests,
         int totalCount
-    )> GetProfessionalRequestsAsync(Guid professionalId, int page, int size)
-    {
-        var (requests, totalCount) = await _repository.GetByProfessionalIdAsync(
-            professionalId,
-            page,
-            size
-        );
-        return (requests.Select(MapToDto), totalCount);
-    }
+    )> GetProfessionalRequestsAsync(Guid professionalId, int page, int size) =>
+        await _repository.GetDtosByProfessionalIdAsync(professionalId, page, size);
 
     public async Task<ServiceRequestDto> UpdateStatusAsync(
         int requestId,
@@ -130,9 +117,7 @@ public class ServiceRequestService : IServiceRequestService
         }
 
         await _repository.UpdateAsync(request);
-
-        var withIncludes = await _repository.GetByIdAsync(request.Id);
-        return MapToDto(withIncludes!);
+        return (await _repository.GetRequestDtoByIdAsync(request.Id))!;
     }
 
     private static bool IsValidTransition(RequestStatus current, RequestStatus next)
@@ -154,26 +139,4 @@ public class ServiceRequestService : IServiceRequestService
 
         return false;
     }
-
-    private static ServiceRequestDto MapToDto(Request r) =>
-        new()
-        {
-            Id = r.Id,
-            ClientId = r.ClientId,
-            ClientName = r.Client is not null
-                ? $"{r.Client.FirstName} {r.Client.LastName}"
-                : string.Empty,
-            ProfessionalId = r.ProfessionalId,
-            ProfessionalName = r.Professional is not null
-                ? $"{r.Professional.FirstName} {r.Professional.LastName}"
-                : string.Empty,
-            ServiceId = r.ServiceId,
-            ServiceTitle = r.Service?.Title ?? string.Empty,
-            QuotedPrice = r.QuotedPrice,
-            Status = r.Status,
-            Description = r.Description,
-            RequestDate = r.RequestDate,
-            ScheduledDate = r.ScheduledDate,
-            CompletionDate = r.CompletionDate,
-        };
 }

@@ -12,20 +12,24 @@ namespace SistemaServicios.Tests.Unit;
 public class UserRegistrationStatsTests
 {
     private readonly Mock<IUserRepository> _mockRepo;
-    private readonly Mock<IWebHostEnvironment> _mockEnv;
+    private readonly Mock<IFileStorage> _mockFileStorage;
     private readonly Mock<IUserLogService> _mockLogService;
     private readonly UserService _service;
 
     public UserRegistrationStatsTests()
     {
         _mockRepo = new Mock<IUserRepository>();
-        _mockEnv = new Mock<IWebHostEnvironment>();
+        _mockFileStorage = new Mock<IFileStorage>();
         _mockLogService = new Mock<IUserLogService>();
         _mockLogService
             .Setup(l => l.CreateLogAsync(It.IsAny<CreateUserLogDto>()))
             .ReturnsAsync(new UserLogDto());
 
-        _service = new UserService(_mockRepo.Object, _mockEnv.Object, _mockLogService.Object);
+        _service = new UserService(
+            _mockRepo.Object,
+            _mockFileStorage.Object,
+            _mockLogService.Object
+        );
     }
 
     [Fact]

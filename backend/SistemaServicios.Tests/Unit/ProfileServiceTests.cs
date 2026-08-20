@@ -14,7 +14,7 @@ namespace SistemaServicios.Tests.Unit;
 public class ProfileServiceTests
 {
     private readonly Mock<IUserRepository> _mockRepo;
-    private readonly Mock<IWebHostEnvironment> _mockEnv;
+    private readonly Mock<IFileStorage> _mockFileStorage;
     private readonly UserService _service;
     private readonly Mock<IUserLogService> _mockLogService = null!;
     private readonly User _usuario;
@@ -22,13 +22,17 @@ public class ProfileServiceTests
     public ProfileServiceTests()
     {
         _mockRepo = new Mock<IUserRepository>();
-        _mockEnv = new Mock<IWebHostEnvironment>();
-        _mockEnv.Setup(e => e.WebRootPath).Returns(Path.GetTempPath());
+        _mockFileStorage = new Mock<IFileStorage>();
+
         _mockLogService = new Mock<IUserLogService>();
         _mockLogService
             .Setup(l => l.CreateLogAsync(It.IsAny<CreateUserLogDto>()))
             .ReturnsAsync(new UserLogDto());
-        _service = new UserService(_mockRepo.Object, _mockEnv.Object, _mockLogService.Object);
+        _service = new UserService(
+            _mockRepo.Object,
+            _mockFileStorage.Object,
+            _mockLogService.Object
+        );
 
         _usuario = new User
         {
@@ -181,16 +185,29 @@ public class ProfileServiceTests
         var mockFile = new Mock<IFormFile>();
         mockFile.Setup(f => f.ContentType).Returns("image/jpeg");
         mockFile.Setup(f => f.Length).Returns(500_000); // 500 KB
+        // Magic Bytes reales de JPEG (FF D8 FF E0 00 10)
         mockFile
-            .Setup(f => f.CopyToAsync(It.IsAny<Stream>(), It.IsAny<CancellationToken>()))
-            .Returns(Task.CompletedTask);
+            .Setup(f => f.OpenReadStream())
+            .Returns(new MemoryStream([0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x10]));
+
+        const string urlAlmacenada = "/api/Files/8a1f0c2e-0000-4000-8000-000000000001";
+        _mockFileStorage
+            .Setup(s =>
+                s.SaveForOwnerAsync(
+                    _usuario.Id,
+                    It.IsAny<Stream>(),
+                    "image/jpeg",
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(urlAlmacenada);
 
         // Act
         var resultado = await _service.UpdateProfileImageAsync(_usuario.Id, mockFile.Object);
 
-        // Assert
+        // Assert: la URL la decide el almacenamiento, no el servicio (issue #125)
         resultado.Should().NotBeNull();
-        resultado!.ProfileImageUrl.Should().Contain($"/uploads/avatars/{_usuario.Id}");
+        resultado!.ProfileImageUrl.Should().Be(urlAlmacenada);
         _mockRepo.Verify(r => r.UpdateUserAsync(It.IsAny<User>()), Times.Once);
     }
 
@@ -239,16 +256,37 @@ public class ProfileServiceTests
         var mockFile = new Mock<IFormFile>();
         mockFile.Setup(f => f.ContentType).Returns("image/png");
         mockFile.Setup(f => f.Length).Returns(300_000); // 300 KB — dentro del límite
+        // Magic Bytes reales de PNG (89 50 4E 47 0D 0A 1A 0A)
         mockFile
-            .Setup(f => f.CopyToAsync(It.IsAny<Stream>(), It.IsAny<CancellationToken>()))
-            .Returns(Task.CompletedTask);
+            .Setup(f => f.OpenReadStream())
+            .Returns(new MemoryStream([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]));
+
+        _mockFileStorage
+            .Setup(s =>
+                s.SaveForOwnerAsync(
+                    It.IsAny<Guid>(),
+                    It.IsAny<Stream>(),
+                    It.IsAny<string>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync("/api/Files/8a1f0c2e-0000-4000-8000-000000000002");
 
         // Act
         var resultado = await _service.UpdateProfileImageAsync(_usuario.Id, mockFile.Object);
 
-        // Assert
+        // Assert: el tipo png llega al almacenamiento; ya no viaja en la extensión
         resultado.Should().NotBeNull();
-        resultado!.ProfileImageUrl.Should().EndWith(".png");
+        _mockFileStorage.Verify(
+            s =>
+                s.SaveForOwnerAsync(
+                    _usuario.Id,
+                    It.IsAny<Stream>(),
+                    "image/png",
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Once
+        );
     }
 
     [Fact]

@@ -1,0 +1,94 @@
+name: Frontend — Compilación y Pruebas E2E
+
+# El repositorio tenia dos workflows, ambos de backend. El frontend no se compilaba
+# ni se probaba en ningun momento, pese a existir una suite de Playwright ya escrita.
+# Una suite que solo corre si alguien se acuerda deja de reflejar el estado real del
+# codigo a las pocas semanas.
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - dev
+      - feat/**
+      - chore/**
+      - fix/**
+      - ci/**
+  pull_request:
+    branches:
+      - main
+      - dev
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/frontend-tests.yml'
+
+jobs:
+  build-and-e2e:
+    name: Compilación + Playwright
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      # ── 1. Checkout ──────────────────────────────────────────────
+      - name: Checkout del repositorio
+        uses: actions/checkout@v4
+
+      # ── 2. Node ──────────────────────────────────────────────────
+      - name: Configurar Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      # ── 3. Dependencias ──────────────────────────────────────────
+      # npm ci y no npm install: reproducible y respeta el package-lock.
+      - name: Instalar dependencias
+        run: npm ci
+
+      # ── 4. Compilación ───────────────────────────────────────────
+      # Las pruebas sirven la compilacion de produccion, que es lo que se despliega.
+      - name: Compilar
+        run: npm run build
+
+      # ── 5. Navegador de Playwright ───────────────────────────────
+      # Solo Chromium: anadir Firefox y WebKit triplica el tiempo sin proporcion con
+      # lo que aporta a esta aplicacion.
+      - name: Cachear navegadores de Playwright
+        id: cache-playwright
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('frontend/package-lock.json') }}
+
+      - name: Instalar Chromium
+        if: steps.cache-playwright.outputs.cache-hit != 'true'
+        run: npx playwright install --with-deps chromium
+
+      # Las dependencias del sistema no viven en la cache del navegador.
+      - name: Instalar dependencias del sistema
+        if: steps.cache-playwright.outputs.cache-hit == 'true'
+        run: npx playwright install-deps chromium
+
+      # ── 6. Pruebas E2E ───────────────────────────────────────────
+      # Corren contra mocks: no necesitan la API ni la base de datos.
+      - name: Ejecutar pruebas E2E
+        run: npx playwright test
+
+      # ── 7. Reporte ───────────────────────────────────────────────
+      # if: always() es lo importante: el reporte hace falta precisamente cuando falla.
+      - name: Publicar reporte de Playwright
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            frontend/playwright-report/
+            frontend/test-results/
+          retention-days: 7
+          if-no-files-found: ignore

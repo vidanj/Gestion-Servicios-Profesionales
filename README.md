@@ -76,6 +76,215 @@ dotnet run --project backend/SistemaServicios.API
 #http://localhost:5000/openapi/v1.json
 ```
  
+## 🩺 Sondas de Disponibilidad
+
+Dos endpoints anónimos, pensados para orquestadores y balanceadores. Son distintos a propósito: uno responde *"no me reinicies"* y el otro *"puedo recibir tráfico"*.
+
+| Ruta | Comprueba | Respuestas |
+|------|-----------|-----------|
+| `GET /health/live` | Solo que el proceso esté vivo. **No consulta dependencias.** | `200 Healthy` mientras el proceso responda |
+| `GET /health/ready` | Además, que PostgreSQL esté alcanzable (timeout 3 s) | `200 Healthy` / `503 Unhealthy` |
+
+```bash
+curl -i http://localhost:5000/health/live
+curl -i http://localhost:5000/health/ready
+```
+
+**Por qué liveness no mira la base de datos:** si lo hiciera, una caída de PostgreSQL haría que el orquestador reiniciara un proceso perfectamente sano, una y otra vez, sin arreglar nada. Con la separación, una base caída saca la instancia de rotación (`503` en readiness) pero no provoca reinicios.
+
+La respuesta es JSON con el estado y la duración de cada comprobación. **No incluye la cadena de conexión, el host de la base ni trazas de excepción**: los endpoints son anónimos y el detalle va al log.
+
+El `Dockerfile` declara un `HEALTHCHECK` contra `/health/ready` con `start-period` de 60 s, margen que cubre el tiempo que `entrypoint.sh` dedica a aplicar migraciones antes de que Kestrel empiece a escuchar.
+
+## 🔀 Proxy Inverso y Dirección Real del Cliente
+
+En producción hay **dos proxies** delante de la API: Cloudflare y el edge de Render. Sin configuración, `HttpContext.Connection.RemoteIpAddress` sería la del proxy, no la del usuario.
+
+| Variable | Por defecto | Qué hace |
+|----------|-------------|----------|
+| `FORWARDED_LIMIT` | `2` | Cuántos proxies de confianza hay delante |
+| `FORWARDED_NETWORKS` | *(vacío)* | Redes CIDR del proxy, separadas por comas |
+
+### Por qué `FORWARDED_LIMIT` es lo que protege
+
+`X-Forwarded-For` se **anexa**, no se reemplaza: un cliente puede enviar una dirección inventada y los proxies añadirán las suyas *a la derecha*. El middleware toma las `N` entradas más a la derecha y descarta el resto.
+
+```
+Cliente envía:   X-Forwarded-For: 9.9.9.9
+NGINX anexa:     X-Forwarded-For: 9.9.9.9, 203.0.113.7
+Con LIMIT=1  ->  dirección resuelta: 203.0.113.7   (la falsificada se descarta)
+```
+
+**Un valor mayor que los saltos reales hace confiar en entradas que controla quien llama.** Uno menor deja la dirección del proxy en lugar de la del cliente.
+
+### Cómo determinar el valor correcto
+
+Subir el nivel del middleware de diagnóstico a `Debug` y leer la cadena tal como llega:
+
+```
+Logging__LogLevel__SistemaServicios.API.Middleware=Debug
+```
+
+```
+X-Forwarded-For recibido: 9.9.9.9, 172.18.0.1 | dirección resuelta: 172.18.0.1
+```
+
+`FORWARDED_LIMIT` debe ser el número de entradas que añaden los proxies de confianza, contando desde la derecha.
+
+### Verificarlo en local
+
+`docker-compose.yml` levanta NGINX delante de la API, con la API **sin publicar al exterior**, igual que en producción:
+
+```bash
+docker compose up --build
+curl -s http://localhost:8080/health/ready
+curl -s -H "X-Forwarded-For: 9.9.9.9" http://localhost:8080/health/ready
+```
+
+En producción el proxy lo pone Render; este compose sirve para verificar el comportamiento y como base si algún día se autoaloja.
+
+## 📋 Observabilidad — Logs y Telemetría
+
+### Dos bitácoras que no son lo mismo
+
+El sistema escribe en dos sitios distintos y conviene no confundirlos, porque
+responden preguntas diferentes:
+
+|  | `UserLog` (tabla) | Telemetría (stdout) |
+|---|---|---|
+| Responde | *quién hizo qué* | *por qué el sistema respondió mal o lento* |
+| Vive en | PostgreSQL | stdout → recolector de la plataforma |
+| Se consulta | desde el panel de administración | durante un incidente |
+| Retención | permanente, es evidencia | la que decida el agregador |
+
+Si un usuario reclama que le borraron algo, se mira `UserLog`. Si la aplicación
+va lenta o devuelve 500, se miran los logs de operación.
+
+### El puente entre ambas: `UserLog.TraceId`
+
+Cada entrada de `UserLog` guarda el `TraceId` de la petición que la originó. Es
+lo que permite pasar de una fila del panel —*"Usuario ana@ejemplo.com
+eliminado"*— a **todo lo que ocurrió técnicamente en esa misma petición**:
+
+```bash
+docker logs <contenedor> | grep '"TraceId":"<el de la fila>"'
+```
+
+Sin ese campo las dos bitácoras quedan incomunicadas y, ante una reclamación,
+hay que adivinar qué líneas del log corresponden a la acción registrada.
+
+El valor se toma de la petición en curso, **nunca del cuerpo de la petición**:
+aceptarlo del cliente permitiría apuntar una entrada a la traza de otra y el
+enlace dejaría de ser fiable. Es anulable porque una tarea en segundo plano no
+tiene traza, y porque las filas anteriores a la columna no la tienen; un valor
+inventado sería peor que su ausencia.
+
+### Formato
+
+Serilog escribe **JSON compacto a stdout**, nunca a archivo: el contenedor es
+efímero y un archivo se perdería en cada redespliegue. Docker y Render recogen
+stdout sin configurar nada.
+
+```bash
+docker logs -f <contenedor>                 # en local
+# En Render: pestaña "Logs" del servicio
+```
+
+Cada línea lleva `TraceId` y `SpanId`. **Esa es la propiedad que hace útil el
+log**: durante un incidente permite reunir todas las líneas de una misma
+petición en lugar de adivinar cuáles corresponden al usuario que se quejó.
+
+```bash
+# Todas las líneas de una petición concreta
+docker logs <contenedor> | grep '"TraceId":"06ded6db324384e443897587f45aec09"'
+```
+
+Un login fallido en producción deja **un solo evento**, elevado a `Warning` por
+ser 4xx:
+
+```json
+{"@t":"...","@mt":"HTTP {RequestMethod} {RequestPath} responded {StatusCode} in {Elapsed:0.0000} ms",
+ "@l":"Warning","StatusCode":401,"Elapsed":1361.32,"ClientIp":"::1",
+ "TraceId":"06ded6db...","SpanId":"5ed3357b...","Environment":"Production"}
+```
+
+Las sondas de `/health` **no generan ninguna línea**: el contenedor las consulta
+cada 30 s y, sin excluirlas, el log sería sobre todo ruido de sondas. Si una
+sonda falla se nota porque el contenedor se reinicia, no por una línea de log.
+
+### Secretos
+
+Un enricher redacta las propiedades cuyo nombre delata un secreto —contraseñas,
+tokens, `Authorization`, cadenas de conexión, `PGPASSWORD`—, incluso dentro de
+objetos volcados enteros con `{@Dto}`.
+
+**Su alcance tiene un límite que conviene conocer:** actúa sobre las propiedades
+estructuradas, no sobre texto ya interpolado en la plantilla del mensaje. Es
+decir, `_logger.LogInformation($"clave {clave}")` sí filtra el secreto. La regla
+sigue siendo **no meter secretos en la plantilla**; el enricher es la red que
+recoge el descuido habitual, que es volcar el DTO completo. Ambos límites están
+documentados con pruebas en `SecretRedactionEnricherTests`.
+
+### Niveles
+
+Se configuran en `appsettings.json` (producción) y `appsettings.Development.json`:
+`Information` en producción y `Debug` en desarrollo, con el SQL de EF Core en
+`Warning` en producción para no volcar cada consulta.
+
+### Avisos esperados al arrancar
+
+Dos avisos de **Data Protection** aparecen en cada arranque dentro del contenedor:
+
+```
+Storing keys in a directory '/root/.aspnet/DataProtection-Keys' that may not be
+persisted outside of the container.
+No XML encryptor configured. Key {…} may be persisted to storage in unencrypted form.
+```
+
+**Hoy son inofensivos, y conviene saber por qué.** Nada en esta aplicación usa Data
+Protection: no hay autenticación por cookie, ni antiforgery, ni sesiones, ni ningún
+`IDataProtector`. La autenticación es JWT firmado con `JWT_KEY`, que viene del entorno y
+no tiene relación con esas claves. ASP.NET Core inicializa el subsistema de todos modos,
+y de ahí los avisos. Que las claves se pierdan en cada redespliegue no cuesta nada,
+porque no protegen nada.
+
+**Cuándo dejan de ser inofensivos:** en el momento en que se añada autenticación por
+cookie, antiforgery o cualquier uso de `IDataProtector`. A partir de ahí, perder las
+claves al redesplegar invalidaría las sesiones o los tokens de todos los usuarios en cada
+despliegue. La solución entonces es persistirlas —por ejemplo en PostgreSQL, con
+`Microsoft.AspNetCore.DataProtection.EntityFrameworkCore`— y cifrarlas. No se hizo antes
+porque sería añadir una dependencia para proteger algo que no existe.
+
+### Trazas
+
+OpenTelemetry instrumenta ASP.NET Core, `HttpClient` y Npgsql. La exportación al
+colector es **opcional**:
+
+```bash
+OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317
+```
+
+Sin esa variable la aplicación **arranca igual y no exporta nada**, que es la
+situación actual: no hay colector desplegado. La instrumentación sigue activa
+aunque no se exporte, porque de ella sale el `TraceId` de los logs.
+
+No se usa el paquete de instrumentación de EF Core ni el exportador de
+Prometheus: ambos siguen en preestreno y este build trata las advertencias como
+errores. Las trazas de base de datos se obtienen del driver con `AddNpgsql()`,
+que sí es estable.
+
+## 📊 Índices de Base de Datos — Notas de Diseño
+
+### `Users.Status` (índice parcial)
+
+```csharp
+modelBuilder.Entity<User>().HasIndex(u => u.Status).HasFilter("\"Status\" = true");
+```
+
+**Por qué parcial y no un índice normal:** `Status` es un `bool` (baja cardinalidad — solo dos valores posibles), y todas las consultas de lectura del sistema filtran exclusivamente por usuarios activos (`Status = true`) — el listado paginado (`GetUsersAsync`/`GetUserDtosAsync`) y la búsqueda por Id (`GetByIdAsync`/`GetUserDtoByIdAsync`) en `UserRepository.cs`. Un índice completo indexaría también las filas con `Status = false`, que nunca se consultan directamente (el borrado de usuario es lógico —soft delete—, no se filtra por inactivos en ningún flujo actual), desperdiciando espacio y costo de mantenimiento en cada escritura sin beneficio de lectura.
+
+**Vigencia del criterio:** si `Status` deja de ser `bool` y pasa a un enum con más estados, este índice debe reevaluarse — el filtro `"Status" = true` ya no tendría sentido tal cual, y habría que identificar cuál sería el nuevo "camino caliente" de lectura (ej. un estado `Active` entre varios) antes de decidir si el índice parcial se mantiene, se amplía, o se reemplaza por uno completo.
+
 # Pruebas Unitarias e Integración
 
 ## Estructura de las Pruebas

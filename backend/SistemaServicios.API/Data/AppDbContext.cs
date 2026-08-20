@@ -24,6 +24,8 @@ public class AppDbContext : DbContext
 
     public DbSet<UserLog> UserLogs { get; set; }
 
+    public DbSet<StoredFile> StoredFiles { get; set; }
+
     // Configuración especial de relaciones (Fluent API)
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -70,5 +72,38 @@ public class AppDbContext : DbContext
             .WithMany()
             .HasForeignKey(l => l.UserId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        // Índice compuesto: acelera el listado paginado de solicitudes por profesional
+        // ordenado por fecha, evitando table scans a medida que crece el volumen
+        modelBuilder.Entity<Request>().HasIndex(r => new { r.ProfessionalId, r.RequestDate });
+
+        // Único: evita condición de carrera en el registro (antes solo se validaba en la app con EmailExistsAsync)
+        modelBuilder.Entity<User>().HasIndex(u => u.Email).IsUnique();
+
+        // Acelera listados/reportes ordenados u filtrados por fecha de alta
+        modelBuilder.Entity<User>().HasIndex(u => u.CreatedAt);
+
+        // Índice parcial en Status: la columna es de baja cardinalidad (bool: activo/inactivo).
+        // Se indexa solo Status = true porque todas las consultas de lectura del sistema
+        // (listado paginado y búsqueda por Id en UserRepository) filtran exclusivamente por
+        // usuarios activos — el borrado es lógico (soft delete) y no existe, a la fecha,
+        // ningún flujo que liste o busque usuarios con Status = false. Si en el futuro Status
+        // deja de ser booleano (ej. se convierte en enum con más estados), este índice debe
+        // revisarse: HasFilter ya no aplicaría tal cual y habría que evaluar qué subconjunto
+        // de estados sigue siendo el "camino caliente" de lectura.
+        modelBuilder.Entity<User>().HasIndex(u => u.Status).HasFilter("\"Status\" = true");
+
+        // StoredFile: mismo criterio que el resto, sin borrado en cascada.
+        // El borrado de usuarios es lógico, así que sus archivos se conservan.
+        modelBuilder
+            .Entity<StoredFile>()
+            .HasOne(f => f.Owner)
+            .WithMany()
+            .HasForeignKey(f => f.OwnerUserId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // El reemplazo de avatar busca por dueño: sin índice sería un scan completo
+        // de una tabla que guarda binarios.
+        modelBuilder.Entity<StoredFile>().HasIndex(f => f.OwnerUserId);
     }
 }

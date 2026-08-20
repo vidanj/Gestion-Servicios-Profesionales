@@ -1,0 +1,83 @@
+name: Seguridad — CodeQL
+
+# El repositorio es publico, asi que CodeQL esta disponible sin GitHub Advanced
+# Security. La Parte H de la auditoria encontro ocho vulnerabilidades por revision
+# manual; varias son del tipo que CodeQL detecta. Una auditoria es una foto de un
+# instante: esto evita que la proxima regresion del mismo tipo llegue a main sin
+# que nadie la vea.
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - dev
+  pull_request:
+    branches:
+      - main
+      - dev
+  schedule:
+    # Semanal: el escaneo programado detecta reglas nuevas sobre codigo que no ha
+    # cambiado, algo que los disparadores por push nunca cubren.
+    - cron: '17 4 * * 1'
+
+jobs:
+  analyze:
+    name: Analizar ${{ matrix.language }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    # Permisos minimos: solo lo que necesita para publicar los resultados.
+    permissions:
+      security-events: write
+      contents: read
+      actions: read
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - language: csharp
+            build-mode: manual
+          - language: javascript-typescript
+            build-mode: none
+
+    steps:
+      # ── 1. Checkout ──────────────────────────────────────────────
+      - name: Checkout del repositorio
+        uses: actions/checkout@v4
+
+      # ── 2. .NET 9 (solo para el analisis de C#) ───────────────────
+      - name: Configurar .NET 9
+        if: matrix.language == 'csharp'
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      # ── 3. Inicializar CodeQL ────────────────────────────────────
+      - name: Inicializar CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: ${{ matrix.build-mode }}
+          # security-and-quality amplia el conjunto por defecto, que solo trae las
+          # consultas de seguridad de mayor confianza.
+          queries: security-and-quality
+
+      # ── 4. Compilar (C#) ─────────────────────────────────────────
+      # Se compila a mano en lugar de usar autobuild: la solucion tiene
+      # TreatWarningsAsErrors y herramientas locales, y un autobuild que falle
+      # dejaria el analisis de C# vacio sin que el workflow lo indique claramente.
+      - name: Restaurar paquetes NuGet
+        if: matrix.language == 'csharp'
+        run: dotnet restore backend/SistemaServicios.sln
+
+      - name: Compilar solucion
+        if: matrix.language == 'csharp'
+        run: dotnet build backend/SistemaServicios.sln --no-restore --configuration Release
+
+      # ── 5. Analizar ──────────────────────────────────────────────
+      - name: Ejecutar analisis de CodeQL
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: '/language:${{ matrix.language }}'

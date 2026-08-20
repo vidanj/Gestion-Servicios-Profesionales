@@ -177,9 +177,9 @@ namespace SistemaServicios.API.Migrations
 
                     b.HasIndex("ClientId");
 
-                    b.HasIndex("ProfessionalId");
-
                     b.HasIndex("ServiceId");
+
+                    b.HasIndex("ProfessionalId", "RequestDate");
 
                     b.ToTable("Requests");
                 });
@@ -233,6 +233,37 @@ namespace SistemaServicios.API.Migrations
                     b.ToTable("Services");
                 });
 
+            modelBuilder.Entity("SistemaServicios.API.Models.StoredFile", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<byte[]>("Content")
+                        .IsRequired()
+                        .HasColumnType("bytea");
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("OwnerUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<long>("SizeBytes")
+                        .HasColumnType("bigint");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OwnerUserId");
+
+                    b.ToTable("StoredFiles");
+                });
+
             modelBuilder.Entity("SistemaServicios.API.Models.User", b =>
                 {
                     b.Property<Guid>("Id")
@@ -282,6 +313,14 @@ namespace SistemaServicios.API.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("CreatedAt");
+
+                    b.HasIndex("Email")
+                        .IsUnique();
+
+                    b.HasIndex("Status")
+                        .HasFilter("\"Status\" = true");
+
                     b.ToTable("Users");
                 });
 
@@ -303,6 +342,10 @@ namespace SistemaServicios.API.Migrations
 
                     b.Property<int>("Status")
                         .HasColumnType("integer");
+
+                    b.Property<string>("TraceId")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
 
                     b.Property<Guid>("UserId")
                         .HasColumnType("uuid");
@@ -447,6 +490,17 @@ namespace SistemaServicios.API.Migrations
                     b.Navigation("Category");
 
                     b.Navigation("Professional");
+                });
+
+            modelBuilder.Entity("SistemaServicios.API.Models.StoredFile", b =>
+                {
+                    b.HasOne("SistemaServicios.API.Models.User", "Owner")
+                        .WithMany()
+                        .HasForeignKey("OwnerUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Owner");
                 });
 
             modelBuilder.Entity("SistemaServicios.API.Models.UserLog", b =>

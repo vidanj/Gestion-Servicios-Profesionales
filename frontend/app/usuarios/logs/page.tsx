@@ -47,6 +47,7 @@ type LogRow = {
   action: number;
   detail?: string;
   status: number;
+  traceId?: string;
   createdAt: string;
 };
 
@@ -242,6 +243,21 @@ export default function UserLogsPage() {
                           </HStack>
                           {log.detail && <Text color="muted">{log.detail}</Text>}
                           <Text fontSize="sm" color="muted">{log.userName}</Text>
+                          {/* Traza de la peticion que origino la accion. Es lo que permite
+                              pasar de esta fila a las lineas de log de operacion de esa
+                              misma peticion; sin mostrarla, el enlace existe en los datos
+                              pero no se puede usar desde aqui. */}
+                          {log.traceId && (
+                            <Text
+                              data-testid="log-trace-id"
+                              fontSize="xs"
+                              fontFamily="mono"
+                              color="muted"
+                              title="Traza de la peticion. Busca este valor en los logs del servidor."
+                            >
+                              traza {log.traceId}
+                            </Text>
+                          )}
                         </Stack>
                         <Text fontSize="sm" color="muted">
                           {new Date(log.createdAt).toLocaleString("es-HN")}

@@ -185,22 +185,23 @@ public class ForgotPasswordServiceTests
     // ForgotPasswordAsync — errores esperados
     // ─────────────────────────────────────────────────────────────
 
+    // Antes, estas rutas lanzaban excepciones con mensajes distintos y el controller
+    // las devolvía al cliente. La de cuenta desactivada confirmaba que el correo
+    // estaba registrado: enumeración de cuentas. Ahora ambas terminan en silencio.
+
     [Fact]
-    public async Task ForgotPasswordAsyncEmailNoRegistradoLanzaInvalidOperationException()
+    public async Task ForgotPasswordAsyncEmailNoRegistradoTerminaEnSilencio()
     {
         // Arrange: el repositorio devuelve null (usuario no encontrado)
         _ = _mockRepo.Setup(r => r.GetByEmailAsync(It.IsAny<string>())).ReturnsAsync((User?)null);
 
         var dto = new ForgotPasswordRequestDto { Email = "noexiste@test.com" };
 
-        // Act & Assert
-        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            _authService.ForgotPasswordAsync(dto)
-        );
+        // Act
+        var ex = await Record.ExceptionAsync(() => _authService.ForgotPasswordAsync(dto));
 
-        _ = ex
-            .Message.Should()
-            .Be("Si el correo está registrado, recibirás tu nueva contraseña en breve.");
+        // Assert: no lanza, para que la respuesta no dependa de si la cuenta existe
+        _ = ex.Should().BeNull();
     }
 
     [Fact]
@@ -212,9 +213,7 @@ public class ForgotPasswordServiceTests
         var dto = new ForgotPasswordRequestDto { Email = "noexiste@test.com" };
 
         // Act
-        _ = await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            _authService.ForgotPasswordAsync(dto)
-        );
+        await _authService.ForgotPasswordAsync(dto);
 
         // Assert: nunca se actualiza la DB ni se envía email
         _mockRepo.Verify(r => r.UpdateUserAsync(It.IsAny<User>()), Times.Never);
@@ -225,7 +224,7 @@ public class ForgotPasswordServiceTests
     }
 
     [Fact]
-    public async Task ForgotPasswordAsyncCuentaDesactivadaLanzaInvalidOperationException()
+    public async Task ForgotPasswordAsyncCuentaDesactivadaTerminaEnSilencio()
     {
         // Arrange: usuario con Status = false
         var usuarioInactivo = new User
@@ -245,13 +244,12 @@ public class ForgotPasswordServiceTests
 
         var dto = new ForgotPasswordRequestDto { Email = "inactivo@test.com" };
 
-        // Act & Assert
-        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            _authService.ForgotPasswordAsync(dto)
-        );
+        // Act
+        var ex = await Record.ExceptionAsync(() => _authService.ForgotPasswordAsync(dto));
 
-        ex.Message.Should()
-            .Be("Si el correo está registrado, recibirás tu nueva contraseña en breve.");
+        // Assert: no lanza y no revela que la cuenta existe. Esta prueba afirmaba antes
+        // lo contrario, que el mensaje era "La cuenta está desactivada."
+        _ = ex.Should().BeNull();
     }
 
     [Fact]
@@ -276,9 +274,7 @@ public class ForgotPasswordServiceTests
         var dto = new ForgotPasswordRequestDto { Email = "inactivo@test.com" };
 
         // Act
-        _ = await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            _authService.ForgotPasswordAsync(dto)
-        );
+        await _authService.ForgotPasswordAsync(dto);
 
         // Assert: nada se ejecuta después de detectar cuenta desactivada
         _mockRepo.Verify(r => r.UpdateUserAsync(It.IsAny<User>()), Times.Never);

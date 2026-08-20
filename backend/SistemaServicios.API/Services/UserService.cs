@@ -12,35 +12,27 @@ public class UserService : IUserService
     private static readonly string[] AllowedImageMimeTypes = ["image/jpeg", "image/png"];
 
     private readonly IUserRepository _userRepository;
-    private readonly IWebHostEnvironment _env;
+    private readonly IFileStorage _fileStorage;
     private readonly IUserLogService _logService;
 
     public UserService(
         IUserRepository userRepository,
-        IWebHostEnvironment env,
+        IFileStorage fileStorage,
         IUserLogService logService
     )
     {
         _userRepository = userRepository;
-        _env = env;
+        _fileStorage = fileStorage;
         _logService = logService;
     }
 
     public async Task<(IEnumerable<UserDto> users, int totalCount)> GetAllUsersAsync(
         int page,
         int size
-    )
-    {
-        var (users, total) = await _userRepository.GetUsersAsync(page, size);
-        var dtos = users.Select(u => MapToDto(u));
-        return (dtos, total);
-    }
+    ) => await _userRepository.GetUserDtosAsync(page, size);
 
-    public async Task<UserDto?> GetUserByIdAsync(Guid id)
-    {
-        var user = await _userRepository.GetByIdAsync(id);
-        return user == null ? null : MapToDto(user);
-    }
+    public async Task<UserDto?> GetUserByIdAsync(Guid id) =>
+        await _userRepository.GetUserDtoByIdAsync(id);
 
     public async Task<UserDto> CreateUserAsync(CreateUserDto createUserDto)
     {
@@ -221,19 +213,21 @@ public class UserService : IUserService
             throw new InvalidOperationException("La imagen no puede superar los 2 MB.");
         }
 
-        var ext = foto.ContentType == "image/png" ? ".png" : ".jpg";
-        var uploadsDir = Path.Combine(_env.WebRootPath, "uploads", "avatars");
-        Directory.CreateDirectory(uploadsDir);
+        await using var contenido = foto.OpenReadStream();
 
-        var fileName = $"{userId}{ext}";
-        var filePath = Path.Combine(uploadsDir, fileName);
-
-        await using (var stream = new FileStream(filePath, FileMode.Create))
+        // Validar firma de archivo (magic bytes) antes de procesar
+        if (!IsValidImageSignature(contenido))
         {
-            await foto.CopyToAsync(stream);
+            throw new InvalidOperationException(
+                "El archivo proporcionado no es una imagen válida o está dañado."
+            );
         }
 
-        user.ProfileImageUrl = $"/uploads/avatars/{fileName}";
+        user.ProfileImageUrl = await _fileStorage.SaveForOwnerAsync(
+            userId,
+            contenido,
+            foto.ContentType
+        );
         user.UpdatedAt = DateTime.UtcNow;
 
         await _userRepository.UpdateUserAsync(user);
@@ -259,6 +253,43 @@ public class UserService : IUserService
         }
 
         return await _userRepository.GetRegistrationsByDateAsync(days);
+    }
+
+    /// <summary>
+    /// Valida los Magic Bytes (firma binaria) del stream para verificar que sea JPEG o PNG real.
+    /// </summary>
+    private static bool IsValidImageSignature(Stream stream)
+    {
+        Span<byte> header = stackalloc byte[8];
+        var bytesRead = stream.Read(header);
+
+        if (bytesRead < 4)
+        {
+            return false;
+        }
+
+        // Reiniciar la posición del stream para que el almacenamiento pueda leerlo completo
+        if (stream.CanSeek)
+        {
+            stream.Position = 0;
+        }
+
+        // Firma JPEG: FF D8 FF
+        var isJpeg = header[0] == 0xFF && header[1] == 0xD8 && header[2] == 0xFF;
+
+        // Firma PNG: 89 50 4E 47 0D 0A 1A 0A
+        var isPng =
+            bytesRead >= 8
+            && header[0] == 0x89
+            && header[1] == 0x50
+            && header[2] == 0x4E
+            && header[3] == 0x47
+            && header[4] == 0x0D
+            && header[5] == 0x0A
+            && header[6] == 0x1A
+            && header[7] == 0x0A;
+
+        return isJpeg || isPng;
     }
 
     private static UserDto MapToDto(User u) =>

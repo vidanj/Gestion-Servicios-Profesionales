@@ -239,7 +239,15 @@ public class ProfileControllerTests : IClassFixture<CustomWebApplicationFactory>
 
         res.StatusCode.Should().Be(HttpStatusCode.OK);
         var user = await res.Content.ReadFromJsonAsync<UserDto>();
-        user!.ProfileImageUrl.Should().Contain("/uploads/avatars/");
+
+        // La imagen ya no vive en el disco del contenedor: la URL apunta al endpoint
+        // que la sirve desde la base de datos.
+        user!.ProfileImageUrl.Should().StartWith("/api/Files/");
+
+        // Y se comprueba que la imagen se recupera de verdad por esa URL, sin token.
+        var imagen = await _client.GetAsync(new Uri(user.ProfileImageUrl!, UriKind.Relative));
+        imagen.StatusCode.Should().Be(HttpStatusCode.OK);
+        (await imagen.Content.ReadAsByteArrayAsync()).Should().NotBeEmpty();
     }
 
     [Fact]
@@ -248,7 +256,8 @@ public class ProfileControllerTests : IClassFixture<CustomWebApplicationFactory>
         var (token, _) = await RegistrarUsuario();
 
         using var content = new MultipartFormDataContent();
-        var imageBytes = new byte[] { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A }; // cabecera PNG mínima
+        // Cabecera PNG completa oficial (8 bytes): 89 50 4E 47 0D 0A 1A 0A
+        var imageBytes = new byte[] { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A };
         var fileContent = new ByteArrayContent(imageBytes);
         fileContent.Headers.ContentType = new MediaTypeHeaderValue("image/png");
         content.Add(fileContent, "foto", "avatar.png");
@@ -260,7 +269,11 @@ public class ProfileControllerTests : IClassFixture<CustomWebApplicationFactory>
 
         res.StatusCode.Should().Be(HttpStatusCode.OK);
         var user = await res.Content.ReadFromJsonAsync<UserDto>();
-        user!.ProfileImageUrl.Should().EndWith(".png");
+
+        user!.ProfileImageUrl.Should().StartWith("/api/Files/");
+
+        var imagen = await _client.GetAsync(new Uri(user.ProfileImageUrl!, UriKind.Relative));
+        imagen.Content.Headers.ContentType?.MediaType.Should().Be("image/png");
     }
 
     [Fact]
