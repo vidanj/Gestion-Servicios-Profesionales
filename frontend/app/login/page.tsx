@@ -11,6 +11,8 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [loaderImageError, setLoaderImageError] = useState(false);
   const apiUrl = process.env.NEXT_PUBLIC_ALLOWED_PATH;
 
   const validateForm = () => {
@@ -39,8 +41,11 @@ export default function LoginPage() {
   };
 
   const handleLogin = async () => {
+    if (isLoading) return;
+
     setError("");
     if (!validateForm()) return;
+    setIsLoading(true);
 
     try {
       const res = await fetch(`${apiUrl}/api/auth/login`, {
@@ -72,6 +77,8 @@ export default function LoginPage() {
     } catch (error) {
       console.error(error);
       setError("Error de conexión");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -107,6 +114,48 @@ export default function LoginPage() {
           boxShadow: "0 25px 50px -12px rgba(0,0,0,0.8)",
           overflow: "hidden",
         }}>
+          {isLoading && (
+            <div
+              data-testid="login-loading-overlay"
+              style={{
+                position: "absolute",
+                inset: 0,
+                zIndex: 30,
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "0.75rem",
+                background: "rgba(7,10,15,0.75)",
+                backdropFilter: "blur(2px)",
+              }}
+            >
+              {!loaderImageError ? (
+                <img
+                  src="/blocks-shuffle-3.svg"
+                  alt="Cargando"
+                  style={{ width: "84px", height: "84px", objectFit: "contain" }}
+                  onError={() => setLoaderImageError(true)}
+                />
+              ) : (
+                <div
+                  aria-label="Cargando"
+                  style={{
+                    width: "56px",
+                    height: "56px",
+                    borderRadius: "9999px",
+                    border: "4px solid rgba(255,255,255,0.25)",
+                    borderTopColor: "#a855f7",
+                    animation: "login-spin 0.9s linear infinite",
+                  }}
+                />
+              )}
+              <p style={{ margin: 0, color: "white", fontWeight: 600 }}>Iniciando sesión...</p>
+            </div>
+          )}
+
+          <style>{`@keyframes login-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
+
           {/* Top color section */}
           <div style={{ position: "relative", height: "10rem", background: "#0b0f14" }}>
             <div style={{
@@ -154,6 +203,7 @@ export default function LoginPage() {
                 placeholder="correo electrónico"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                disabled={isLoading}
                 style={{
                   display: "block", width: "100%", boxSizing: "border-box",
                   padding: "1.25rem 1.5rem",
@@ -176,6 +226,7 @@ export default function LoginPage() {
                 placeholder="contraseña"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                disabled={isLoading}
                 style={{
                   display: "block", width: "100%", boxSizing: "border-box",
                   padding: "1.25rem 1.5rem",
@@ -206,6 +257,7 @@ export default function LoginPage() {
                 data-testid="login-button"
                 type="button"
                 onClick={handleLogin}
+                disabled={isLoading}
                 style={{
                   display: "block", width: "100%", boxSizing: "border-box",
                   padding: "1rem",
@@ -219,11 +271,13 @@ export default function LoginPage() {
                   boxShadow: "0 10px 15px -3px rgba(124,58,237,0.3)",
                   fontFamily: "inherit",
                   letterSpacing: "0.05em",
+                  opacity: isLoading ? 0.8 : 1,
+                  pointerEvents: isLoading ? "none" : "auto",
                 }}
                 onMouseEnter={e => { e.currentTarget.style.background = "linear-gradient(to right, #5b21b6, #6d28d9)"; }}
                 onMouseLeave={e => { e.currentTarget.style.background = "linear-gradient(to right, #6d28d9, #7c3aed)"; }}
               >
-                LOGIN
+                {isLoading ? "INICIANDO..." : "LOGIN"}
               </button>
               {error && <p data-testid="error-message" style={{ color: "red" }}>{error}</p>}
             </form>

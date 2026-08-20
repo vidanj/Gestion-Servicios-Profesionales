@@ -11,6 +11,8 @@ export default function RegisterPage() {
     const [lastName, setLastName] = useState("");
     const [phoneNumber, setPhoneNumber] = useState("");
     const [role, setRole] = useState("");
+    const [isLoading, setIsLoading] = useState(false);
+    const [loaderImageError, setLoaderImageError] = useState(false);
 
     const [roleOpen, setRoleOpen] = useState(false);
 
@@ -22,7 +24,7 @@ export default function RegisterPage() {
     const selectedRole = roles.find(r => r.value === role);
 
     const [error, setError] = useState("");
-    const apiUrl = process.env.NEXT_PUBLIC_ALLOWED_PATH;
+    const apiUrl = process.env.NEXT_PUBLIC_ALLOWED_PATH || "http://localhost:5000";
 
     const validateForm = () => {
         if (!firstName.trim()) {
@@ -62,8 +64,11 @@ export default function RegisterPage() {
     };
 
     const handleRegister = async () => {
+        if (isLoading) return;
+
         setError("");
         if (!validateForm()) return;
+        setIsLoading(true);
 
         try {
             const res = await fetch(`${apiUrl}/api/Auth/register`, {
@@ -73,7 +78,8 @@ export default function RegisterPage() {
             });
 
             if (!res.ok) {
-                setError("Error al registrar");
+                const responseError = await res.json().catch(() => null);
+                setError(responseError?.message || "Error al registrar");
                 return;
             }
 
@@ -83,6 +89,8 @@ export default function RegisterPage() {
         } catch (error) {
             console.error(error);
             setError("Error de conexión");
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -119,6 +127,48 @@ export default function RegisterPage() {
                     background: "rgba(13,19,27,0.95)", border: "1px solid rgba(255,255,255,0.08)",
                     boxShadow: "0 25px 50px -12px rgba(0,0,0,0.8)", overflow: "hidden",
                 }}>
+                    {isLoading && (
+                        <div
+                            data-testid="register-loading-overlay"
+                            style={{
+                                position: "absolute",
+                                inset: 0,
+                                zIndex: 30,
+                                display: "flex",
+                                flexDirection: "column",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                gap: "0.75rem",
+                                background: "rgba(7,10,15,0.75)",
+                                backdropFilter: "blur(2px)",
+                            }}
+                        >
+                            {!loaderImageError ? (
+                                <img
+                                    src="/blocks-shuffle-3.svg"
+                                    alt="Registrando"
+                                    style={{ width: "84px", height: "84px", objectFit: "contain" }}
+                                    onError={() => setLoaderImageError(true)}
+                                />
+                            ) : (
+                                <div
+                                    aria-label="Registrando"
+                                    style={{
+                                        width: "56px",
+                                        height: "56px",
+                                        borderRadius: "9999px",
+                                        border: "4px solid rgba(255,255,255,0.25)",
+                                        borderTopColor: "#a855f7",
+                                        animation: "register-spin 0.9s linear infinite",
+                                    }}
+                                />
+                            )}
+                            <p style={{ margin: 0, color: "white", fontWeight: 600 }}>Registrando...</p>
+                        </div>
+                    )}
+
+                    <style>{`@keyframes register-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
+
                     <div style={{ position: "relative", height: "10rem", background: "#0b0f14" }}>
                         <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to bottom, rgba(109,40,217,0.5), rgba(109,40,217,0.1), transparent)", filter: "blur(24px)", opacity: 0.9 }} />
                         <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to bottom, rgba(11,15,20,0.3), rgba(11,15,20,0.7), #0d131b)" }} />
@@ -144,6 +194,7 @@ export default function RegisterPage() {
                                 placeholder="nombre"
                                 value={firstName}
                                 onChange={(e) => setFirstName(e.target.value)}
+                                disabled={isLoading}
                                 style={inputStyle}
                                 onFocus={handleFocus}
                                 onBlur={handleBlur}
@@ -155,6 +206,7 @@ export default function RegisterPage() {
                                 placeholder="apellido"
                                 value={lastName}
                                 onChange={(e) => setLastName(e.target.value)}
+                                disabled={isLoading}
                                 style={inputStyle}
                                 onFocus={handleFocus}
                                 onBlur={handleBlur}
@@ -166,6 +218,7 @@ export default function RegisterPage() {
                                 placeholder="correo electrónico"
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
+                                disabled={isLoading}
                                 style={inputStyle}
                                 onFocus={handleFocus}
                                 onBlur={handleBlur}
@@ -177,6 +230,7 @@ export default function RegisterPage() {
                                 placeholder="teléfono"
                                 value={phoneNumber}
                                 onChange={(e) => setPhoneNumber(e.target.value)}
+                                disabled={isLoading}
                                 style={inputStyle}
                                 onFocus={handleFocus}
                                 onBlur={handleBlur}
@@ -188,6 +242,7 @@ export default function RegisterPage() {
                                 placeholder="contraseña"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
+                                disabled={isLoading}
                                 style={inputStyle}
                                 onFocus={handleFocus}
                                 onBlur={handleBlur}
@@ -198,15 +253,17 @@ export default function RegisterPage() {
                                     data-testid="role-button"
                                     type="button"
                                     onClick={() => setRoleOpen(!roleOpen)}
+                                    disabled={isLoading}
                                     style={{
                                         ...inputStyle,
                                         display: "flex",
                                         alignItems: "center",
                                         justifyContent: "space-between",
-                                        cursor: "pointer",
+                                        cursor: isLoading ? "default" : "pointer",
                                         color: selectedRole ? "white" : "rgba(255,255,255,0.4)",
                                         boxShadow: roleOpen ? "0 0 0 2px #7c3aed" : "none",
                                         borderColor: roleOpen ? "#7c3aed" : "rgba(255,255,255,0.1)",
+                                        opacity: isLoading ? 0.8 : 1,
                                     }}
                                 >
                                     <span>{selectedRole ? selectedRole.label : "rol"}</span>
@@ -256,20 +313,18 @@ export default function RegisterPage() {
                                 <Link href="/login" style={{ color: "rgba(255,255,255,0.8)", textDecoration: "none", fontWeight: 500 }}>
                                     ¿Ya tienes cuenta?
                                 </Link>
-                                {/* <Link href="/recovery" style={{ color: "rgba(255,255,255,0.8)", textDecoration: "none", fontWeight: 500 }}>
-                                    ¿Olvidaste tu contraseña?
-                                </Link> */}
                             </div>
 
                             <button
                                 data-testid="register-button"
                                 type="button"
                                 onClick={handleRegister}
-                                style={{ display: "block", width: "100%", boxSizing: "border-box", padding: "1rem", borderRadius: "9999px", border: "none", background: "linear-gradient(to right, #6d28d9, #7c3aed)", color: "white", fontSize: "1.125rem", fontWeight: 600, cursor: "pointer", boxShadow: "0 10px 15px -3px rgba(124,58,237,0.3)", fontFamily: "inherit", letterSpacing: "0.05em" }}
-                                onMouseEnter={(e) => { e.currentTarget.style.background = "linear-gradient(to right, #5b21b6, #6d28d9)"; }}
-                                onMouseLeave={(e) => { e.currentTarget.style.background = "linear-gradient(to right, #6d28d9, #7c3aed)"; }}
+                                disabled={isLoading}
+                                style={{ display: "block", width: "100%", boxSizing: "border-box", padding: "1rem", borderRadius: "9999px", border: "none", background: "linear-gradient(to right, #6d28d9, #7c3aed)", color: "white", fontSize: "1.125rem", fontWeight: 600, cursor: isLoading ? "default" : "pointer", boxShadow: "0 10px 15px -3px rgba(124,58,237,0.3)", fontFamily: "inherit", letterSpacing: "0.05em", opacity: isLoading ? 0.8 : 1, pointerEvents: isLoading ? "none" : "auto" }}
+                                onMouseEnter={(e) => { if (!isLoading) e.currentTarget.style.background = "linear-gradient(to right, #5b21b6, #6d28d9)"; }}
+                                onMouseLeave={(e) => { if (!isLoading) e.currentTarget.style.background = "linear-gradient(to right, #6d28d9, #7c3aed)"; }}
                             >
-                                Registrarme
+                                {isLoading ? "REGISTRANDO..." : "Registrarme"}
                             </button>
 
                             {error && <p data-testid="error-message" style={{ color: "red" }}>{error}</p>}
