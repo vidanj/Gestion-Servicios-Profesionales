@@ -61,6 +61,7 @@ public class UsersController : ControllerBase
     }
 
     [HttpPut("{id}")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> UpdateUser(Guid id, UpdateUserDto updateUserDto)
     {
         var result = await _userService.UpdateUserAsync(id, updateUserDto);

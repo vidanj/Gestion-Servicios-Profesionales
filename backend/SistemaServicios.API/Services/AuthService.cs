@@ -24,16 +24,16 @@ public class AuthService : IAuthService
 
     public async Task<AuthResponseDto> LoginAsync(LoginRequestDto dto)
     {
-        var user =
-            await _userRepo.GetByEmailAsync(dto.Email)
-            ?? throw new UnauthorizedAccessException("Credenciales inválidas.");
+        var user = await _userRepo.GetByEmailAsync(dto.Email);
 
-        if (!user.Status)
+        // Homogeneizamos el error: Si no existe el usuario, o si la contraseña falla,
+        // o si está desactivado, siempre devolvemos el mismo mensaje genérico.
+        if (user == null || !BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash))
         {
-            throw new UnauthorizedAccessException("La cuenta está desactivada.");
+            throw new UnauthorizedAccessException("Credenciales inválidas.");
         }
 
-        if (!BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash))
+        if (!user.Status)
         {
             throw new UnauthorizedAccessException("Credenciales inválidas.");
         }
@@ -45,6 +45,9 @@ public class AuthService : IAuthService
     {
         if (await _userRepo.EmailExistsAsync(dto.Email))
         {
+            // Nota: En registro es un estándar aceptado indicar si el correo está en uso
+            // por motivos de usabilidad, pero si se requiere máxima seguridad estricta,
+            // se usaría un flujo de confirmación por correo. Lo dejaremos así para no romper el flujo.
             throw new InvalidOperationException("El correo ya está registrado.");
         }
 

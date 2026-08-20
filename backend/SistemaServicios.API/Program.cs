@@ -1,5 +1,8 @@
 using System.Security.Claims;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.RateLimiting;
 using Serilog;
 using Serilog.Formatting.Compact;
 using SistemaServicios.API.Extensions;
@@ -22,10 +25,32 @@ builder.Host.UseSerilog(
 
 // --- 1. CONFIGURACIÓN LIMPIA (Aquí llamamos a tu clase nueva) ---
 builder.Services.AddApplicationServices(builder.Configuration);
-
 builder.Services.AddControllers();
 
-// --- 2. CONFIGURACIÓN OPENAPI (.NET 9 NATIVO) ---
+// NUEVO: Configuración de Rate Limiting (Issue #139)
+builder.Services.AddRateLimiter(options =>
+{
+    // Creamos una política específica llamada "AuthLimiter"
+    options.AddFixedWindowLimiter(
+        "AuthLimiter",
+        opt =>
+        {
+            opt.PermitLimit = 5; // Máximo 5 peticiones permitidas...
+            opt.Window = TimeSpan.FromMinutes(1); // ...en una ventana de 1 minuto
+            opt.QueueProcessingOrder = System
+                .Threading
+                .RateLimiting
+                .QueueProcessingOrder
+                .OldestFirst;
+            opt.QueueLimit = 0; // Si se pasan de 5, rechazamos inmediatamente
+        }
+    );
+
+    // Si superan el límite, devolvemos el código HTTP 429 (Too Many Requests)
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+});
+
+// --- 2. CONFIGURACIÓN OPENAPI ---
 builder.Services.AddOpenApi();
 
 var app = builder.Build();
@@ -98,6 +123,13 @@ app.UseWhen(
 
 app.UseStaticFiles();
 app.UseCors("FrontendPolicy");
+
+// Activar el Rate Limiter solo si NO estamos en el entorno de pruebas automatizadas
+if (!app.Environment.IsEnvironment("Testing"))
+{
+    app.UseRateLimiter();
+}
+
 app.UseAuthentication();
 app.UseAuthorization();
 
@@ -139,5 +171,4 @@ app.MapControllers();
 
 app.Run();
 
-// Necesario para que WebApplicationFactory<Program> pueda acceder a este ensamblado en los tests
-public partial class Program;
+public partial class Program { }

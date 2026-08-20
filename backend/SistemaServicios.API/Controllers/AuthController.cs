@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using SistemaServicios.API.DTOs.Auth;
 using SistemaServicios.API.Interfaces;
 
@@ -19,6 +20,7 @@ public class AuthController : ControllerBase
 
     /// <summary>Inicia sesión y devuelve un JWT.</summary>
     [HttpPost("login")]
+    [EnableRateLimiting("AuthLimiter")] // Candado activado: Máximo 5 intentos por minuto
     public async Task<IActionResult> Login([FromBody] LoginRequestDto dto)
     {
         try
@@ -34,6 +36,7 @@ public class AuthController : ControllerBase
 
     /// <summary>Registra un nuevo usuario y devuelve un JWT.</summary>
     [HttpPost("register")]
+    [EnableRateLimiting("AuthLimiter")] // Previene la creación masiva de cuentas falsas (Spam)
     public async Task<IActionResult> Register([FromBody] RegisterRequestDto dto)
     {
         try
@@ -81,6 +84,7 @@ public class AuthController : ControllerBase
     /// Genera una nueva contraseña y la envía al correo registrado.
     /// </summary>
     [HttpPost("forgot-password")]
+    [EnableRateLimiting("AuthLimiter")] // Evita que saturen el servidor enviando miles de correos
     public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequestDto dto)
     {
         try
