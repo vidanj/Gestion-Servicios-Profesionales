@@ -25,11 +25,11 @@ jobs:
     steps:
       # ── 1. Checkout ──────────────────────────────────────────────
       - name: Checkout del repositorio
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       # ── 2. .NET 9 SDK ─────────────────────────────────────────────
       - name: Configurar .NET 9
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v6
         with:
           dotnet-version: '9.0.x'
 
@@ -99,7 +99,7 @@ jobs:
 
       # ── 10. Publicar reporte como artefacto ────────────────────────
       - name: Publicar reporte HTML como artefacto
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: coverage-report-${{ github.run_number }}
@@ -108,7 +108,7 @@ jobs:
 
       # ── 11. Publicar resultados de pruebas ─────────────────────────
       - name: Publicar resultados .trx como artefacto
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: test-results-${{ github.run_number }}
