@@ -35,7 +35,7 @@ builder.Services.AddRateLimiter(options =>
         "AuthLimiter",
         opt =>
         {
-            opt.PermitLimit = 5; // Máximo 5 peticiones permitidas...
+            opt.PermitLimit = builder.Configuration.GetValue<int>("AUTH_RATE_LIMIT", 5); // Máximo 5 peticiones permitidas...
             opt.Window = TimeSpan.FromMinutes(1); // ...en una ventana de 1 minuto
             opt.QueueProcessingOrder = System
                 .Threading
