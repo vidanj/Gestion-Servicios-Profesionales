@@ -163,13 +163,17 @@ Este proyecto adopta:
 | Defectos por requisito faltante | Issues BUG cuya causa es un requisito no escrito | Issues | Tendencia a la baja | Mensual |
 | Avance de tareas | Tareas `[x]` / total por spec | `tasks.md` (script 9.3) | Visible en cada revisión | Semanal |
 
-### 9.2 Tablero de estado de los pilotos
+### 9.2 Tablero de estado de los pilotos y specs
 
-| Piloto | spec | clarify | plan | checklist | tasks | analyze | implement | converge |
+| Spec | spec | clarify | plan | checklist | tasks | analyze | implement | converge |
 |---|---|---|---|---|---|---|---|---|
 | [001 — Pruebas E2E con Playwright MCP](../../specs/001-e2e-playwright-mcp/spec.md) | Hecho | Hecho | Hecho | Hecho | Hecho | Hecho | Pendiente de aprobación | Pendiente |
 | [002 — Guía interactiva (tours)](../../specs/002-guia-interactiva-tours/spec.md) | Hecho | Hecho | Hecho | Hecho | Hecho | Hecho | Pendiente de aprobación | Pendiente |
 | [003 — Software como infraestructura](../../specs/003-infraestructura-como-codigo/spec.md) | Hecho | Hecho | Hecho | Hecho | Hecho | Hecho | Pendiente de aprobación | Pendiente |
+| [007 — Módulo de créditos de autores](../../specs/007-creditos-autores/spec.md) | Hecho | Hecho | Hecho | Hecho | Hecho | Hecho | Pendiente de aprobación | Pendiente |
+
+Las tres primeras filas son los pilotos de capacidades transversales. La 007 es el primer spec de
+una capacidad de producto.
 
 ### 9.3 Cómo medir el avance
 
@@ -197,8 +201,9 @@ Get-ChildItem specs -Directory | ForEach-Object {
 | 0. Instalación y gobernanza | Spec Kit 1.0.6, skills de Claude, constitución 1.1.0 | Hecho (2026-09-11) |
 | 1. Línea base | Ingeniería inversa: inventario, ER, trazabilidad, brechas | Hecho (2026-09-11) |
 | 2. Pilotos a), b), c) | Artefactos hasta `analyze` | Hecho; implementación pendiente de aprobación |
-| 3. Módulos de negocio | Specs 004 Cotización, 005 Verificación de profesionales, 006 Reglas de calificación (brechas B1–B3) | Propuesto |
-| 4. Institucionalización | Plantilla de PR con sección de spec, check de CI, skills propias ([propuesta §5](sdd-proposal.md#5-propuesta-sdd--skills)), plantillas en español en `.specify/templates/overrides/` | Propuesto |
+| 3. Primer módulo de producto | Spec 007 Créditos de autores (necesidad nueva, sin brecha de origen) | Planeado (2026-09-11); implementación pendiente de aprobación |
+| 4. Módulos de negocio | Specs 004 Cotización, 005 Verificación de profesionales, 006 Reglas de calificación (brechas B1–B3) | Propuesto |
+| 5. Institucionalización | Plantilla de PR con sección de spec, check de CI, skills propias ([propuesta §5](sdd-proposal.md#5-propuesta-sdd--skills)), plantillas en español en `.specify/templates/overrides/` | Propuesto |
 
 ## 11. Riesgos y mitigaciones
 
