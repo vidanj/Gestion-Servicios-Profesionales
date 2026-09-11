@@ -4,7 +4,6 @@
 .env
 .env.*
 !.env.example
-.CLAUDE
 CLAUDE.md
 # ========================
 # .NET / C# Build
@@ -97,7 +96,11 @@ coverage/
 PULL_REQUEST_TEMPLATE.md
 
 .github/DRAFTS/
-.claude/
+# Carpeta del agente: las reglas locales (RULES.md, commands.md, structure.md) y la
+# configuración personal siguen ignoradas; solo se versionan las skills de spec-kit
+# para que todo el equipo tenga los mismos comandos /speckit-*.
+.claude/*
+!.claude/skills/
 
 # ========================
 # Respaldos de base de datos
