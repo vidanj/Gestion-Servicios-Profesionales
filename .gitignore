@@ -127,3 +127,11 @@ backend/SistemaServicios.API/wwwroot/uploads/avatars/*
 .store/
 dotnet-ef.exe
 ""
+
+# ========================
+# SonarQube — datos de trabajo del escáner
+# ========================
+# Los genera cada análisis (cachés, informes intermedios y el token de la
+# ejecución). Los resultados viven en el servidor, no en el repositorio.
+.scannerwork/
+.sonarqube/
