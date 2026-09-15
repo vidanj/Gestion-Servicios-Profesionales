@@ -1,0 +1,219 @@
+name: Pruebas de carga — k6
+
+# Una prueba de carga no se parece a las demas suites: tarda dos minutos, exige la
+# API levantada contra una base real y su resultado depende de la maquina. Correrla
+# en cada push castigaria el ciclo de trabajo sin aportar nada, y correrla en el
+# equipo de cada integrante da cifras que no se pueden comparar entre si.
+#
+# De ahi las dos llaves:
+#   1. La variable de repositorio LOAD_TESTS_ENABLED. Si no vale 'true', el job se
+#      omite. Es el interruptor que permite mostrar el pipeline con y sin la
+#      integracion activa.
+#   2. La etiqueta 'carga' en el pull request. Sin ella, un PR normal no la dispara.
+#
+# El codigo de salida de k6 manda: si el umbral p(95) < 5000 ms no se cumple, k6
+# termina distinto de cero y el job queda en rojo. Eso convierte el nivel de
+# servicio acordado en un criterio automatizado y no en una cifra de un documento.
+
+on:
+  workflow_dispatch:
+    inputs:
+      script:
+        description: 'Script de k6 a ejecutar'
+        type: string
+        default: 'tests/load/jecprueba.js'
+      usuarios_sembrados:
+        description: 'Usuarios de prueba a sembrar antes de medir'
+        type: string
+        default: '100'
+  pull_request:
+    branches:
+      - main
+      - dev
+    types: [opened, reopened, synchronize, labeled]
+
+jobs:
+  carga:
+    name: k6 contra la API en contenedor
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    # vars.LOAD_TESTS_ENABLED se define en Settings > Secrets and variables >
+    # Actions > Variables. Sin definir, el job aparece omitido y el PR no se
+    # bloquea: es el estado por defecto deliberado.
+    if: >-
+      vars.LOAD_TESTS_ENABLED == 'true' &&
+      (github.event_name == 'workflow_dispatch' ||
+       contains(github.event.pull_request.labels.*.name, 'carga'))
+
+    env:
+      IMAGEN: gsp-api:carga
+      RED: gsp-carga
+      # Credenciales de usar y tirar: la base vive y muere dentro de este job.
+      DB_NAME: gsp_carga
+      DB_USER: gsp_carga
+      DB_PASSWORD: gsp_carga_password
+      PUERTO: 10000
+      # Cuenta de administracion para los endpoints autenticados. El registro
+      # fuerza rol Client, asi que despues se promueve en la base (ver el paso
+      # correspondiente): asi no hay ningun hash escrito en el repositorio.
+      CARGA_EMAIL: carga-admin@ejemplo.local
+      CARGA_PASS: CargaEnIntegracionContinua1!
+
+    steps:
+      - name: Checkout del repositorio
+        uses: actions/checkout@v4
+
+      - name: Configurar Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # Se reutiliza el Dockerfile del proyecto y no `dotnet run`: lo que se mide
+      # debe parecerse a lo que se despliega, incluidas las migraciones que aplica
+      # efbundle en el arranque.
+      - name: Construir la imagen
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          load: true
+          push: false
+          tags: ${{ env.IMAGEN }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Crear la red
+        run: docker network create "$RED"
+
+      - name: Levantar PostgreSQL
+        run: |
+          docker run -d --name gsp-db --network "$RED" \
+            -e POSTGRES_DB="$DB_NAME" \
+            -e POSTGRES_USER="$DB_USER" \
+            -e POSTGRES_PASSWORD="$DB_PASSWORD" \
+            --health-cmd="pg_isready -U $DB_USER -d $DB_NAME" \
+            --health-interval=5s \
+            --health-timeout=3s \
+            --health-retries=12 \
+            postgres:18-alpine
+
+      - name: Esperar a que PostgreSQL acepte conexiones
+        run: |
+          for intento in $(seq 1 24); do
+            estado=$(docker inspect -f '{{.State.Health.Status}}' gsp-db)
+            if [ "$estado" = "healthy" ]; then
+              echo "PostgreSQL listo tras $intento intentos."
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "PostgreSQL no llego a estar sano."
+          docker logs gsp-db
+          exit 1
+
+      # AUTH_RATE_LIMIT se pasa elevado a proposito. Hoy la aplicacion todavia no
+      # lee esa variable (queda pendiente de integrar el PR que la parametriza) y
+      # el valor se ignora sin efecto; en cuanto se integre, este job podra
+      # ejecutar tambien scripts que midan el inicio de sesion sin chocar contra
+      # el limitador. Las peticiones de autenticacion de este job son tres.
+      - name: Arrancar la API
+        run: |
+          docker run -d --name gsp-api --network "$RED" -p ${PUERTO}:${PUERTO} \
+            -e DB_HOST=gsp-db \
+            -e DB_PORT=5432 \
+            -e DB_NAME="$DB_NAME" \
+            -e DB_USER="$DB_USER" \
+            -e DB_PASSWORD="$DB_PASSWORD" \
+            -e JWT_KEY="ClaveDePruebaParaPruebasDeCarga_32Bytes!" \
+            -e JWT_ISSUER=carga \
+            -e JWT_AUDIENCE=carga \
+            -e JWT_EXPIRES_MINUTES=60 \
+            -e ALLOWED_ORIGINS=http://localhost:3000 \
+            -e AUTH_RATE_LIMIT=10000 \
+            -e SMTP_HOST=smtp.invalido.local \
+            -e SMTP_PORT=587 \
+            -e SMTP_USER=carga@invalido.local \
+            -e SMTP_PASSWORD=sin-uso \
+            -e SMTP_FROM=noreply@invalido.local \
+            "$IMAGEN"
+
+      - name: Esperar a que la sonda responda sana
+        run: |
+          for intento in $(seq 1 30); do
+            if ! docker ps --format '{{.Names}}' | grep -q '^gsp-api$'; then
+              echo "El contenedor se detuvo antes de responder."
+              exit 1
+            fi
+            respuesta=$(curl -fsS "http://localhost:${PUERTO}/health/ready" 2>/dev/null || true)
+            case "$respuesta" in
+              *'"status":"Healthy"'*)
+                echo "Sonda sana tras $intento intentos."
+                exit 0
+                ;;
+            esac
+            sleep 5
+          done
+          echo "La sonda nunca respondio Healthy en 150 s."
+          exit 1
+
+      # El registro es publico y crea siempre un Client (regla anti escalada de
+      # privilegios). Para medir el listado hace falta un Admin, asi que se
+      # promueve la cuenta recien creada con una sentencia sobre la base efimera
+      # del job. Es la alternativa a escribir un hash de BCrypt en el repositorio.
+      - name: Crear la cuenta de administracion
+        run: |
+          curl -fsS -X POST "http://localhost:${PUERTO}/api/Auth/register" \
+            -H 'Content-Type: application/json' \
+            -d "{\"email\":\"${CARGA_EMAIL}\",\"password\":\"${CARGA_PASS}\",\"firstName\":\"Carga\",\"lastName\":\"Admin\"}" \
+            > /dev/null
+          docker exec gsp-db psql -U "$DB_USER" -d "$DB_NAME" \
+            -c "UPDATE \"Users\" SET \"Role\" = 0 WHERE \"Email\" = '${CARGA_EMAIL}';"
+
+      # Reutiliza el mismo script de siembra que se usa en local: con la base
+      # recien creada, el listado paginado devolveria una sola fila y la medicion
+      # no ejercitaria ni el filtro por Status ni la proyeccion a DTO.
+      # pwsh viene preinstalado en los runners de Ubuntu.
+      - name: Sembrar usuarios de prueba
+        run: |
+          pwsh tests/load/seed-usuarios.ps1 \
+            -BaseUrl "http://localhost:${PUERTO}" \
+            -AdminUser "$CARGA_EMAIL" \
+            -AdminPass "$CARGA_PASS" \
+            -Cantidad ${{ inputs.usuarios_sembrados || '100' }}
+
+      # k6 corre dentro de la red de Docker para hablar con la API por su nombre.
+      # Si el umbral no se cumple, k6 sale distinto de cero y el job falla: esa es
+      # toda la integracion al pipeline.
+      - name: Ejecutar la prueba de carga
+        run: |
+          mkdir -p resultados
+          docker run --rm --network "$RED" \
+            -v "$PWD/tests/load:/scripts:ro" \
+            -v "$PWD/resultados:/resultados" \
+            grafana/k6 run \
+              --summary-export=/resultados/ci-resumen.json \
+              -e BASE_URL="http://gsp-api:${PUERTO}" \
+              -e USER="$CARGA_EMAIL" \
+              -e PASS="$CARGA_PASS" \
+              "/scripts/$(basename "${{ inputs.script || 'tests/load/jecprueba.js' }}")"
+
+      - name: Publicar el resumen de k6
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: resumen-carga-${{ github.run_number }}
+          path: resultados/
+          retention-days: 30
+          if-no-files-found: warn
+
+      - name: Registro de los contenedores
+        if: always()
+        run: |
+          echo "── API ────────────────────────────────────────────"
+          docker logs gsp-api 2>&1 || echo "(el contenedor no llego a existir)"
+          echo "── PostgreSQL ─────────────────────────────────────"
+          docker logs gsp-db 2>&1 || echo "(el contenedor no llego a existir)"
+
+      - name: Limpiar
+        if: always()
+        run: |
+          docker rm -f gsp-api gsp-db 2>/dev/null || true
+          docker network rm "$RED" 2>/dev/null || true
