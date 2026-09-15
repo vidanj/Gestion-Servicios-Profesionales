@@ -39,7 +39,7 @@ flowchart LR
   PR --> V["/speckit-converge"]
 ```
 
-| Brecha de origen | Spec | Historias | Requisitos | Tareas |
+| Origen | Spec | Historias | Requisitos | Tareas |
 |---|---|---|---|---|
 | B9 (módulos sin E2E) | [001 — Pruebas E2E con IA](../../../specs/001-e2e-playwright-mcp/spec.md) | US1 catálogo → solicitud · US2 servicios del profesional · US3 seguimiento · US4 IA | FR-001 … FR-012 | [tasks.md](../../../specs/001-e2e-playwright-mcp/tasks.md) |
 | B14 (sin onboarding) | [002 — Guía interactiva](../../../specs/002-guia-interactiva-tours/spec.md) | US1 cliente · US2 profesional · US3 admin · US4 volver a ver | FR-001 … FR-014 | [tasks.md](../../../specs/002-guia-interactiva-tours/tasks.md) |
@@ -47,6 +47,12 @@ flowchart LR
 | B1 | 004 — Cotización (propuesto) | — | — | — |
 | B2 | 005 — Verificación de profesionales (propuesto) | — | — | — |
 | B3 | 006 — Reglas de calificación (propuesto) | — | — | — |
+| Necesidad nueva (issue #228, sin brecha de origen) | [007 — Créditos de autores](../../../specs/007-creditos-autores/spec.md) | US1 consulta pública · US2 administración · US3 fotografía | FR-001 … FR-022 | [tasks.md](../../../specs/007-creditos-autores/tasks.md) |
+
+> **Sobre la columna de origen.** Las specs 001 a 006 provienen de brechas detectadas por
+> ingeniería inversa y se identifican con `B#`. La 007 proviene de una necesidad nueva del
+> producto y se identifica con su issue. Los requisitos que no nacen de una brecha usan esta
+> segunda forma.
 
 La cobertura requisito → tarea de cada piloto está en la sección *Coverage Summary* del reporte de
 `/speckit-analyze` de su carpeta (`analysis.md`).
