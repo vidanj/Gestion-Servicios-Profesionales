@@ -173,7 +173,7 @@ jobs:
       # pwsh viene preinstalado en los runners de Ubuntu.
       - name: Sembrar usuarios de prueba
         run: |
-          pwsh tests/load/seed-usuarios.ps1 \
+          pwsh -File tests/load/seed-usuarios.ps1 \
             -BaseUrl "http://localhost:${PUERTO}" \
             -AdminUser "$CARGA_EMAIL" \
             -AdminPass "$CARGA_PASS" \
