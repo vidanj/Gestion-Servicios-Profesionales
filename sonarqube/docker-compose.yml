@@ -1,0 +1,60 @@
+# Stack local de SonarQube para el analisis estatico del proyecto.
+#
+#   docker compose -f sonarqube/docker-compose.yml up -d
+#   http://localhost:9000        (admin / admin en el primer arranque)
+#
+# El servidor guarda su estado en volumenes nombrados: al detener el stack no se
+# pierden los proyectos ni el historico de analisis.
+#
+# Nota sobre la edicion Community: no analiza ramas ni pull requests. Para
+# escanear la rama de un PR se usa una clave de proyecto propia, no el parametro
+# sonar.branch.name (ver docs/analisis-estatico-sonarqube.md).
+
+services:
+  sonarqube:
+    image: sonarqube:community
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "9000:9000"
+    environment:
+      SONAR_JDBC_URL: jdbc:postgresql://db:5432/sonar
+      SONAR_JDBC_USERNAME: sonar
+      SONAR_JDBC_PASSWORD: sonar
+    volumes:
+      - sonarqube_data:/opt/sonarqube/data
+      - sonarqube_extensions:/opt/sonarqube/extensions
+      - sonarqube_logs:/opt/sonarqube/logs
+    # El servidor arranca un Elasticsearch embebido que exige este limite; con el
+    # valor por defecto de Docker Desktop el contenedor muere al iniciar.
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+
+  db:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_DB: sonar
+      POSTGRES_USER: sonar
+      POSTGRES_PASSWORD: sonar
+    volumes:
+      # El montaje va en /var/lib/postgresql y NO en /var/lib/postgresql/data.
+      # Desde la version 18 la imagen oficial guarda los datos en un subdirectorio
+      # por version mayor, para permitir `pg_upgrade --link` sin cruzar el limite
+      # del punto de montaje. Si se monta en .../data, la imagen lo detecta como
+      # un volumen sin usar y el contenedor termina con codigo 1 antes de arrancar,
+      # lo que deja a SonarQube sin base y sin arrancar tampoco.
+      - sonarqube_db:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sonar -d sonar"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+volumes:
+  sonarqube_data:
+  sonarqube_extensions:
+  sonarqube_logs:
+  sonarqube_db:
