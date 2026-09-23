@@ -1,0 +1,65 @@
+{
+  "_comentario": "Datos del documento de monitoreo. Lo que quede vacío se imprime como [PENDIENTE] resaltado en amarillo; nunca se inventa. Rellenar conforme avance el trabajo y volver a ejecutar docs/reporte/generar_monitoreo.py.",
+  "autor": "Efrén Campuzano",
+  "cuenta": "vidanj",
+  "fecha": "23 de septiembre de 2026",
+
+  "items": {
+    "documentacion": {
+      "titulo": "Spec 008 y documento de monitoreo",
+      "issue": 250,
+      "issue_url": "https://github.com/vidanj/Gestion-Servicios-Profesionales/issues/250",
+      "pr": "",
+      "pr_url": "",
+      "rama": "docs/250-spec-008-monitoreo",
+      "commit": ""
+    },
+    "implementacion": {
+      "titulo": "Stack de monitoreo, métricas de negocio y despliegue verificado",
+      "issue": 251,
+      "issue_url": "https://github.com/vidanj/Gestion-Servicios-Profesionales/issues/251",
+      "pr": "",
+      "pr_url": "",
+      "rama": "ci/251-monitoreo-y-despliegue",
+      "commit": ""
+    },
+    "resuelto_189": {
+      "titulo": "Disparador de despliegue, verificación de salud y reversión",
+      "issue": 189,
+      "issue_url": "https://github.com/vidanj/Gestion-Servicios-Profesionales/issues/189",
+      "pr": "",
+      "pr_url": "",
+      "rama": "ci/251-monitoreo-y-despliegue",
+      "commit": ""
+    },
+    "cerrado_187": {
+      "titulo": "Métricas Prometheus e instrumentación de EF Core (cerrado por cambio de enfoque)",
+      "issue": 187,
+      "issue_url": "https://github.com/vidanj/Gestion-Servicios-Profesionales/issues/187",
+      "pr": "",
+      "pr_url": "",
+      "rama": "—",
+      "commit": "—"
+    }
+  },
+
+  "ejecuciones": {
+    "backend_lint": "",
+    "backend_tests": "",
+    "frontend_tests": "",
+    "docker_image": "",
+    "monitoring_stack": "",
+    "deploy": "",
+    "reversion": ""
+  },
+
+  "mediciones": {
+    "duracion_despliegue": "",
+    "duracion_reversion": "",
+    "metricas_verificadas": "",
+    "reglas_cargadas": "",
+    "series_tras_una_hora": "",
+    "alerta_tiempo_disparo": "",
+    "alerta_tiempo_resolucion": ""
+  }
+}

@@ -18,7 +18,14 @@
 
 ## 2. Principios
 
-1. **Imagen inmutable por commit:** `ghcr.io/<owner>/gsp-api:<sha>`; se despliega la misma imagen que se probó.
+1. **Imagen inmutable por commit:** `ghcr.io/<owner>/gsp-api:<sha>`; se despliega la misma imagen
+   que se probó.
+   > **Matiz añadido por la [spec 008](../../specs/008-monitoreo-metricas-alertas/spec.md).** Este
+   > principio describe el destino, no el presente. El despliegue que se implementa primero usa el
+   > deploy hook de Render, que **reconstruye** la imagen a partir del commit: la trazabilidad real
+   > es *commit → despliegue*, no *artefacto → despliegue*. El principio se cumplirá por completo
+   > cuando exista el registro de imágenes previsto aquí. Ver
+   > [analysis.md](../../specs/008-monitoreo-metricas-alertas/analysis.md), hallazgo A1.
 2. **Solo se despliega lo que pasó CI:** `dev` protegida con checks obligatorios.
 3. **Un despliegue no está terminado hasta que `/health/ready` responde `Healthy`.**
 4. **Reversión = redesplegar el SHA anterior.** Las migraciones destructivas no se revierten con la imagen.
@@ -94,12 +101,21 @@ infra/
 
 ## 8. Métricas (DORA)
 
-| Métrica | Hoy | Meta del piloto |
-|---|---|---|
-| Frecuencia de despliegue a staging | Manual, esporádica | Cada merge a `dev` |
-| Tiempo commit → staging | Desconocido | ≤ 20 min |
-| Tasa de despliegues fallidos | No se mide | Visible en el historial de Actions |
-| Tiempo de recuperación | Sin procedimiento | ≤ 10 min por reversión |
+| Métrica | Hoy | Meta del piloto | Fuente de medición |
+|---|---|---|---|
+| Frecuencia de despliegue | Manual, esporádica | Cada merge a `dev` | Historial de `deploy.yml` |
+| Tiempo commit → servicio sano | Desconocido | ≤ 20 min | Duración de `deploy.yml` (SLO-10) |
+| Tasa de despliegues fallidos | No se mide | ≥ 95 % sanos a la primera | Historial de `deploy.yml` (SLO-8) |
+| Tiempo de recuperación | Sin procedimiento | ≤ 10 min por reversión | Duración de la ejecución de reversión (SLO-9) |
+
+> **De dónde salen ahora estas cifras.** Hasta la
+> [spec 008](../../specs/008-monitoreo-metricas-alertas/spec.md) estas metas no tenían **de dónde**
+> medirse. El despliegue verificado es esa fuente, y los niveles de servicio completos —incluidos
+> disponibilidad, latencia y error— están en
+> [monitoreo-metricas-y-alertas.md](../monitoreo-metricas-y-alertas.md) §6.
+>
+> El reloj de «commit → servicio sano» **no incluye la espera de aprobación humana**: si la
+> incluyera, mediría la disponibilidad del revisor en lugar del pipeline.
 
 ## 9. Plan de implementación
 
