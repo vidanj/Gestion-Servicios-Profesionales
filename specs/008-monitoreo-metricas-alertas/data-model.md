@@ -29,14 +29,20 @@ añade el sufijo de la unidad y los contadores reciben `_total`. Un histograma p
 
 Nombres `dotnet.*`, no `process.runtime.dotnet.*` (research, D4).
 
+> **Verificado contra el sistema en marcha el 2026-09-23.** Dos de estos nombres llevan sufijo
+> `_total` aunque el instrumento sea un medidor: el exportador se lo añade porque por debajo son
+> contadores bidireccionales. Escribirlos sin sufijo produce un panel permanentemente vacío y una
+> alarma que nunca dispara, **sin ningún error visible**. Es exactamente el modo de fallo que
+> describe D4, y se cometió una vez antes de detectarlo levantando el entorno.
+
 | Nombre en el sistema | Nombre consultable | Tipo | Para qué sirve |
 |---|---|---|---|
 | `dotnet.process.memory.working_set` | `dotnet_process_memory_working_set_bytes` | Medidor | **La más importante del grupo**: el plan de alojamiento tiene memoria acotada y el reinicio por memoria es la caída más frecuente |
 | `dotnet.process.cpu.time` | `dotnet_process_cpu_time_seconds_total` | Contador | Consumo real frente al tráfico atendido |
 | `dotnet.gc.collections` | `dotnet_gc_collections_total` | Contador | Presión de memoria; el crecimiento sostenido de la generación mayor delata una fuga |
 | `dotnet.gc.pause.time` | `dotnet_gc_pause_time_seconds_total` | Contador | Tiempo con la aplicación detenida: explica latencias sin causa aparente |
-| `dotnet.thread_pool.queue.length` | `dotnet_thread_pool_queue_length` | Medidor | **Trabajo pendiente**: si crece, la aplicación va por detrás de la demanda y la latencia subirá después |
-| `dotnet.thread_pool.thread.count` | `dotnet_thread_pool_thread_count` | Medidor | Hilos en uso |
+| `dotnet.thread_pool.queue.length` | `dotnet_thread_pool_queue_length_total` | Medidor | **Trabajo pendiente**: si crece, la aplicación va por detrás de la demanda y la latencia subirá después |
+| `dotnet.thread_pool.thread.count` | `dotnet_thread_pool_thread_count_total` | Medidor | Hilos en uso |
 | `dotnet.monitor.lock_contentions` | `dotnet_monitor_lock_contentions_total` | Contador | Contención de bloqueos |
 | `dotnet.exceptions` | `dotnet_exceptions_total` | Contador | Excepciones lanzadas, incluidas las capturadas: las del controlador de base de datos delatan una caída antes que la sonda |
 

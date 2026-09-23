@@ -18,25 +18,25 @@
       "titulo": "Stack de monitoreo, métricas de negocio y despliegue verificado",
       "issue": 251,
       "issue_url": "https://github.com/vidanj/Gestion-Servicios-Profesionales/issues/251",
-      "pr": "",
-      "pr_url": "",
+      "pr": "253",
+      "pr_url": "https://github.com/vidanj/Gestion-Servicios-Profesionales/pull/253",
       "rama": "ci/251-monitoreo-y-despliegue",
-      "commit": ""
+      "commit": "bdb32c0"
     },
     "resuelto_189": {
       "titulo": "Disparador de despliegue, verificación de salud y reversión",
       "issue": 189,
       "issue_url": "https://github.com/vidanj/Gestion-Servicios-Profesionales/issues/189",
-      "pr": "",
-      "pr_url": "",
+      "pr": "253",
+      "pr_url": "https://github.com/vidanj/Gestion-Servicios-Profesionales/pull/253",
       "rama": "ci/251-monitoreo-y-despliegue",
-      "commit": ""
+      "commit": "bdb32c0"
     },
     "cerrado_187": {
-      "titulo": "Métricas Prometheus e instrumentación de EF Core (cerrado por cambio de enfoque)",
+      "titulo": "Métricas Prometheus e instrumentación de EF Core (superado por cambio de enfoque)",
       "issue": 187,
       "issue_url": "https://github.com/vidanj/Gestion-Servicios-Profesionales/issues/187",
-      "pr": "",
+      "pr": "—",
       "pr_url": "",
       "rama": "—",
       "commit": "—"
@@ -56,10 +56,10 @@
   "mediciones": {
     "duracion_despliegue": "",
     "duracion_reversion": "",
-    "metricas_verificadas": "",
-    "reglas_cargadas": "",
+    "metricas_verificadas": "17 de 17 presentes (guion en salida 0)",
+    "reglas_cargadas": "10 alarmas y 6 reglas de registro",
     "series_tras_una_hora": "",
-    "alerta_tiempo_disparo": "",
-    "alerta_tiempo_resolucion": ""
+    "alerta_tiempo_disparo": "120 s (objetivo: 180 s o menos)",
+    "alerta_tiempo_resolucion": "60 s (objetivo: 120 s o menos)"
   }
 }

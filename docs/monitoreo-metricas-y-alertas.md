@@ -327,7 +327,7 @@ lugar de discutirlo.
 | `dotnet_process_memory_working_set_bytes` | Medidor | **La más importante del grupo.** El plan tiene memoria acotada y el reinicio por memoria es la caída más frecuente |
 | `dotnet_gc_collections_total` | Contador | Presión de memoria; el crecimiento sostenido de la generación mayor delata una fuga |
 | `dotnet_gc_pause_time_seconds_total` | Contador | Tiempo con la aplicación detenida: explica latencias sin causa aparente |
-| `dotnet_thread_pool_queue_length` | Medidor | Trabajo pendiente: si crece, la latencia subirá a continuación |
+| `dotnet_thread_pool_queue_length_total` | Medidor | Trabajo pendiente: si crece, la latencia subirá a continuación |
 | `dotnet_monitor_lock_contentions_total` | Contador | Contención de bloqueos |
 | `dotnet_exceptions_total` | Contador | Excepciones lanzadas, incluidas las capturadas |
 
@@ -336,6 +336,13 @@ instrumentación ya no emite los nombres con prefijo `process.runtime.*`: regist
 integrado, cuyos instrumentos se llaman `dotnet.*`. Casi todos los tableros publicados que se
 encuentran buscando fueron escritos para versiones anteriores; copiarlos produce un tablero que se
 aprovisiona **sin ningún error** y aparece permanentemente vacío.
+
+Y hay un segundo escalón en la misma trampa: **algunos de estos nombres llevan sufijo `_total`
+aunque el instrumento sea un medidor**, porque por debajo son contadores bidireccionales y el
+exportador se lo añade. Es `dotnet_thread_pool_queue_length_total`, no
+`dotnet_thread_pool_queue_length`. Se detectó levantando el entorno y consultando los nombres
+realmente publicados; ninguna revisión de código lo habría visto, porque el error no produce fallo
+sino silencio.
 
 ### 7.4 Métricas de negocio
 
@@ -587,8 +594,8 @@ entregable: una evidencia que todavía no existe no se rellena con una suposici�
 | Entregable | Issue | PR | Rama | Commit |
 |---|---|---|---|---|
 | Documentación: spec 008 y este documento | [#250](https://github.com/vidanj/Gestion-Servicios-Profesionales/issues/250) | [#252](https://github.com/vidanj/Gestion-Servicios-Profesionales/pull/252) | `docs/250-spec-008-monitoreo` | `383c548` |
-| Implementación: monitoreo y despliegue | [#251](https://github.com/vidanj/Gestion-Servicios-Profesionales/issues/251) | **[PENDIENTE]** | `ci/251-monitoreo-y-despliegue` | **[PENDIENTE]** |
-| Issue absorbido: disparador y reversión | [#189](https://github.com/vidanj/Gestion-Servicios-Profesionales/issues/189) | **[PENDIENTE]** | `ci/251-monitoreo-y-despliegue` | — |
+| Implementación: monitoreo y despliegue | [#251](https://github.com/vidanj/Gestion-Servicios-Profesionales/issues/251) | [#253](https://github.com/vidanj/Gestion-Servicios-Profesionales/pull/253) | `ci/251-monitoreo-y-despliegue` | `bdb32c0` |
+| Issue absorbido: disparador y reversión | [#189](https://github.com/vidanj/Gestion-Servicios-Profesionales/issues/189) | [#253](https://github.com/vidanj/Gestion-Servicios-Profesionales/pull/253) | `ci/251-monitoreo-y-despliegue` | `bdb32c0` |
 | Issue cerrado por cambio de enfoque | [#187](https://github.com/vidanj/Gestion-Servicios-Profesionales/issues/187) | — | — | — |
 
 Especificación: [`specs/008-monitoreo-metricas-alertas/`](../specs/008-monitoreo-metricas-alertas/spec.md)
@@ -642,15 +649,33 @@ Una por flujo, como prueba de que cada puerta de §4 existe y pasa.
 Las cifras se toman de ejecuciones reales. Lo que aparezca como pendiente **no se ha medido
 todavía**.
 
-| Medición | Valor | Criterio |
-|---|---|---|
-| Duración del despliegue, de integrar a servicio sano | **[PENDIENTE]** | SLO-10: ≤ 20 min |
-| Duración de la reversión | **[PENDIENTE]** | SLO-9: ≤ 10 min |
-| Métricas del catálogo verificadas | **[PENDIENTE]** | SC-001 |
-| Reglas de alerta cargadas | **[PENDIENTE]** | 10 esperadas |
-| Series tras una hora de tráfico | **[PENDIENTE]** | SC-010: < 2 000 |
-| Tiempo hasta disparar la alarma de caída | **[PENDIENTE]** | SC-004: ≤ 3 min |
-| Tiempo hasta resolverse tras restablecer | **[PENDIENTE]** | SC-004: ≤ 2 min |
+| Medición | Valor | Criterio | Estado |
+|---|---|---|---|
+| Métricas del catálogo verificadas | 17 de 17 presentes | SC-001 | **Cumple** |
+| Reglas cargadas | 10 alarmas y 6 de registro | 10 esperadas | **Cumple** |
+| Tiempo hasta disparar la alarma de caída | **120 s** | SC-004: ≤ 180 s | **Cumple** |
+| Tiempo hasta resolverse tras restablecer | **60 s** | SC-004: ≤ 120 s | **Cumple** |
+| Casos de prueba de las reglas | 8, todos correctos | SC-005 | **Cumple** |
+| Compilación en Release | 0 advertencias, 0 silenciadores | SC-007 | **Cumple** |
+| Suite del backend | 350 pruebas, 0 fallos | — | **Cumple** |
+| Duración del despliegue, de integrar a servicio sano | **[PENDIENTE]** | SLO-10: ≤ 20 min | Sin medir |
+| Duración de la reversión | **[PENDIENTE]** | SLO-9: ≤ 10 min | Sin medir |
+| Series tras una hora de tráfico | **[PENDIENTE]** | SC-010: < 2 000 | Sin medir |
+
+Las tres últimas siguen sin medir, y se dice en lugar de estimarse: las dos primeras necesitan el
+secreto del disparador y el ambiente protegido, que solo puede configurar quien tiene acceso al
+panel del proveedor; la tercera necesita una hora de tráfico sostenido.
+
+### Cómo se tomaron las cuatro primeras
+
+No por inspección del código, sino levantando el entorno completo con la aplicación conectada:
+se generó tráfico, se comprobó el catálogo con el guion, se **detuvo la API** y se observó la
+alarma pasar de inactiva a pendiente y a disparada, y se restableció para verla resolverse sola.
+
+Esa comprobación descubrió tres defectos que ninguna revisión de código habría visto, porque
+ninguno produce un error: el sufijo `_total` de §7.3, la declaración del lector de telemetría del
+colector, y que una proporción sin numerador desaparece en vez de valer cero. Los tres están
+corregidos y anotados en [`monitoring/README.md`](../monitoring/README.md).
 
 ---
 
