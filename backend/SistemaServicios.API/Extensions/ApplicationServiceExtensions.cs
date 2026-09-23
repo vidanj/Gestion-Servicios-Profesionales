@@ -8,6 +8,7 @@ using SistemaServicios.API.Data;
 using SistemaServicios.API.Interfaces;
 using SistemaServicios.API.Repositories;
 using SistemaServicios.API.Services;
+using SistemaServicios.API.Telemetry;
 
 namespace SistemaServicios.API.Extensions;
 
@@ -72,6 +73,11 @@ public static class ApplicationServiceExtensions
             $"Host={dbHost};Port={dbPort};Database={dbName};Username={dbUser};Password={dbPassword}";
 
         services.AddDbContext<AppDbContext>(options => options.UseNpgsql(connectionString));
+
+        // Instancia única: un Meter es un recurso de proceso, y crear uno por petición
+        // multiplicaría los ámbitos y la memoria sin ganar nada. Va antes de AddTelemetry
+        // solo por legibilidad; el orden de registro no importa aquí.
+        services.AddSingleton<IMetricasDeNegocio, MetricasDeNegocio>();
 
         // Trazas y métricas. La exportación solo se activa si hay colector configurado;
         // la instrumentación se registra siempre porque de ella sale el TraceId que

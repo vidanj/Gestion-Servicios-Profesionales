@@ -1,0 +1,380 @@
+{
+  "uid": "gsp-api",
+  "title": "GSP · Salud de la API",
+  "description": "Disponibilidad, latencia, errores y saturacion. Cada panel tiene un solo eje: nunca se mezclan dos magnitudes de escala distinta en el mismo grafico. Los colores de estado (verde/ambar/rojo) se reservan para umbrales de nivel de servicio; las series de identidad usan la paleta categorica en orden fijo.",
+  "tags": ["gsp", "api", "slo"],
+  "timezone": "browser",
+  "editable": false,
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s",
+  "time": { "from": "now-1h", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "Disponibilidad (sonda de preparacion)",
+      "description": "SLO-1: objetivo 99,0 % en 30 dias. Excluye por diseno los arranques en frio, que se miden aparte.",
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "gsp-prometheus" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "avg(avg_over_time(probe_success{sonda=\"ready\"}[$__range]))",
+          "legendFormat": "disponibilidad"
+        }
+      ],
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "decimals": 2,
+          "min": 0,
+          "max": 1,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "#d03b3b", "value": null },
+              { "color": "#fab219", "value": 0.99 },
+              { "color": "#0ca30c", "value": 0.995 }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Latencia p95",
+      "description": "SLO-3: objetivo interno 1,5 s (ambar) y acuerdo formal 5 s (rojo). El acuerdo se hereda del plan de pruebas de carga para no tener dos verdades sobre la misma magnitud.",
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "gsp-prometheus" },
+      "targets": [
+        { "refId": "A", "expr": "gsp:http_latencia:p95_5m", "legendFormat": "p95" }
+      ],
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "colorMode": "value",
+        "graphMode": "area",
+        "textMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "decimals": 3,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "#0ca30c", "value": null },
+              { "color": "#fab219", "value": 1.5 },
+              { "color": "#d03b3b", "value": 5 }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "Proporcion de errores de servidor",
+      "description": "SLO-4: objetivo 1 %; la alarma salta al 5 %.",
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "gsp-prometheus" },
+      "targets": [
+        { "refId": "A", "expr": "gsp:http_proporcion_error:5m", "legendFormat": "error" }
+      ],
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "colorMode": "value",
+        "graphMode": "area",
+        "textMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "decimals": 2,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "#0ca30c", "value": null },
+              { "color": "#fab219", "value": 0.01 },
+              { "color": "#d03b3b", "value": 0.05 }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "Peticiones por segundo",
+      "description": "Volumen atendido. Sin umbrales: es contexto, no estado. Una caida a cero con la aplicacion sana significa que dejo de llegar trafico, no que algo falle.",
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "gsp-prometheus" },
+      "targets": [
+        { "refId": "A", "expr": "gsp:http_peticiones:tasa5m", "legendFormat": "req/s" }
+      ],
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "colorMode": "none",
+        "graphMode": "area",
+        "textMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": { "unit": "reqps", "decimals": 2, "color": { "mode": "fixed", "fixedColor": "#3987e5" } },
+        "overrides": []
+      }
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "Latencia p95 por ruta",
+      "description": "Lo que convierte 'la latencia subio' en 'la latencia subio EN ESTE endpoint', que es la unica version accionable. La ruta es la plantilla (/api/Users/{id}), nunca la direccion concreta: usar la direccion multiplicaria las series por cada entidad del sistema.",
+      "gridPos": { "h": 9, "w": 12, "x": 0, "y": 4 },
+      "datasource": { "type": "prometheus", "uid": "gsp-prometheus" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "topk(6, gsp:http_latencia_por_ruta:p95_5m)",
+          "legendFormat": "{{http_route}}"
+        }
+      ],
+      "options": {
+        "legend": { "displayMode": "table", "placement": "bottom", "showLegend": true, "calcs": ["lastNotNull", "max"] },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "decimals": 3,
+          "min": 0,
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 0,
+            "showPoints": "never",
+            "spanNulls": false,
+            "axisGridShow": true,
+            "thresholdsStyle": { "mode": "dashed" }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "transparent", "value": null },
+              { "color": "#fab219", "value": 1.5 },
+              { "color": "#d03b3b", "value": 5 }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "Proporcion de errores de servidor",
+      "description": "En su propio panel y no superpuesta a la latencia: son dos magnitudes de escala distinta y compartir eje las haria ilegibles a las dos.",
+      "gridPos": { "h": 9, "w": 12, "x": 12, "y": 4 },
+      "datasource": { "type": "prometheus", "uid": "gsp-prometheus" },
+      "targets": [
+        { "refId": "A", "expr": "gsp:http_proporcion_error:5m", "legendFormat": "errores 5xx" }
+      ],
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom", "showLegend": false },
+        "tooltip": { "mode": "single", "sort": "none" }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "decimals": 3,
+          "min": 0,
+          "color": { "mode": "fixed", "fixedColor": "#d95926" },
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "thresholdsStyle": { "mode": "dashed" }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "transparent", "value": null },
+              { "color": "#d03b3b", "value": 0.05 }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 7,
+      "type": "timeseries",
+      "title": "Memoria: conjunto de trabajo",
+      "description": "La metrica mas importante del grupo de tiempo de ejecucion: el plan gratuito ofrece 512 MB y el reinicio por memoria es la caida mas frecuente. Vista desde fuera, esa caida parece un arranque en frio sin causa. La linea roja marca los 400 MB a los que avisa la alarma.",
+      "gridPos": { "h": 9, "w": 12, "x": 0, "y": 13 },
+      "datasource": { "type": "prometheus", "uid": "gsp-prometheus" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "dotnet_process_memory_working_set_bytes{job=\"api\"}",
+          "legendFormat": "conjunto de trabajo"
+        }
+      ],
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom", "showLegend": false },
+        "tooltip": { "mode": "single", "sort": "none" }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "min": 0,
+          "color": { "mode": "fixed", "fixedColor": "#3987e5" },
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "thresholdsStyle": { "mode": "dashed" }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "transparent", "value": null },
+              { "color": "#d03b3b", "value": 419430400 }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 8,
+      "type": "timeseries",
+      "title": "Saturacion",
+      "description": "Tres senales de la misma familia y en la misma unidad (cuentas), por eso comparten panel. La cola del grupo de hilos es anticipatoria: cuando crece, la latencia sube despues.",
+      "gridPos": { "h": 9, "w": 12, "x": 12, "y": 13 },
+      "datasource": { "type": "prometheus", "uid": "gsp-prometheus" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(http_server_active_requests{job=\"api\"})",
+          "legendFormat": "peticiones en vuelo"
+        },
+        {
+          "refId": "B",
+          "expr": "sum(kestrel_active_connections{job=\"api\"})",
+          "legendFormat": "conexiones activas"
+        },
+        {
+          "refId": "C",
+          "expr": "sum(dotnet_thread_pool_queue_length_total{job=\"api\"})",
+          "legendFormat": "cola de hilos"
+        }
+      ],
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "min": 0,
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 0,
+            "showPoints": "never"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "peticiones en vuelo" },
+            "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "#3987e5" } }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "conexiones activas" },
+            "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "#d95926" } }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "cola de hilos" },
+            "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "#199e70" } }]
+          }
+        ]
+      }
+    },
+    {
+      "id": 9,
+      "type": "timeseries",
+      "title": "Rechazos del limitador de autenticacion",
+      "description": "La senal que distingue 'nadie entra' de 'alguien esta probando contrasenas'. Su medidor no viaja con la instrumentacion general de ASP.NET Core: hay que registrarlo explicitamente.",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 22 },
+      "datasource": { "type": "prometheus", "uid": "gsp-prometheus" },
+      "targets": [
+        { "refId": "A", "expr": "gsp:limitador_rechazos:tasa5m", "legendFormat": "rechazos/s" }
+      ],
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom", "showLegend": false },
+        "tooltip": { "mode": "single", "sort": "none" }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "decimals": 3,
+          "min": 0,
+          "color": { "mode": "fixed", "fixedColor": "#c98500" },
+          "custom": {
+            "drawStyle": "bars",
+            "lineWidth": 1,
+            "fillOpacity": 60,
+            "showPoints": "never"
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 10,
+      "type": "timeseries",
+      "title": "Recoleccion de basura: tiempo en pausa",
+      "description": "Tiempo acumulado con la aplicacion detenida. Explica las latencias que no tienen causa aparente en la base de datos ni en el trafico.",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 22 },
+      "datasource": { "type": "prometheus", "uid": "gsp-prometheus" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "rate(dotnet_gc_pause_time_seconds_total{job=\"api\"}[5m])",
+          "legendFormat": "fraccion de tiempo en pausa"
+        }
+      ],
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom", "showLegend": false },
+        "tooltip": { "mode": "single", "sort": "none" }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "decimals": 4,
+          "min": 0,
+          "color": { "mode": "fixed", "fixedColor": "#d55181" },
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "showPoints": "never"
+          }
+        },
+        "overrides": []
+      }
+    }
+  ]
+}

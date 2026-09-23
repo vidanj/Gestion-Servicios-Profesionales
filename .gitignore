@@ -135,3 +135,11 @@ dotnet-ef.exe
 # ejecución). Los resultados viven en el servidor, no en el repositorio.
 .scannerwork/
 .sonarqube/
+
+# ========================
+# Monitoreo — objetivos del sondeo externo
+# ========================
+# La dirección del servicio publicado no es un secreto, pero versionarla invita a
+# que el monitoreo de un equipo de trabajo acabe apuntando a producción sin que
+# nadie lo decidiera. Se versiona solo el archivo de ejemplo.
+monitoring/prometheus/objetivos/render.yml

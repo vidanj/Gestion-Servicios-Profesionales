@@ -1,0 +1,19 @@
+# Origen de datos aprovisionado. Cero configuracion manual tras el arranque.
+
+apiVersion: 1
+
+datasources:
+  - name: gsp-prometheus
+    # El uid es fijo y lo referencian los tableros. Si cambia, los paneles se
+    # aprovisionan sin ningun error y aparecen vacios, que es el fallo mas
+    # dificil de diagnosticar de todo el entorno. monitoring-stack.yml comprueba
+    # que los tableros usan este uid exacto.
+    uid: gsp-prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+    editable: false
+    jsonData:
+      timeInterval: 15s
+      httpMethod: POST

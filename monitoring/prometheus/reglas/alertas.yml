@@ -1,0 +1,190 @@
+# Alarmas. Diez reglas, todas derivadas de un nivel de servicio declarado en
+# docs/monitoreo-metricas-y-alertas.md, seccion 6.
+#
+# Cada una lleva tres anotaciones: que ocurre (resumen), que significa y por que
+# ese umbral y esa espera (descripcion), y que hacer (accion). Una alarma sin
+# accion no esta terminada: quien la recibe a las tres de la manana necesita el
+# siguiente paso, no solo el diagnostico.
+#
+# Los tiempos de espera estan calibrados para absorber el arranque en frio del
+# plan gratuito. Si A1 disparase en un minuto, avisaria cada vez que el servicio
+# despierta de una siesta, y la consecuencia no seria un aviso de mas: seria que
+# en dos semanas nadie se cree las alarmas. Hay un caso de prueba en
+# ../pruebas/alertas_test.yml que lo afirma explicitamente.
+
+groups:
+  - name: gsp-disponibilidad
+    rules:
+      - alert: ApiNoDisponible
+        expr: probe_success{sonda="ready"} == 0
+        for: 3m
+        labels:
+          severidad: critica
+          componente: api
+        annotations:
+          resumen: 'La API no responde sana en {{ $labels.ambiente }}'
+          descripcion: >-
+            La sonda de preparacion de {{ $labels.instance }} lleva 3 minutos sin devolver
+            estado sano. Los tres minutos son deliberados: absorben el arranque en frio del
+            plan gratuito, que tarda decenas de segundos y no es una caida.
+          accion: >-
+            Revisar los registros del servicio y si la base de datos acepta conexiones.
+            Si acaba de desplegarse, comprobar la ejecucion del flujo de despliegue.
+
+      # La sonda de preparacion incluye la comprobacion de base de datos y es el
+      # UNICO chequeo etiquetado como "ready". Por eso esta combinacion -proceso
+      # vivo, preparacion caida- solo puede significar una cosa. Sin esta regla,
+      # ese diagnostico habria que hacerlo a mano en mitad del incidente.
+      - alert: BaseDeDatosInalcanzable
+        expr: |
+          (probe_success{sonda="live"} == 1)
+            unless on (ambiente) (probe_success{sonda="ready"} == 1)
+        for: 2m
+        labels:
+          severidad: critica
+          componente: base-de-datos
+        annotations:
+          resumen: 'El proceso vive pero la base de datos no responde ({{ $labels.ambiente }})'
+          descripcion: >-
+            La sonda de vida responde y la de preparacion no. La comprobacion de PostgreSQL
+            es el unico chequeo etiquetado como parte de la preparacion, asi que la causa
+            esta acotada.
+          accion: 'Comprobar el contenedor de PostgreSQL y las credenciales DB_*.'
+
+      # La espera (10 min) es mayor que la caducidad de series del colector
+      # (5 min) a proposito: asi no se confunde un hueco de raspado con una
+      # ausencia real.
+      - alert: ApiSinMetricas
+        expr: absent(gsp:http_peticiones:tasa5m) or (up{job="api"} == 0)
+        for: 10m
+        labels:
+          severidad: advertencia
+          componente: observabilidad
+        annotations:
+          resumen: 'Prometheus dejo de ver metricas de la API'
+          descripcion: >-
+            O la API dejo de exportar por OTLP, o el colector dejo de publicarlas. Las series
+            caducan a los 5 minutos en el colector, de modo que 10 minutos sin nada es una
+            ausencia real. Sin metricas no se puede evaluar ningun otro nivel de servicio.
+          accion: >-
+            Revisar los registros del colector y que OTEL_EXPORTER_OTLP_ENDPOINT siga
+            definido en el entorno de la aplicacion.
+
+  - name: gsp-latencia-y-errores
+    rules:
+      # La segunda condicion no es un detalle: con trafico casi nulo, un solo 500
+      # da el 100 % de tasa de error. Sin ella la alarma se disparia cada noche y
+      # acabaria silenciada.
+      - alert: TasaDeErrorServidorAlta
+        expr: gsp:http_proporcion_error:5m > 0.05 and gsp:http_peticiones:tasa5m > 0.05
+        for: 5m
+        labels:
+          severidad: critica
+          componente: api
+        annotations:
+          resumen: 'Mas del 5 % de las peticiones devuelven error de servidor'
+          descripcion: >-
+            Proporcion actual: {{ $value | humanizePercentage }}. El objetivo declarado es
+            1 %; la alarma salta al 5 %. La condicion de trafico minimo evita alertar en
+            periodos tranquilos, donde un solo error daria el 100 %.
+          accion: >-
+            Filtrar por http_route en el tablero y revisar
+            aspnetcore_diagnostics_exceptions_total para identificar el tipo de excepcion.
+
+      - alert: LatenciaP95Degradada
+        expr: gsp:http_latencia:p95_5m > 1.5
+        for: 10m
+        labels:
+          severidad: advertencia
+          componente: api
+        annotations:
+          resumen: 'El percentil 95 supera el objetivo interno de 1,5 s'
+          descripcion: >-
+            Valor actual: {{ $value }} s. El objetivo interno es 1,5 s y el acuerdo formal,
+            5 s. Se avisa con margen porque esperar a rozar el acuerdo es llegar tarde.
+          accion: >-
+            Identificar la ruta con gsp:http_latencia_por_ruta:p95_5m y contrastar con
+            dotnet_gc_pause_time_seconds_total por si la causa es la recoleccion de basura.
+
+      - alert: LatenciaP95FueraDelAcuerdo
+        expr: gsp:http_latencia:p95_5m > 5
+        for: 5m
+        labels:
+          severidad: critica
+          componente: api
+        annotations:
+          resumen: 'El percentil 95 rebasa el nivel de servicio acordado (5 s)'
+          descripcion: >-
+            Valor actual: {{ $value }} s. Es el mismo umbral que hace fallar la prueba de
+            carga del proyecto, heredado para no tener dos verdades sobre la misma magnitud.
+            En produccion significa incumplimiento, no aviso.
+          accion: 'Escalar: revisar saturacion, memoria y consultas a la base de datos.'
+
+  - name: gsp-saturacion
+    rules:
+      - alert: MemoriaCercaDelLimite
+        expr: dotnet_process_memory_working_set_bytes{job="api"} > 400 * 1024 * 1024
+        for: 15m
+        labels:
+          severidad: advertencia
+          componente: api
+        annotations:
+          resumen: 'La API supera los 400 MB de conjunto de trabajo'
+          descripcion: >-
+            El plan gratuito ofrece 512 MB. Pasado ese punto la plataforma reinicia la
+            instancia, y la caida se ve desde fuera como un arranque en frio sin causa
+            aparente, lo que despista el diagnostico.
+          accion: >-
+            Revisar dotnet_gc_collections_total de la generacion mayor para distinguir
+            carga legitima de una fuga de memoria.
+
+      # El nombre lleva sufijo _total: el exportador se lo anade porque el
+      # instrumento subyacente es un contador bidireccional. Verificado contra el
+      # sistema en marcha; escribirlo sin sufijo produce una alerta que nunca
+      # dispara, sin ningun error visible.
+      - alert: ColaDeHilosCreciente
+        expr: dotnet_thread_pool_queue_length_total{job="api"} > 50
+        for: 5m
+        labels:
+          severidad: advertencia
+          componente: api
+        annotations:
+          resumen: 'El grupo de hilos acumula trabajo pendiente'
+          descripcion: >-
+            Valor actual: {{ $value }}. La aplicacion recibe mas de lo que atiende; la
+            latencia va a subir a continuacion. Es una alarma anticipatoria.
+          accion: 'Contrastar con http_server_active_requests y kestrel_queued_requests.'
+
+  - name: gsp-negocio
+    rules:
+      - alert: IntentosDeAutenticacionFallidos
+        expr: |
+          sum(rate(gsp_autenticacion_intentos_total{job="api",resultado!="exito"}[5m])) > 1
+        for: 10m
+        labels:
+          severidad: advertencia
+          componente: seguridad
+        annotations:
+          resumen: 'Mas de un intento de inicio de sesion fallido por segundo durante 10 minutos'
+          descripcion: >-
+            Patron compatible con fuerza bruta. El limitador deberia estar rechazando:
+            contrastese con gsp:limitador_rechazos:tasa5m. Si el limitador no rechaza,
+            su umbral esta mal calibrado.
+          accion: >-
+            Revisar los registros por ClientIp. El detalle identificativo esta ahi, no en
+            la metrica: la metrica cuenta, el registro identifica.
+
+      - alert: RespaldoFallido
+        expr: increase(gsp_respaldos_ejecutados_total{job="api",resultado!="exito"}[1h]) > 0
+        for: 0m
+        labels:
+          severidad: critica
+          componente: respaldos
+        annotations:
+          resumen: 'Fallo al menos un respaldo en la ultima hora'
+          descripcion: >-
+            Resultado: {{ $labels.resultado }}. Un respaldo que falla en silencio solo se
+            descubre el dia que hace falta restaurar, que es el peor dia posible para
+            descubrirlo. Sin espera: un solo fallo ya es un incidente.
+          accion: >-
+            Revisar los registros de pg_dump y que BACKUP_DIR este montado como volumen.

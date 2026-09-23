@@ -1,0 +1,284 @@
+name: Despliegue — Render (hook, verificación y reversión)
+
+# Hasta ahora el despliegue se lanzaba a mano desde el panel del proveedor. Eso tenia tres
+# consecuencias: la version en marcha no se podia ligar a un commit, un fallo de migracion
+# tumbaba el contenedor sin dejar rastro legible, y no existia procedimiento de reversion.
+# Este flujo convierte las tres cosas en un resultado visible (issue #189).
+#
+# Revertir NO es un flujo aparte: es este mismo, con la entrada `sha` del commit sano
+# anterior. Asi el camino de reversion se ejercita en cada despliegue, en lugar de ser una
+# ruta que nadie ha recorrido hasta el dia del incidente.
+#
+# Limite conocido: el disparador hace que el proveedor RECONSTRUYA la imagen a partir del
+# commit, de modo que lo desplegado no es el mismo artefacto binario que verifico la
+# integracion continua. La trazabilidad es commit -> despliegue, no artefacto -> despliegue.
+# Aceptado y documentado en specs/008-monitoreo-metricas-alertas/analysis.md, hallazgo A1.
+
+on:
+  workflow_run:
+    workflows: ["Imagen Docker — Construcción y arranque"]
+    types: [completed]
+    branches: [dev]
+  workflow_dispatch:
+    inputs:
+      sha:
+        description: 'Commit a desplegar. Vacío = HEAD de dev. Para revertir, el último SHA sano.'
+        required: false
+        type: string
+
+concurrency:
+  # Sin cancelar: dos despliegues simultaneos pueden ejecutar migraciones a la vez.
+  # Se serializan por construccion, no por suerte.
+  group: despliegue-produccion
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  checks: read
+  statuses: read
+
+jobs:
+  desplegar:
+    name: Desplegar y verificar
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # El ambiente exige revisor: "automatico" aqui significa que nadie entra al panel del
+    # proveedor ni copia una orden, no que no haya aprobacion.
+    environment:
+      name: production
+      url: ${{ vars.RENDER_SERVICE_URL }}
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event.workflow_run.conclusion == 'success'
+
+    env:
+      COMPROBACIONES: 'Backend — Formato y Linting,Backend — Pruebas y Cobertura,Frontend — Compilación y Pruebas E2E,Imagen Docker — Construcción y arranque'
+
+    steps:
+      - name: Resolver el commit a desplegar
+        id: commit
+        run: |
+          if [ -n "${{ inputs.sha }}" ]; then
+            SHA="${{ inputs.sha }}"
+            echo "Despliegue manual (o reversión) del commit indicado."
+          elif [ -n "${{ github.event.workflow_run.head_sha }}" ]; then
+            SHA="${{ github.event.workflow_run.head_sha }}"
+            echo "Despliegue automático tras la verificación de la imagen."
+          else
+            SHA="${{ github.sha }}"
+          fi
+          echo "sha=${SHA}" >> "$GITHUB_OUTPUT"
+          echo "Commit: ${SHA}"
+
+      - name: Comprobar que el secreto del disparador existe
+        env:
+          HOOK: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        run: |
+          if [ -z "$HOOK" ]; then
+            echo "::error::Falta el secreto RENDER_DEPLOY_HOOK_URL."
+            echo "Obtenlo en el panel del servicio (Settings → Deploy Hook) y guárdalo como"
+            echo "secreto del repositorio. Sin él no se puede desplegar."
+            exit 1
+          fi
+          echo "Secreto presente."
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.commit.outputs.sha }}
+          fetch-depth: 0
+
+      # ── Puerta de integración ────────────────────────────────────────────────
+      # Encadenar el despliegue a UN solo flujo previo solo demuestra que ese flujo paso.
+      # Un commit con las pruebas en rojo llegaria igual. Por eso se consulta el estado de
+      # las cuatro comprobaciones PARA ESE MISMO COMMIT.
+      - name: Verificar que las comprobaciones están en verde para este commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ steps.commit.outputs.sha }}
+        run: |
+          echo "Comprobaciones requeridas para ${SHA}:"
+          FALLOS=0
+          IFS=',' read -ra REQUERIDAS <<< "$COMPROBACIONES"
+          RESULTADOS=$(gh api "repos/${{ github.repository }}/commits/${SHA}/check-runs" \
+            --jq '.check_runs[] | "\(.name)\t\(.conclusion // "pendiente")"')
+
+          for requerida in "${REQUERIDAS[@]}"; do
+            estado=$(echo "$RESULTADOS" | awk -F'\t' -v n="$requerida" '$1==n {print $2; exit}')
+            if [ -z "$estado" ]; then
+              echo "  ? $requerida — no se ejecutó para este commit"
+              FALLOS=$((FALLOS+1))
+            elif [ "$estado" = "success" ]; then
+              echo "  OK $requerida"
+            else
+              echo "  X  $requerida — $estado"
+              FALLOS=$((FALLOS+1))
+            fi
+          done
+
+          if [ "$FALLOS" -gt 0 ]; then
+            echo "::error::$FALLOS comprobación(es) no están en verde para ${SHA}. No se despliega."
+            exit 1
+          fi
+
+      - name: Registrar la versión que está desplegada ahora
+        id: anterior
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # Se lee del historial de este mismo flujo. Sin esto, la reversion obligaria a
+          # buscar el commit anterior a mano justo cuando hay un incidente en curso.
+          ANTERIOR=$(gh run list --workflow "${{ github.workflow }}" --status success \
+            --limit 1 --json headSha --jq '.[0].headSha // ""' 2>/dev/null || true)
+          echo "sha=${ANTERIOR}" >> "$GITHUB_OUTPUT"
+          if [ -n "$ANTERIOR" ]; then
+            echo "Versión actualmente desplegada: ${ANTERIOR}"
+          else
+            echo "No hay despliegues previos registrados por este flujo."
+          fi
+
+      # ── Disparo ──────────────────────────────────────────────────────────────
+      - name: Disparar el despliegue
+        env:
+          HOOK: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+          SHA: ${{ steps.commit.outputs.sha }}
+        run: |
+          # El hook se enmascara antes de usarse y la salida de curl se descarta: la URL
+          # lleva la clave dentro y no debe aparecer nunca en el registro de ejecucion.
+          echo "::add-mask::$HOOK"
+          # El parametro ref es lo que permite revertir sin interfaz de programacion:
+          # redesplegar un commit concreto en lugar del ultimo de la rama.
+          if curl -fsS -X POST "${HOOK}&ref=${SHA}" > /dev/null 2>&1; then
+            echo "Despliegue solicitado para ${SHA}."
+          else
+            echo "::error::El disparador respondió con error."
+            exit 1
+          fi
+
+      - name: Esperar a que la instancia se reinicie
+        run: |
+          # Sin esta pausa se sondearia la instancia ANTERIOR, que responde perfectamente
+          # sana, y el despliegue se daria por bueno sin haber ocurrido. Es el modo de fallo
+          # mas probable de todo el diseno y el mas dificil de detectar, porque produce un
+          # pipeline verde.
+          echo "Pausa de 30 s antes del primer sondeo."
+          sleep 30
+
+      # ── Verificación ─────────────────────────────────────────────────────────
+      - name: Esperar a que la sonda responda sana
+        env:
+          URL: ${{ vars.RENDER_SERVICE_URL }}
+        run: |
+          if [ -z "$URL" ]; then
+            echo "::error::Falta la variable RENDER_SERVICE_URL. Sin ella no se puede verificar."
+            exit 1
+          fi
+
+          # Se sondea /health/ready y no /health/live: ready confirma ademas que la base de
+          # datos es alcanzable y, por tanto, que las migraciones se aplicaron.
+          #
+          # 60 intentos x 10 s = 600 s. Es mucho mas que los 150 s de la verificacion local,
+          # y es deliberado: el proveedor construye la imagen en su propia infraestructura y
+          # el plan gratuito arranca en frio.
+          SANAS=0
+          ULTIMA=""
+          for intento in $(seq 1 60); do
+            ULTIMA=$(curl -fsS --max-time 30 "${URL}/health/ready" 2>/dev/null || true)
+            case "$ULTIMA" in
+              *'"status":"Healthy"'*)
+                SANAS=$((SANAS+1))
+                echo "  intento ${intento}: sana (${SANAS}/3)"
+                # Tres seguidas: durante un reinicio el servicio rebota y puede responder
+                # sano un instante antes de volver a caer. Una sola respuesta no distingue
+                # "arranco" de "esta arrancando".
+                if [ "$SANAS" -ge 3 ]; then
+                  echo "Servicio sano y estable."
+                  exit 0
+                fi
+                ;;
+              *)
+                if [ "$SANAS" -gt 0 ]; then
+                  echo "  intento ${intento}: rebote, se reinicia el conteo"
+                fi
+                SANAS=0
+                ;;
+            esac
+            sleep 10
+          done
+
+          echo "::error::La sonda nunca respondió sana de forma sostenida en 600 s."
+          echo "Última respuesta recibida: ${ULTIMA:-(ninguna)}"
+          exit 1
+
+      - name: Verificación de humo
+        env:
+          URL: ${{ vars.RENDER_SERVICE_URL }}
+        run: |
+          for ruta in "/" "/health/live"; do
+            if curl -fsS --max-time 30 "${URL}${ruta}" > /dev/null 2>&1; then
+              echo "  OK ${ruta}"
+            else
+              echo "::error::${ruta} no respondió correctamente."
+              exit 1
+            fi
+          done
+
+      # Opcional y con degradacion honesta: si no hay credenciales de la interfaz de
+      # programacion, el paso se omite con aviso y manda el sondeo. Mismo criterio que usa
+      # la aplicacion con OTEL_EXPORTER_OTLP_ENDPOINT.
+      - name: Consultar el estado real del despliegue
+        if: ${{ vars.RENDER_SERVICE_ID != '' }}
+        continue-on-error: true
+        env:
+          CLAVE: ${{ secrets.RENDER_API_KEY }}
+          SERVICIO: ${{ vars.RENDER_SERVICE_ID }}
+        run: |
+          if [ -z "$CLAVE" ]; then
+            echo "::notice::Sin RENDER_API_KEY; se omite. El sondeo ya confirmó el servicio."
+            exit 0
+          fi
+          echo "::add-mask::$CLAVE"
+          curl -fsS -H "Authorization: Bearer ${CLAVE}" \
+            "https://api.render.com/v1/services/${SERVICIO}/deploys?limit=1" \
+            | head -c 2000 || echo "::notice::No se pudo consultar el estado; no es bloqueante."
+
+      # ── Resumen ──────────────────────────────────────────────────────────────
+      - name: Escribir el resumen
+        if: always()
+        env:
+          SHA: ${{ steps.commit.outputs.sha }}
+          ANTERIOR: ${{ steps.anterior.outputs.sha }}
+        run: |
+          {
+            echo "## Despliegue"
+            echo ""
+            echo "| Campo | Valor |"
+            echo "|---|---|"
+            echo "| Commit desplegado | \`${SHA}\` |"
+            echo "| Commit anterior | \`${ANTERIOR:-desconocido}\` |"
+            echo "| Resultado | ${{ job.status }} |"
+            echo ""
+            echo "### Para revertir"
+            echo ""
+            echo "Actions → **${{ github.workflow }}** → Run workflow → \`sha\`:"
+            echo ""
+            echo '```'
+            echo "${ANTERIOR:-<commit sano anterior>}"
+            echo '```'
+            echo ""
+            echo "> **Una migración destructiva no se revierte redesplegando.** La imagen"
+            echo "> vuelve atrás; los datos no. La recuperación pasa por los guiones de"
+            echo "> respaldo, que son destructivos y exigen confirmación explícita."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Diagnóstico
+        if: failure()
+        env:
+          URL: ${{ vars.RENDER_SERVICE_URL }}
+        run: |
+          echo "── Última respuesta de las sondas ──"
+          curl -sS --max-time 20 "${URL}/health/ready" || true
+          echo ""
+          curl -sS --max-time 20 "${URL}/health/live" || true
+          echo ""
+          echo "Los registros del servicio están en el panel del proveedor."
+          echo "Si la causa fue una migración, la instancia puede estar viva y no lista."

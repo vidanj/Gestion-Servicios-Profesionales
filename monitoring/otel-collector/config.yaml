@@ -1,0 +1,97 @@
+# Colector de telemetria: recibe OTLP de la API y lo republica en formato Prometheus.
+#
+# Por que existe esta pieza, en lugar de que la API exponga /metrics directamente:
+# el exportador de Prometheus en proceso (OpenTelemetry.Exporter.Prometheus.AspNetCore)
+# nunca ha publicado una version estable -1.19.1-beta.1 al 2026-09-23- y el backend
+# compila tratando las advertencias como errores, sin silenciadores. Ademas, un
+# endpoint de metricas en una API publica revela rutas, volumenes y versiones.
+# Detalle en specs/008-monitoreo-metricas-alertas/research.md, decision D1.
+#
+# Se usa la distribucion "contrib" y no la nucleo porque el exportador `prometheus`
+# solo viene en la primera.
+
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  # Primero de la cadena a proposito: si el colector se queda sin memoria, deja de
+  # aceptar datos en vez de morir. Un colector muerto convierte un incidente de la
+  # aplicacion en dos incidentes, y el segundo tapa al primero.
+  memory_limiter:
+    check_interval: 5s
+    limit_mib: 256
+    spike_limit_mib: 64
+
+  batch:
+    timeout: 10s
+    send_batch_size: 1024
+
+exporters:
+  prometheus:
+    endpoint: 0.0.0.0:8889
+    # Sin prefijo anadido: los nombres ya llegan con su espacio propio
+    # (http_, kestrel_, aspnetcore_, dotnet_, gsp_).
+    namespace: ""
+    # Las etiquetas del recurso NO se copian a cada serie. Multiplicarian la
+    # cardinalidad sin anadir capacidad de consulta: service.name y service.version
+    # viven en target_info, y quien identifica el origen en las alertas es la
+    # etiqueta `job` que pone Prometheus al raspar.
+    resource_to_telemetry_conversion:
+      enabled: false
+    # Cinco minutos sin datos y la serie desaparece. Es el mecanismo que permite
+    # detectar la ausencia: sin caducidad, el colector seguiria publicando el ultimo
+    # valor conocido de una aplicacion muerta desde hace horas, el tablero mostraria
+    # cifras plausibles y ninguna alarma saltaria. La alerta ApiSinMetricas espera
+    # 10 minutos, mas que esta caducidad, para no confundir un hueco de raspado con
+    # una ausencia real.
+    metric_expiration: 5m
+    enable_open_metrics: true
+
+  # Destino provisional de las trazas. La aplicacion ya las produce e instrumenta
+  # desde el issue #124; aqui solo se registran.
+  debug:
+    verbosity: basic
+
+extensions:
+  health_check:
+    endpoint: 0.0.0.0:13133
+
+service:
+  extensions: [health_check]
+  pipelines:
+    metrics:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [prometheus]
+
+    # PUNTO 2 DEL CASO DE ESTUDIO -- visor de trazabilidad.
+    # La tuberia existe y recibe de verdad; lo que falta es el almacen de trazas y
+    # su interfaz de consulta. Este es el punto exacto donde se conecta: se anade el
+    # exportador correspondiente a esta lista y nada mas cambia, porque la API ya
+    # esta exportando trazas de ASP.NET Core, HttpClient y el driver de PostgreSQL.
+    # No se desarrolla en esta entrega.
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [debug]
+
+  telemetry:
+    metrics:
+      level: basic
+      # Hay que declarar el lector explicitamente. En versiones anteriores bastaba
+      # con `address: 0.0.0.0:8888`, que quedo obsoleto; sin esto el colector
+      # publica su propia telemetria solo en localhost y el objetivo `colector`
+      # de Prometheus aparece caido. Importa mas de lo que parece: un colector que
+      # descarta datos por falta de memoria lo haria en silencio, y desde fuera se
+      # veria como si la aplicacion hubiera dejado de emitir.
+      readers:
+        - pull:
+            exporter:
+              prometheus:
+                host: 0.0.0.0
+                port: 8888

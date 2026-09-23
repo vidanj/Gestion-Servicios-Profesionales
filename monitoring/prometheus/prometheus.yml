@@ -1,0 +1,89 @@
+# Recoleccion de metricas y evaluacion de reglas.
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    monitor: gsp
+
+rule_files:
+  - /etc/prometheus/reglas/*.yml
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ['alertmanager:9093']
+
+scrape_configs:
+  # La API NO aparece aqui como objetivo directo, y es deliberado: no expone
+  # /metrics. Empuja por OTLP al colector, y lo que se raspa es el colector.
+  # El porque, en specs/008-monitoreo-metricas-alertas/research.md, decision D1.
+  - job_name: api
+    static_configs:
+      - targets: ['otel-collector:8889']
+        labels:
+          ambiente: local
+
+  # Telemetria del propio colector. Sin esto, un colector que descarta datos por
+  # falta de memoria lo haria en silencio y pareceria que la aplicacion dejo de
+  # emitir.
+  - job_name: colector
+    static_configs:
+      - targets: ['otel-collector:8888']
+
+  - job_name: prometheus
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # --- Sondeo externo -------------------------------------------------------
+  - job_name: sondas
+    scrape_interval: 30s
+    scrape_timeout: 20s
+    metrics_path: /probe
+    params:
+      module: [http_2xx]
+    static_configs:
+      - targets: ['http://api:10000/health/ready']
+        labels:
+          ambiente: local
+          sonda: ready
+      - targets: ['http://api:10000/health/live']
+        labels:
+          ambiente: local
+          sonda: live
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox:9115
+
+  # Servicio publicado. Se descubre por archivo y NO por lista fija, a proposito:
+  # el archivo no existe hasta que alguien pone la direccion real. Si estuviera
+  # escrito aqui un marcador, el sondeo fallaria de forma permanente desde el
+  # primer arranque y dispararia la alarma critica de indisponibilidad con la
+  # etiqueta de produccion. La primera alarma que viera cualquiera seria falsa,
+  # que es la peor manera posible de estrenar un sistema de alertas.
+  # Prometheus tolera que el archivo no exista: el grupo queda sin objetivos.
+  #
+  # Para activarlo: copiar objetivos/render.yml.ejemplo a objetivos/render.yml,
+  # poner la direccion real y recargar:
+  #   curl -X POST http://localhost:9090/-/reload
+  - job_name: sondas-render
+    scrape_interval: 60s
+    scrape_timeout: 55s
+    metrics_path: /probe
+    params:
+      module: [http_2xx_frio]
+    file_sd_configs:
+      - files:
+          - /etc/prometheus/objetivos/render.yml
+        refresh_interval: 60s
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox:9115

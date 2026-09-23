@@ -1,0 +1,300 @@
+{
+  "uid": "gsp-negocio",
+  "title": "GSP · Negocio",
+  "description": "Lo que distingue 'la API responde 200' de 'el negocio funciona'. Ninguna serie lleva identificadores ni datos personales: la metrica cuenta, el registro identifica.",
+  "tags": ["gsp", "negocio"],
+  "timezone": "browser",
+  "editable": false,
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s",
+  "time": { "from": "now-6h", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "Solicitudes creadas",
+      "description": "Volumen de negocio en el rango. Una caida a cero con trafico HTTP normal significa que el flujo se rompio en algun punto que el codigo 200 no delata.",
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "gsp-prometheus" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(increase(gsp_solicitudes_creadas_total{job=\"api\",resultado=\"creada\"}[$__range]))",
+          "legendFormat": "creadas"
+        }
+      ],
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "colorMode": "none",
+        "graphMode": "area",
+        "textMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "color": { "mode": "fixed", "fixedColor": "#3987e5" }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Altas de usuario",
+      "description": "Crecimiento. Un pico repentino puede ser una campana o un alta automatizada masiva; el panel de resultados de abajo lo distingue.",
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "gsp-prometheus" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(increase(gsp_usuarios_registrados_total{job=\"api\",resultado=\"creado\"}[$__range]))",
+          "legendFormat": "altas"
+        }
+      ],
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "colorMode": "none",
+        "graphMode": "area",
+        "textMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "color": { "mode": "fixed", "fixedColor": "#199e70" }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "Inicios de sesion correctos",
+      "description": "Proporcion de intentos que terminan en acceso. Cae cuando hay fuerza bruta, pero tambien cuando algo se rompio en el flujo de acceso.",
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "gsp-prometheus" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(increase(gsp_autenticacion_intentos_total{job=\"api\",resultado=\"exito\"}[$__range])) / clamp_min(sum(increase(gsp_autenticacion_intentos_total{job=\"api\"}[$__range])), 1)",
+          "legendFormat": "tasa de exito"
+        }
+      ],
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "decimals": 1,
+          "min": 0,
+          "max": 1,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "#d03b3b", "value": null },
+              { "color": "#fab219", "value": 0.5 },
+              { "color": "#0ca30c", "value": 0.8 }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "Respaldos fallidos",
+      "description": "SLO-7: el objetivo es cero. Un respaldo que falla en silencio solo se descubre el dia que hace falta restaurar.",
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "gsp-prometheus" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(increase(gsp_respaldos_ejecutados_total{job=\"api\",resultado!=\"exito\"}[$__range]))",
+          "legendFormat": "fallidos"
+        }
+      ],
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "#0ca30c", "value": null },
+              { "color": "#d03b3b", "value": 1 }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "Intentos de autenticacion por resultado",
+      "description": "El servicio devuelve el mismo mensaje para credenciales incorrectas y para cuenta desactivada, para no revelar cual de las dos ocurrio. La metrica si los distingue, y eso no rompe esa decision: la respuesta que ve el cliente sigue siendo identica y aqui no hay ningun identificador. Es lo que permite responder si la gente no entra porque se equivoca o porque su cuenta esta desactivada.",
+      "gridPos": { "h": 9, "w": 12, "x": 0, "y": 4 },
+      "datasource": { "type": "prometheus", "uid": "gsp-prometheus" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (resultado) (rate(gsp_autenticacion_intentos_total{job=\"api\"}[5m]))",
+          "legendFormat": "{{resultado}}"
+        }
+      ],
+      "options": {
+        "legend": { "displayMode": "table", "placement": "bottom", "showLegend": true, "calcs": ["lastNotNull", "max"] },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "decimals": 3,
+          "min": 0,
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 0,
+            "showPoints": "never"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "exito" },
+            "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "#199e70" } }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "credenciales_invalidas" },
+            "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "#d95926" } }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "cuenta_inactiva" },
+            "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "#c98500" } }]
+          }
+        ]
+      }
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "Solicitudes creadas y rechazadas",
+      "description": "El resultado 'servicio_no_disponible' no es un error del sistema: es un cliente pidiendo un servicio dado de baja o inactivo. Si crece, el catalogo que ve el cliente no coincide con el que acepta el servidor.",
+      "gridPos": { "h": 9, "w": 12, "x": 12, "y": 4 },
+      "datasource": { "type": "prometheus", "uid": "gsp-prometheus" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (resultado) (rate(gsp_solicitudes_creadas_total{job=\"api\"}[5m]))",
+          "legendFormat": "{{resultado}}"
+        }
+      ],
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "decimals": 3,
+          "min": 0,
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 0,
+            "showPoints": "never"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "creada" },
+            "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "#3987e5" } }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "servicio_no_disponible" },
+            "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "#d95926" } }]
+          }
+        ]
+      }
+    },
+    {
+      "id": 7,
+      "type": "barchart",
+      "title": "Transiciones de estado en el rango",
+      "description": "Las transiciones validas del sistema son seis; dos estados son terminales. Por eso un volumen apreciable de 'rechazada' no significa trafico hostil: significa que la interfaz esta ofreciendo transiciones que el servidor no admite. Es un defecto de producto que ninguna metrica tecnica mostraria.",
+      "gridPos": { "h": 10, "w": 14, "x": 0, "y": 13 },
+      "datasource": { "type": "prometheus", "uid": "gsp-prometheus" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (estado_origen, estado_destino, resultado) (increase(gsp_solicitudes_cambios_estado_total{job=\"api\"}[$__range]))",
+          "legendFormat": "{{estado_origen}} - {{estado_destino}} ({{resultado}})",
+          "instant": true
+        }
+      ],
+      "options": {
+        "orientation": "horizontal",
+        "showValue": "auto",
+        "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true },
+        "tooltip": { "mode": "single", "sort": "none" }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "min": 0,
+          "color": { "mode": "fixed", "fixedColor": "#3987e5" },
+          "custom": { "lineWidth": 1, "fillOpacity": 80, "gradientMode": "none" }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 8,
+      "type": "timeseries",
+      "title": "Duracion de los respaldos (p95)",
+      "description": "El respaldo crece con la base de datos. La tendencia al alza avisa antes de que agote el plazo del trabajo en segundo plano, que es cuando empezaria a fallar sin causa aparente.",
+      "gridPos": { "h": 10, "w": 10, "x": 14, "y": 13 },
+      "datasource": { "type": "prometheus", "uid": "gsp-prometheus" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(gsp_respaldos_duracion_seconds_bucket{job=\"api\"}[30m])))",
+          "legendFormat": "p95"
+        }
+      ],
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom", "showLegend": false },
+        "tooltip": { "mode": "single", "sort": "none" }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "decimals": 1,
+          "min": 0,
+          "color": { "mode": "fixed", "fixedColor": "#d55181" },
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "showPoints": "auto",
+            "pointSize": 8
+          }
+        },
+        "overrides": []
+      }
+    }
+  ]
+}
