@@ -192,6 +192,7 @@ jobs:
             -e SMTP_HOST=localhost -e SMTP_PORT=25 \
             -e SMTP_USER=ci -e SMTP_PASSWORD=ci -e SMTP_FROM=ci@ejemplo.com \
             -e OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317 \
+            -e OTEL_METRIC_EXPORT_INTERVAL=5000 \
             "$IMAGEN"
 
       - name: Esperar a que la API responda sana
@@ -215,8 +216,13 @@ jobs:
       - name: Generar tráfico
         run: bash scripts/generar-trafico.sh --url http://localhost:10000 --duracion 20
 
-      - name: Esperar dos ciclos de recolección
-        run: sleep 35
+      # Dos relojes distintos, y el lento manda: la aplicacion EXPORTA por OTLP cada
+      # 60 s por defecto -de ahi OTEL_METRIC_EXPORT_INTERVAL arriba, que lo baja a 5 s
+      # solo para esta comprobacion- y Prometheus RECOGE cada 15 s. Con la espera de
+      # 35 s y el intervalo por omision, el job fallaba sin que nada estuviera roto:
+      # las metricas simplemente aun no habian salido de la aplicacion.
+      - name: Esperar a que las métricas lleguen
+        run: sleep 45
 
       - name: Verificar el catálogo de métricas y las reglas
         run: bash scripts/verificar-monitoreo.sh

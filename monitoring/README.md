@@ -66,6 +66,17 @@ Versiones verificadas en Docker Hub el 2026-09-23. Ninguna etiqueta móvil;
 
 Cada uno de estos costó una sesión de diagnóstico; están aquí para que no cueste una segunda.
 
+**Las métricas tardan hasta un minuto en aparecer, y no es un fallo.** Hay dos relojes y manda
+el lento: la aplicación **exporta** por OTLP cada 60 s por omisión, mientras que Prometheus
+**recoge** cada 15 s. Tras generar tráfico hay que esperar ese minuto antes de verificar; si no,
+el catálogo sale incompleto y todo parece roto sin estarlo. Para acortarlo en pruebas:
+
+```bash
+OTEL_METRIC_EXPORT_INTERVAL=5000   # milisegundos
+```
+
+Es lo que hace el flujo de validación, y por eso allí basta con esperar 45 s.
+
 **El sondeo externo busca el host `api`.** Así se llama el servicio de la aplicación en el
 archivo de composición raíz. Si se levanta el contenedor a mano con otro nombre, el sondeo no
 lo resuelve, `probe_success` queda en 0 y la alarma crítica de indisponibilidad se dispara
