@@ -2,7 +2,9 @@
 
 > Reporte de consistencia entre [spec.md](spec.md), [plan.md](plan.md) y [tasks.md](tasks.md), y de
 > cumplimiento de la [constitución](../../.specify/memory/constitution.md) v1.1.0.
-> **Fecha:** 2026-09-23 · **Estado:** 1 hallazgo ALTO abierto, 3 medios, 2 bajos.
+> **Fecha:** 2026-09-23 · **Estado:** 6 hallazgos; el ALTO **resuelto** por decisión del
+> responsable, 2 medios abiertos con mitigación definida, 1 medio aceptado y 2 bajos.
+> **Sin hallazgos CRITICAL: la implementación puede proceder.**
 
 ---
 
@@ -53,7 +55,12 @@ estrategia de despliegue debe reflejar que su principio 1 se cumplirá plenament
 introduzca el registro de imágenes.
 
 **Acción:** ampliar T069 para corregir el principio 1 en lugar de solo actualizar su estado.
-**Estado:** abierto, pendiente de la aprobación del responsable.
+
+**Estado: RESUELTO (2026-09-23).** El responsable acepta la trazabilidad *commit → despliegue* y que
+el principio 1 se cumpla por completo cuando la spec 003 introduzca el registro de imágenes. El
+matiz ya está escrito en
+[`estrategia-despliegue.md`](../../docs/planeacion/estrategia-despliegue.md) §2 y en el documento
+entregable, §4.4. **US4 se implementa con el disparador del proveedor.**
 
 ### A2 — MEDIO · "Despliegue automático" y "aprobación manual" conviven mal
 
@@ -137,7 +144,8 @@ copiado entre documentos sin verificar, produce una tarea que no se puede ejecut
 
 ## 4. Antes de implementar
 
-1. Resolver **A1**: el responsable debe aceptar por escrito que la trazabilidad es por commit y no
-   por artefacto, o posponer US4 hasta que exista el registro de imágenes de la spec 003.
+1. ~~Resolver **A1**~~ — **hecho el 2026-09-23**: aceptado y documentado.
 2. Resolver **A2**: decidir si el reloj de SC-008 se detiene mientras espera aprobación.
+   *Resuelto en la práctica*: el documento entregable (§6) ya declara que el reloj **no** incluye la
+   espera de aprobación humana.
 3. Confirmar las mitigaciones de **A3** y **A5** al ejecutar T009 y T039.
