@@ -10,6 +10,9 @@ cuantas veces haga falta.
 |---|---|
 | `generar_monitoreo.py` | Genera el documento del caso de estudio de monitoreo |
 | `enlaces-monitoreo.json` | Issues, PR, ramas, ejecuciones y mediciones de ese documento |
+| [`guia-de-capturas.md`](guia-de-capturas.md) | **Qué va en cada uno de los 24 recuadros amarillos y cómo obtenerlo, paso a paso** |
+| `diagramas/*.mmd` | Fuentes de los dos diagramas, en Mermaid |
+| `diagramas/*.png` | Los mismos diagramas ya renderizados, listos para pegar |
 
 Fuente del contenido: [`docs/monitoreo-metricas-y-alertas.md`](../monitoreo-metricas-y-alertas.md).
 
@@ -53,5 +56,10 @@ amarillo**. Nunca se inventan: una evidencia que todavía no existe tiene que ve
 3. Pegar las capturas y los diagramas en los recuadros amarillos. El generador no incrusta
    imágenes a propósito: cuáles son buenas capturas es un criterio humano.
 
-La lista completa de capturas, numerada y con su ubicación, está en la sección 12 de la fuente en
+**Los dos diagramas ya están hechos** en `diagramas/`. Para las veintidós capturas,
+[`guia-de-capturas.md`](guia-de-capturas.md) da los pasos exactos de cada una: qué abrir, qué
+esperar, qué debe verse y qué recortar. Dos de ellas están bloqueadas hasta que se configure el
+secreto del despliegue, y la guía explica cómo desbloquearlas.
+
+La lista numerada con su ubicación en el documento también está en la sección 12 de la fuente en
 markdown.

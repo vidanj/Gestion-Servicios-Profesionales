@@ -1,0 +1,51 @@
+%% DIAGRAMA 2 — Flujo del pipeline, del commit a la versión verificada
+%% Va en la sección 4.1 del documento ("El recorrido completo").
+%% Es el diagrama principal del entregable.
+%% .
+%% Paleta clara: azul las etapas de integración, ámbar las puertas de decisión,
+%% verde el resultado bueno, rojo el fallo. Los colores de estado se reservan para
+%% el estado; nunca se usan para distinguir etapas entre sí.
+%% .
+%% Exportar vertical, ancho 1400 px, fondo blanco.
+flowchart TD
+    A["Commit en rama de trabajo"] --> B["Pull request hacia <b>dev</b>"]
+
+    B --> C1["Formato y análisis<br/><i>CSharpier · StyleCop · Roslynator</i>"]
+    B --> C2["Pruebas y cobertura<br/><i>350 pruebas</i>"]
+    B --> C3["Frontend<br/><i>compilación · Playwright</i>"]
+    B --> C4["Imagen<br/><i>construir y arrancar</i>"]
+    B --> C5["Seguridad<br/><i>CodeQL · Dependabot</i>"]
+
+    C1 --> D{"¿Todo en verde?"}
+    C2 --> D
+    C3 --> D
+    C4 --> D
+    C5 --> D
+
+    D -- "no" --> X["Se corrige.<br/>No se integra"]
+    D -- "sí" --> E["Revisión y merge a <b>dev</b>"]
+
+    E --> F{"<b>Puerta de integración</b><br/>¿las 4 comprobaciones en verde<br/>para ESTE commit?"}
+    F -- "no" --> X
+    F -- "sí" --> G{"Aprobación en<br/>ambiente protegido"}
+
+    G -- "aprobada" --> H["Disparo del despliegue<br/><i>hook + ref = sha</i>"]
+    H --> I["Espera inicial de 30 s<br/><i>evita sondear la instancia anterior</i>"]
+    I --> J{"Sonda de preparación<br/>¿sana 3 veces seguidas?<br/><i>hasta 600 s</i>"}
+
+    J -- "sí" --> K["<b>Desplegado y verificado</b><br/>se registra el commit"]
+    J -- "se agota el plazo" --> L["<b>Fallo visible</b><br/>con diagnóstico"]
+    L --> M["Reversión:<br/>redesplegar el commit sano anterior"]
+    M --> H
+
+    classDef ci fill:#e8f0fb,stroke:#2a78d6,stroke-width:2px,color:#0b0b0b
+    classDef puerta fill:#fdf4e0,stroke:#c98500,stroke-width:2px,color:#0b0b0b
+    classDef exito fill:#e3f5ee,stroke:#0ca30c,stroke-width:2.5px,color:#0b0b0b
+    classDef fallo fill:#fbeaea,stroke:#d03b3b,stroke-width:2px,color:#0b0b0b
+    classDef neutro fill:#f2f2f0,stroke:#8a8a8a,stroke-width:2px,color:#0b0b0b
+
+    class A,B,C1,C2,C3,C4,C5,E ci
+    class D,F,G,J puerta
+    class K exito
+    class X,L fallo
+    class H,I,M neutro

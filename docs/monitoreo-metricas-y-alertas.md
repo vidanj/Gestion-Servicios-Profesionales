@@ -605,6 +605,11 @@ Especificación: [`specs/008-monitoreo-metricas-alertas/`](../specs/008-monitore
 El documento entregable reserva un recuadro para cada una; aquí se listan para que se tomen todas
 y ninguna quede al azar.
 
+> **Los pasos concretos de cada captura** —qué abrir, qué esperar, qué debe verse y qué recortar—
+> están en [`docs/reporte/guia-de-capturas.md`](reporte/guia-de-capturas.md). Los dos diagramas
+> ya están renderizados en [`docs/reporte/diagramas/`](reporte/diagramas/), con sus fuentes en
+> Mermaid por si hay que rehacerlos.
+
 | # | Captura | Dónde va |
 |---|---|---|
 | 1 | Issue #250 en GitHub, con etiquetas, prioridad y estimación | §12, evidencia de documentación |
