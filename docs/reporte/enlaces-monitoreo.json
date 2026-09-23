@@ -9,10 +9,10 @@
       "titulo": "Spec 008 y documento de monitoreo",
       "issue": 250,
       "issue_url": "https://github.com/vidanj/Gestion-Servicios-Profesionales/issues/250",
-      "pr": "",
-      "pr_url": "",
+      "pr": "252",
+      "pr_url": "https://github.com/vidanj/Gestion-Servicios-Profesionales/pull/252",
       "rama": "docs/250-spec-008-monitoreo",
-      "commit": ""
+      "commit": "383c548"
     },
     "implementacion": {
       "titulo": "Stack de monitoreo, métricas de negocio y despliegue verificado",

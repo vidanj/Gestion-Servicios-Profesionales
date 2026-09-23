@@ -586,7 +586,7 @@ entregable: una evidencia que todavía no existe no se rellena con una suposici�
 
 | Entregable | Issue | PR | Rama | Commit |
 |---|---|---|---|---|
-| Documentación: spec 008 y este documento | [#250](https://github.com/vidanj/Gestion-Servicios-Profesionales/issues/250) | **[PENDIENTE]** | `docs/250-spec-008-monitoreo` | **[PENDIENTE]** |
+| Documentación: spec 008 y este documento | [#250](https://github.com/vidanj/Gestion-Servicios-Profesionales/issues/250) | [#252](https://github.com/vidanj/Gestion-Servicios-Profesionales/pull/252) | `docs/250-spec-008-monitoreo` | `383c548` |
 | Implementación: monitoreo y despliegue | [#251](https://github.com/vidanj/Gestion-Servicios-Profesionales/issues/251) | **[PENDIENTE]** | `ci/251-monitoreo-y-despliegue` | **[PENDIENTE]** |
 | Issue absorbido: disparador y reversión | [#189](https://github.com/vidanj/Gestion-Servicios-Profesionales/issues/189) | **[PENDIENTE]** | `ci/251-monitoreo-y-despliegue` | — |
 | Issue cerrado por cambio de enfoque | [#187](https://github.com/vidanj/Gestion-Servicios-Profesionales/issues/187) | — | — | — |
