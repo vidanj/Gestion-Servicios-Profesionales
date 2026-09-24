@@ -1,0 +1,35 @@
+%% DIAGRAMA 1 — Arquitectura de telemetría
+%% Va en la sección 2 del documento ("Decisión estructural: dónde viven las métricas").
+%% .
+%% Paleta clara a propósito: el destino es un documento que se imprime sobre blanco.
+%% Los colores son los mismos que usan los tableros (azul aplicación, verde recolección,
+%% naranja salida, gris lo reservado), pero aquí como borde sobre relleno suave.
+%% .
+%% Exportar horizontal, ancho 1600 px, fondo blanco.
+flowchart LR
+    API["<b>API</b><br/>ASP.NET Core 9<br/><i>instrumentada</i>"]
+    COL["<b>OpenTelemetry<br/>Collector</b><br/><i>distribución contrib</i>"]
+    PRO["<b>Prometheus</b><br/>series y reglas"]
+    GRA["<b>Grafana</b><br/>tableros"]
+    ALM["<b>Alertmanager</b><br/>alarmas"]
+    BB["<b>Blackbox</b><br/>sondeo externo"]
+    REN["<b>Servicio publicado</b><br/><i>plan gratuito</i>"]
+    T2["<b>Punto 2</b><br/>visor de trazabilidad<br/><i>reservado</i>"]
+
+    API -- "OTLP :4317" --> COL
+    COL -- "formato Prometheus :8889" --> PRO
+    BB -- "sondas de salud" --> PRO
+    REN -. "observado desde fuera" .-> BB
+    PRO --> GRA
+    PRO --> ALM
+    COL -. "trazas: tubería creada,<br/>sin almacén final" .-> T2
+
+    classDef app fill:#e8f0fb,stroke:#2a78d6,stroke-width:2px,color:#0b0b0b
+    classDef infra fill:#e3f5ee,stroke:#1baf7a,stroke-width:2px,color:#0b0b0b
+    classDef salida fill:#fdefe7,stroke:#eb6834,stroke-width:2px,color:#0b0b0b
+    classDef reservado fill:#f2f2f0,stroke:#8a8a8a,stroke-width:2px,stroke-dasharray:5 4,color:#52514e
+
+    class API,REN app
+    class COL,PRO,BB infra
+    class GRA,ALM salida
+    class T2 reservado

@@ -1,0 +1,65 @@
+{
+  "_comentario": "Datos del documento de monitoreo. Lo que quede vacío se imprime como [PENDIENTE] resaltado en amarillo; nunca se inventa. Rellenar conforme avance el trabajo y volver a ejecutar docs/reporte/generar_monitoreo.py.",
+  "autor": "Efrén Campuzano",
+  "cuenta": "vidanj",
+  "fecha": "23 de septiembre de 2026",
+
+  "items": {
+    "documentacion": {
+      "titulo": "Spec 008 y documento de monitoreo",
+      "issue": 250,
+      "issue_url": "https://github.com/vidanj/Gestion-Servicios-Profesionales/issues/250",
+      "pr": "252",
+      "pr_url": "https://github.com/vidanj/Gestion-Servicios-Profesionales/pull/252",
+      "rama": "docs/250-spec-008-monitoreo",
+      "commit": "383c548"
+    },
+    "implementacion": {
+      "titulo": "Stack de monitoreo, métricas de negocio y despliegue verificado",
+      "issue": 251,
+      "issue_url": "https://github.com/vidanj/Gestion-Servicios-Profesionales/issues/251",
+      "pr": "253",
+      "pr_url": "https://github.com/vidanj/Gestion-Servicios-Profesionales/pull/253",
+      "rama": "ci/251-monitoreo-y-despliegue",
+      "commit": "bdb32c0"
+    },
+    "resuelto_189": {
+      "titulo": "Disparador de despliegue, verificación de salud y reversión",
+      "issue": 189,
+      "issue_url": "https://github.com/vidanj/Gestion-Servicios-Profesionales/issues/189",
+      "pr": "253",
+      "pr_url": "https://github.com/vidanj/Gestion-Servicios-Profesionales/pull/253",
+      "rama": "ci/251-monitoreo-y-despliegue",
+      "commit": "bdb32c0"
+    },
+    "cerrado_187": {
+      "titulo": "Métricas Prometheus e instrumentación de EF Core (superado por cambio de enfoque)",
+      "issue": 187,
+      "issue_url": "https://github.com/vidanj/Gestion-Servicios-Profesionales/issues/187",
+      "pr": "—",
+      "pr_url": "",
+      "rama": "—",
+      "commit": "—"
+    }
+  },
+
+  "ejecuciones": {
+    "backend_lint": "",
+    "backend_tests": "",
+    "frontend_tests": "",
+    "docker_image": "",
+    "monitoring_stack": "",
+    "deploy": "",
+    "reversion": ""
+  },
+
+  "mediciones": {
+    "duracion_despliegue": "",
+    "duracion_reversion": "",
+    "metricas_verificadas": "17 de 17 presentes (guion en salida 0)",
+    "reglas_cargadas": "10 alarmas y 6 reglas de registro",
+    "series_tras_una_hora": "",
+    "alerta_tiempo_disparo": "120 s (objetivo: 180 s o menos)",
+    "alerta_tiempo_resolucion": "60 s (objetivo: 120 s o menos)"
+  }
+}

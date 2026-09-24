@@ -21,8 +21,14 @@
 | driver.js | Recorridos guiados por rol | Planeada (spec 002, T001) | `frontend/src/features/tours/` |
 | GitHub Codespaces | Entorno de trabajo en la nube | Planeada (spec 003, US1) | `.devcontainer/` |
 | Terraform | Infraestructura declarativa multi-proveedor | Planeada (spec 003, US2/US4) | `infra/` |
-| GitHub Actions | CI/CD | **En uso** (5 workflows) + 5 planeados | `.github/workflows/` |
+| GitHub Actions | CI/CD | **En uso** (6 workflows) + 7 planeados | `.github/workflows/` |
 | Docker | Imagen de la API y verificación en CI | **En uso** | `Dockerfile`, `docker-compose.yml` |
+| OpenTelemetry Collector | Traduce OTLP al formato de Prometheus | Planeada (spec 008, US1) | `monitoring/otel-collector/` |
+| Prometheus | Recolección de métricas y evaluación de alertas | Planeada (spec 008, US1/US2) | `monitoring/prometheus/` |
+| Alertmanager | Enrutado, agrupación e inhibición de alarmas | Planeada (spec 008, US2) | `monitoring/alertmanager/` |
+| Grafana | Tableros aprovisionados de forma declarativa | Planeada (spec 008, US1) | `monitoring/grafana/` |
+| Blackbox exporter | Sondeo externo de las sondas de salud | Planeada (spec 008, US1) | `monitoring/blackbox/` |
+| python-docx | Genera los documentos entregables desde su fuente markdown | **En uso** | `docs/reporte/` |
 
 ---
 
@@ -175,10 +181,51 @@ notación de Katalon (palabras clave `WebUI.*`) y de Selenium IDE (`open`, `type
 | `frontend-tests.yml` | push (+ `ci/**`); PR con `frontend/**` | Node 24, `npm ci`, build, Chromium, `timeout-minutes: 15` | En uso |
 | `docker-image.yml` | push (+ `ci/**`); PR con `Dockerfile`/`backend/**` | Buildx con caché GHA, `postgres:18-alpine`, sondeo de `/health/ready` 150 s | En uso |
 | `codeql.yml` + `dependabot.yml` | Programado / PR | Análisis de seguridad y actualizaciones | En uso |
+| `load-tests.yml` | Manual o PR con etiqueta `carga` | k6 con umbral `p(95) < 5000 ms`, doble llave de activación | En uso |
 | `infra-plan.yml` / `infra-apply.yml` | PR con `infra/**` / manual | Environment `infra` con revisión, concurrencia sin cancelar | Planeado |
-| `deploy-staging.yml` | push a `dev` / manual con `sha` | GHCR por SHA, sondeo de 300 s, concurrencia `deploy-staging` | Planeado |
+| `deploy-staging.yml` | push a `dev` / manual con `sha` | GHCR por SHA, sondeo de 300 s, concurrencia `deploy-staging` | Planeado (spec 003) |
 | `promote-production.yml` | Manual | Environment `production` con revisión | Planeado |
 | `secret-scan.yml` | PR | gitleaks sobre el diff | Planeado |
+| `deploy.yml` | Imagen verificada sobre `dev` / manual con `sha` | Deploy hook, puerta de las 4 comprobaciones, sondeo de 600 s con 3 respuestas sanas, concurrencia sin cancelar | Planeado (spec 008) |
+| `monitoring-stack.yml` | PR con `monitoring/**` | `promtool check`/`test rules`, `amtool check-config`, validación del colector y de los tableros | Planeado (spec 008) |
+
+> `deploy.yml` (spec 008) y `deploy-staging.yml` (spec 003) **no son el mismo flujo ni se
+> duplican**: el primero despliega el único ambiente que existe hoy mediante el deploy hook del
+> proveedor; el segundo presupone un ambiente de staging declarado con Terraform y una imagen
+> publicada en un registro, que todavía no existen. El primero se sustituirá por el segundo cuando
+> la spec 003 se implemente.
+
+## 12. Entorno de monitoreo (spec 008)
+
+**Planeación de uso.** Un archivo de composición propio en `monitoring/`, independiente del de la
+aplicación, porque el monitoreo debe seguir en pie cuando la aplicación se cae. Detalle completo en
+[monitoreo-metricas-y-alertas.md](../monitoreo-metricas-y-alertas.md) §10.
+
+| Herramienta | Parámetros clave |
+|---|---|
+| OpenTelemetry Collector | Distribución *contrib* (el exportador de Prometheus no viene en la núcleo); receptores OTLP 4317/4318; límite de memoria; **caducidad de series a 5 min**, que es lo que permite detectar la ausencia de métricas; conversión de atributos de recurso a etiquetas **desactivada** |
+| Prometheus | Recolección y evaluación cada 15 s; reglas en directorio versionado; la API **no** se raspa directamente; plazo ampliado para el sondeo del servicio publicado |
+| Alertmanager | Agrupación por alarma y ambiente; inhibición de las derivadas; receptor de consola por omisión y destino externo documentado pero desactivado |
+| Grafana | Puerto **3001** (el 3000 lo ocupa Next.js); origen de datos y tableros aprovisionados; edición desde la interfaz **desactivada**; contraseña desde `GRAFANA_ADMIN_PASSWORD` |
+| Blackbox exporter | Dos módulos, uno con plazo ampliado para el arranque en frío; ambos afirman el cuerpo de la respuesta, no solo el código 200 |
+| Versiones | Todas las imágenes fijadas a una versión exacta; `monitoring-stack.yml` verifica que no haya etiquetas móviles |
+
+**Decisión registrada.** No se usan `OpenTelemetry.Exporter.Prometheus.AspNetCore` ni
+`OpenTelemetry.Instrumentation.EntityFrameworkCore`: consultados el 2026-09-23, **ninguno de los dos
+ha publicado jamás una versión estable** (`1.19.1-beta.1` y `1.19.0-beta.1`), y el backend compila
+tratando las advertencias como errores. Esto corrige la premisa del issue #187, que los daba por
+inminentes.
+
+## 13. python-docx (documentos entregables)
+
+| Parámetro | Valor |
+|---|---|
+| Instalación | `pip install python-docx` |
+| Guion | `docs/reporte/generar_monitoreo.py`, ejecutado desde la raíz |
+| Datos | `docs/reporte/enlaces-monitoreo.json`; lo que falte se imprime como `[PENDIENTE]` resaltado, nunca se inventa |
+| Salida | `.github/DRAFTS/`, ignorado por git: se versionan la fuente y el generador, no el binario |
+| Índice | Campo de tabla de contenido con actualización automática al abrir |
+| Imágenes | No se incrustan: quedan recuadros amarillos para pegarlas a mano |
 
 ## 10. Docker
 
