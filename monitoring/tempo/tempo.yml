@@ -1,0 +1,54 @@
+# Almacen de trazas. Modo monolitico: todos los componentes en un solo proceso,
+# disco local, sin Kafka.
+#
+# Tempo 3.0 cambio de arquitectura respecto a 2.x: ya no hay ingesters ni
+# compactor. En modo monolitico el distribuidor entrega directo al live-store,
+# que sirve las consultas recientes y vuelca los bloques a disco. Por eso este
+# archivo no tiene bloques `ingester:` ni `compactor:`; si alguien copia un
+# ejemplo de 2.x y los agrega, Tempo no arranca.
+#
+# Por que Tempo y no Jaeger: Jaeger resuelve trazas pero trae su propia interfaz;
+# habria que unir dos visores en lugar de uno. Detalle en
+# specs/009-visor-trazabilidad/research.md, decision D1.
+#
+# Version verificada el 2026-09-24: grafana/tempo:3.0.3.
+
+# Necesario para que la busqueda de Grafana reciba resultados en flujo. Sin esto,
+# el panel de trazas mas lentas espera a la consulta completa antes de pintar nada.
+stream_over_http_enabled: true
+
+server:
+  http_listen_port: 3200
+  grpc_listen_port: 9095
+  # Mismo criterio que Loki y Alloy.
+  log_level: warn
+
+distributor:
+  receivers:
+    otlp:
+      protocols:
+        # Solo gRPC: es lo unico que usa el colector para reenviar. Abrir HTTP
+        # tambien seria una segunda puerta sin nadie que la use.
+        grpc:
+          endpoint: 0.0.0.0:4317
+
+storage:
+  trace:
+    backend: local
+    wal:
+      path: /var/tempo/wal
+    local:
+      path: /var/tempo/blocks
+
+overrides:
+  # Formato con ambitos (`defaults:` y dentro `compaction:`). Tempo 3.0 rechaza el
+  # formato plano de 2.x y se niega a arrancar si lo detecta.
+  defaults:
+    compaction:
+      # Siete dias, igual que Loki. Un registro sin su traza, o al reves, rompe
+      # la navegacion del visor: las dos retenciones tienen que coincidir.
+      block_retention: 168h
+
+# Mismo criterio que Grafana y Loki: nada sale del equipo.
+usage_report:
+  reporting_enabled: false

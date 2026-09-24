@@ -64,6 +64,11 @@ $sanas = (Esperar "colector"     "http://localhost:13133")   -and $sanas
 $sanas = (Esperar "prometheus"   "http://localhost:9090/-/ready")   -and $sanas
 $sanas = (Esperar "alertmanager" "http://localhost:9093/-/ready")   -and $sanas
 $sanas = (Esperar "grafana"      "http://localhost:3001/api/health") -and $sanas
+# Spec 009. Loki tarda unos segundos mas que el resto en responder /ready: espera
+# a que su anillo interno se estabilice antes de declararse listo.
+$sanas = (Esperar "loki"         "http://localhost:3100/ready")      -and $sanas
+$sanas = (Esperar "tempo"        "http://localhost:3200/ready")      -and $sanas
+$sanas = (Esperar "alloy"        "http://localhost:12345/-/ready")   -and $sanas
 
 if (-not $sanas) {
     Write-Host "El entorno no quedo sano. Revisa: docker compose -f monitoring/docker-compose.yml logs" -ForegroundColor Red
@@ -86,6 +91,9 @@ Write-Host "  Tableros (Grafana) .... http://localhost:3001   (admin / valor de 
 Write-Host "  Prometheus ............ http://localhost:9090"
 Write-Host "  Alarmas ............... http://localhost:9093"
 Write-Host "  Sondeo externo ........ http://localhost:9115"
+Write-Host "  Registros (Loki) ...... http://localhost:3100   (solo API; se consulta desde Grafana)"
+Write-Host "  Trazas (Tempo) ........ http://localhost:3200   (solo API; se consulta desde Grafana)"
+Write-Host "  Recolector (Alloy) .... http://localhost:12345  (diagnostico de la recoleccion)"
 if (-not $SinApi) {
     Write-Host "  API (tras el proxy) ... http://localhost:8080"
 }
