@@ -8,14 +8,17 @@ public class ServiceRequestService : IServiceRequestService
 {
     private readonly IServiceRequestRepository _repository;
     private readonly IServiceRepository _serviceRepository;
+    private readonly IMetricasDeNegocio _metricas;
 
     public ServiceRequestService(
         IServiceRequestRepository repository,
-        IServiceRepository serviceRepository
+        IServiceRepository serviceRepository,
+        IMetricasDeNegocio metricas
     )
     {
         _repository = repository;
         _serviceRepository = serviceRepository;
+        _metricas = metricas;
     }
 
     public async Task<ServiceRequestDto> CreateRequestAsync(
@@ -26,6 +29,10 @@ public class ServiceRequestService : IServiceRequestService
         var service = await _serviceRepository.GetByIdAsync(dto.ServiceId);
         if (service is null || !service.IsActive)
         {
+            // No es un error del sistema: es un cliente pidiendo un servicio dado de baja.
+            // Si esta cuenta crece, el catálogo que ve el cliente dejó de coincidir con el
+            // que acepta el servidor.
+            _metricas.SolicitudCreada(creada: false);
             throw new KeyNotFoundException(
                 $"El servicio con ID {dto.ServiceId} no existe o no está disponible."
             );
@@ -44,6 +51,8 @@ public class ServiceRequestService : IServiceRequestService
         };
 
         var created = await _repository.CreateAsync(request);
+
+        _metricas.SolicitudCreada(creada: true);
         return (await _repository.GetRequestDtoByIdAsync(created.Id))!;
     }
 
@@ -97,6 +106,11 @@ public class ServiceRequestService : IServiceRequestService
 
         if (requesterRole != "Admin" && request.ProfessionalId != requesterId)
         {
+            _metricas.CambioDeEstado(
+                request.Status,
+                newStatus,
+                ResultadoDeCambioDeEstado.NoAutorizada
+            );
             throw new UnauthorizedAccessException(
                 "Solo el profesionista asignado o un Admin puede cambiar el estado."
             );
@@ -104,10 +118,22 @@ public class ServiceRequestService : IServiceRequestService
 
         if (!IsValidTransition(request.Status, newStatus))
         {
+            // Un volumen apreciable de transiciones rechazadas no es tráfico hostil:
+            // significa que la interfaz está ofreciendo transiciones que el servidor no
+            // admite. Es un defecto de producto que ninguna métrica técnica mostraría.
+            _metricas.CambioDeEstado(
+                request.Status,
+                newStatus,
+                ResultadoDeCambioDeEstado.Rechazada
+            );
             throw new InvalidOperationException(
                 $"Transición de estado inválida: {request.Status} → {newStatus}."
             );
         }
+
+        // Se cuenta con el estado de origen todavía sin sobrescribir; después de la
+        // asignación de abajo, origen y destino serían el mismo valor.
+        _metricas.CambioDeEstado(request.Status, newStatus, ResultadoDeCambioDeEstado.Aceptada);
 
         request.Status = newStatus;
 

@@ -2,6 +2,7 @@ using Npgsql;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
+using SistemaServicios.API.Telemetry;
 
 namespace SistemaServicios.API.Extensions;
 
@@ -73,7 +74,38 @@ public static class TelemetryConfiguration
             })
             .WithMetrics(metrics =>
             {
-                _ = metrics.AddAspNetCoreInstrumentation().AddHttpClientInstrumentation();
+                // AddRuntimeInstrumentation es estable, a diferencia del exportador de
+                // Prometheus y de la instrumentación de EF Core. Ojo con los nombres: en
+                // .NET 9 este paquete ya no recolecta por su cuenta ni emite
+                // process.runtime.dotnet.*; lo que hace es registrar el medidor integrado
+                // "System.Runtime", cuyos instrumentos se llaman dotnet.*. Casi todos los
+                // tableros publicados que se encuentran buscando están escritos para
+                // .NET 6-8 y usan los nombres viejos: copiarlos produce un tablero que se
+                // aprovisiona sin ningún error y aparece permanentemente vacío.
+                //
+                // El medidor del limitador de peticiones tampoco viaja con
+                // AddAspNetCoreInstrumentation: publica en uno propio que hay que pedir por
+                // nombre. Sin esa línea no habría forma de ver cuántas peticiones rechaza
+                // AuthLimiter, que es la señal que distingue "nadie entra" de "alguien está
+                // probando contraseñas".
+                //
+                // La vista acota los tramos del histograma de respaldos: los de por defecto
+                // están pensados para milisegundos de petición, y un respaldo que tarda
+                // segundos o minutos caería entero en el último, dejando el percentil sin
+                // ningún significado.
+                _ = metrics
+                    .AddAspNetCoreInstrumentation()
+                    .AddHttpClientInstrumentation()
+                    .AddRuntimeInstrumentation()
+                    .AddMeter("Microsoft.AspNetCore.RateLimiting")
+                    .AddMeter(MetricasDeNegocio.NombreDelMedidor)
+                    .AddView(
+                        instrumentName: "gsp.respaldos.duracion",
+                        new ExplicitBucketHistogramConfiguration
+                        {
+                            Boundaries = [1, 5, 15, 30, 60, 120, 300],
+                        }
+                    );
 
                 if (exportar)
                 {

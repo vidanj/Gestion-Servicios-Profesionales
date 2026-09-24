@@ -23,7 +23,13 @@ public class ForgotPasswordServiceTests
         _mockRepo = new Mock<IUserRepository>();
         _mockToken = new Mock<ITokenService>();
         _mockEmail = new Mock<IEmailService>();
-        _authService = new AuthService(_mockRepo.Object, _mockToken.Object, _mockEmail.Object);
+        // Doble inerte: el flujo de recuperación de contraseña no emite métricas.
+        _authService = new AuthService(
+            _mockRepo.Object,
+            _mockToken.Object,
+            _mockEmail.Object,
+            Mock.Of<IMetricasDeNegocio>()
+        );
 
         _usuarioActivo = new User
         {

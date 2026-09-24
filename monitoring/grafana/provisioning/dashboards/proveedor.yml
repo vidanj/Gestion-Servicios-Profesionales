@@ -1,0 +1,18 @@
+# Proveedor de tableros: los carga desde archivos versionados.
+
+apiVersion: 1
+
+providers:
+  - name: gsp
+    orgId: 1
+    folder: 'Gestion de Servicios Profesionales'
+    type: file
+    disableDeletion: true
+    updateIntervalSeconds: 30
+    # Desactivado a proposito: si el tablero se puede editar desde la interfaz,
+    # el archivo versionado deja de ser la verdad en la primera sesion de pruebas
+    # y nadie sabe ya cual es la version buena.
+    allowUiUpdates: false
+    options:
+      path: /var/lib/grafana/dashboards
+      foldersFromFilesStructure: false

@@ -1,0 +1,195 @@
+# Casos de prueba de las reglas de alerta.
+#
+#   promtool test rules /etc/prometheus/pruebas/alertas_test.yml
+#
+# Una regla mal escrita o mal calibrada no se descubre hasta que hace falta que
+# dispare -es decir, durante un incidente-, y ese es el peor momento posible.
+# Estas pruebas corren en monitoring-stack.yml en cada cambio.
+#
+# El caso mas importante es el primero: afirma que un arranque en frio NO dispara
+# la alarma critica. Es lo que impide que las alarmas dejen de creerse.
+
+rule_files:
+  - /etc/prometheus/reglas/registros.yml
+  - /etc/prometheus/reglas/alertas.yml
+
+evaluation_interval: 1m
+
+tests:
+  # --- A1: indisponibilidad, y el arranque en frio que no debe alertar --------
+  - interval: 30s
+    name: Un arranque en frio de 60 s no dispara la alarma critica
+    input_series:
+      # Dos minutos caida y luego se recupera: es el perfil de una instancia que
+      # despierta de una siesta del plan gratuito.
+      - series: 'probe_success{job="sondas",sonda="ready",ambiente="local",instance="http://api:10000/health/ready"}'
+        values: '0 0 0 0 1 1 1 1 1 1'
+    alert_rule_test:
+      - eval_time: 1m
+        alertname: ApiNoDisponible
+        exp_alerts: []
+      - eval_time: 2m
+        alertname: ApiNoDisponible
+        exp_alerts: []
+      # A los 2 min la sonda ya respondia sana: nunca llego a los 3 min de espera.
+      - eval_time: 3m
+        alertname: ApiNoDisponible
+        exp_alerts: []
+
+  - interval: 1m
+    name: Una caida sostenida si dispara, a los 3 minutos y no antes
+    input_series:
+      - series: 'probe_success{job="sondas",sonda="ready",ambiente="local",instance="http://api:10000/health/ready"}'
+        values: '0 0 0 0 0 0'
+    alert_rule_test:
+      - eval_time: 2m
+        alertname: ApiNoDisponible
+        exp_alerts: []
+      - eval_time: 3m
+        alertname: ApiNoDisponible
+        exp_alerts:
+          - exp_labels:
+              severidad: critica
+              componente: api
+              job: sondas
+              sonda: ready
+              ambiente: local
+              instance: 'http://api:10000/health/ready'
+            exp_annotations:
+              resumen: 'La API no responde sana en local'
+              descripcion: >-
+                La sonda de preparacion de http://api:10000/health/ready lleva 3 minutos sin devolver estado sano. Los tres minutos son deliberados: absorben el arranque en frio del plan gratuito, que tarda decenas de segundos y no es una caida.
+              accion: >-
+                Revisar los registros del servicio y si la base de datos acepta conexiones. Si acaba de desplegarse, comprobar la ejecucion del flujo de despliegue.
+
+  # --- A2: proceso vivo, base caida ------------------------------------------
+  - interval: 1m
+    name: Proceso vivo con base inalcanzable dispara la alarma de base de datos
+    input_series:
+      - series: 'probe_success{job="sondas",sonda="live",ambiente="local",instance="http://api:10000/health/live"}'
+        values: '1 1 1 1 1'
+      - series: 'probe_success{job="sondas",sonda="ready",ambiente="local",instance="http://api:10000/health/ready"}'
+        values: '0 0 0 0 0'
+    alert_rule_test:
+      - eval_time: 1m
+        alertname: BaseDeDatosInalcanzable
+        exp_alerts: []
+      - eval_time: 2m
+        alertname: BaseDeDatosInalcanzable
+        exp_alerts:
+          - exp_labels:
+              severidad: critica
+              componente: base-de-datos
+              job: sondas
+              sonda: live
+              ambiente: local
+              instance: 'http://api:10000/health/live'
+            exp_annotations:
+              resumen: 'El proceso vive pero la base de datos no responde (local)'
+              descripcion: >-
+                La sonda de vida responde y la de preparacion no. La comprobacion de PostgreSQL es el unico chequeo etiquetado como parte de la preparacion, asi que la causa esta acotada.
+              accion: 'Comprobar el contenedor de PostgreSQL y las credenciales DB_*.'
+
+  - interval: 1m
+    name: Con ambas sondas sanas no se dispara nada
+    input_series:
+      - series: 'probe_success{job="sondas",sonda="live",ambiente="local",instance="http://api:10000/health/live"}'
+        values: '1 1 1 1 1'
+      - series: 'probe_success{job="sondas",sonda="ready",ambiente="local",instance="http://api:10000/health/ready"}'
+        values: '1 1 1 1 1'
+    alert_rule_test:
+      - eval_time: 4m
+        alertname: BaseDeDatosInalcanzable
+        exp_alerts: []
+      - eval_time: 4m
+        alertname: ApiNoDisponible
+        exp_alerts: []
+
+  # --- A4: la condicion de trafico minimo ------------------------------------
+  - interval: 1m
+    name: Un solo error con trafico casi nulo no dispara la alarma de tasa de error
+    input_series:
+      # Una unica peticion, y es un 500: la proporcion de error es del 100 %,
+      # pero el volumen es insignificante. Sin la condicion de trafico minimo,
+      # esta alarma saltaria cada noche.
+      - series: 'http_server_request_duration_seconds_count{job="api",http_response_status_code="500"}'
+        values: '1 1 1 1 1 1 1 1 1 1'
+      - series: 'http_server_request_duration_seconds_count{job="api",http_response_status_code="200"}'
+        values: '0 0 0 0 0 0 0 0 0 0'
+    alert_rule_test:
+      - eval_time: 8m
+        alertname: TasaDeErrorServidorAlta
+        exp_alerts: []
+
+  - interval: 1m
+    name: Con trafico real y mas del 5 % de errores si dispara
+    input_series:
+      # 6 errores por minuto (0,1/s) sobre 60 peticiones por minuto (1/s):
+      # 10 % de error con volumen suficiente.
+      - series: 'http_server_request_duration_seconds_count{job="api",http_response_status_code="500"}'
+        values: '0+6x15'
+      - series: 'http_server_request_duration_seconds_count{job="api",http_response_status_code="200"}'
+        values: '0+54x15'
+    alert_rule_test:
+      - eval_time: 12m
+        alertname: TasaDeErrorServidorAlta
+        exp_alerts:
+          - exp_labels:
+              severidad: critica
+              componente: api
+            exp_annotations:
+              resumen: 'Mas del 5 % de las peticiones devuelven error de servidor'
+              descripcion: >-
+                Proporcion actual: 10%. El objetivo declarado es 1 %; la alarma salta al 5 %. La condicion de trafico minimo evita alertar en periodos tranquilos, donde un solo error daria el 100 %.
+              accion: >-
+                Filtrar por http_route en el tablero y revisar aspnetcore_diagnostics_exceptions_total para identificar el tipo de excepcion.
+
+  # --- A3: la ausencia de metricas se detecta --------------------------------
+  - interval: 1m
+    name: Sin ninguna serie de peticiones se dispara la alarma de ausencia
+    input_series:
+      # Deliberadamente vacio de metricas de la API: solo hay una serie ajena
+      # para que el caso tenga algo que evaluar.
+      - series: 'up{job="prometheus",instance="localhost:9090"}'
+        values: '1 1 1 1 1 1 1 1 1 1 1 1'
+    alert_rule_test:
+      - eval_time: 9m
+        alertname: ApiSinMetricas
+        exp_alerts: []
+      - eval_time: 10m
+        alertname: ApiSinMetricas
+        exp_alerts:
+          - exp_labels:
+              severidad: advertencia
+              componente: observabilidad
+            exp_annotations:
+              resumen: 'Prometheus dejo de ver metricas de la API'
+              descripcion: >-
+                O la API dejo de exportar por OTLP, o el colector dejo de publicarlas. Las series caducan a los 5 minutos en el colector, de modo que 10 minutos sin nada es una ausencia real. Sin metricas no se puede evaluar ningun otro nivel de servicio.
+              accion: >-
+                Revisar los registros del colector y que OTEL_EXPORTER_OTLP_ENDPOINT siga definido en el entorno de la aplicacion.
+
+  # --- A10: un solo respaldo fallido ya es incidente -------------------------
+  - interval: 1m
+    name: Un respaldo fallido dispara de inmediato
+    input_series:
+      - series: 'gsp_respaldos_ejecutados_total{job="api",resultado="fallo_ejecucion"}'
+        values: '0 0 1 1 1 1'
+    alert_rule_test:
+      - eval_time: 1m
+        alertname: RespaldoFallido
+        exp_alerts: []
+      - eval_time: 3m
+        alertname: RespaldoFallido
+        exp_alerts:
+          - exp_labels:
+              severidad: critica
+              componente: respaldos
+              job: api
+              resultado: fallo_ejecucion
+            exp_annotations:
+              resumen: 'Fallo al menos un respaldo en la ultima hora'
+              descripcion: >-
+                Resultado: fallo_ejecucion. Un respaldo que falla en silencio solo se descubre el dia que hace falta restaurar, que es el peor dia posible para descubrirlo. Sin espera: un solo fallo ya es un incidente.
+              accion: >-
+                Revisar los registros de pg_dump y que BACKUP_DIR este montado como volumen.

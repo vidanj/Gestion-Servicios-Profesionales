@@ -1,0 +1,56 @@
+# Indicadores precalculados.
+#
+# Existen para que el tablero y la alarma no calculen lo mismo de dos maneras
+# distintas y acaben discrepando. Cuando eso pasa, la discusion siempre es la
+# misma -"el panel dice una cosa y la alerta otra"- y nadie se fia de ninguno.
+#
+# Convencion de nombres: gsp:<que_mide>:<ventana>
+
+groups:
+  - name: gsp-sli
+    interval: 30s
+    rules:
+      # Volumen total de peticiones atendidas. El _count del histograma hace de
+      # contador: no hace falta una metrica aparte.
+      - record: gsp:http_peticiones:tasa5m
+        expr: sum(rate(http_server_request_duration_seconds_count{job="api"}[5m]))
+
+      - record: gsp:http_errores_servidor:tasa5m
+        expr: |
+          sum(rate(http_server_request_duration_seconds_count{job="api",http_response_status_code=~"5.."}[5m]))
+
+      # Dos defensas, y las dos hacen falta:
+      #   clamp_min evita la division por cero cuando no hay trafico;
+      #   `or vector(0)` cubre el caso de que NO EXISTA ninguna serie de errores
+      #   5xx, que es lo normal en un sistema sano. Sin eso la division no produce
+      #   serie alguna, el panel aparece vacio y la alerta que la consulta queda en
+      #   un limbo que parece un fallo de configuracion. Verificado contra el
+      #   sistema en marcha: sin errores, esta regla debe valer 0, no desaparecer.
+      - record: gsp:http_proporcion_error:5m
+        expr: |
+          (
+            (gsp:http_errores_servidor:tasa5m or vector(0))
+              / clamp_min(gsp:http_peticiones:tasa5m, 1e-9)
+          ) or vector(0)
+
+      - record: gsp:http_latencia:p95_5m
+        expr: |
+          histogram_quantile(
+            0.95,
+            sum by (le) (rate(http_server_request_duration_seconds_bucket{job="api"}[5m]))
+          )
+
+      # Por ruta: es lo que convierte "la latencia subio" en "la latencia subio
+      # EN ESTE endpoint", que es la unica version accionable.
+      - record: gsp:http_latencia_por_ruta:p95_5m
+        expr: |
+          histogram_quantile(
+            0.95,
+            sum by (le, http_route) (rate(http_server_request_duration_seconds_bucket{job="api"}[5m]))
+          )
+
+      # Rechazos del limitador de autenticacion. `acquired` son las que pasaron;
+      # cualquier otro resultado es un rechazo.
+      - record: gsp:limitador_rechazos:tasa5m
+        expr: |
+          sum(rate(aspnetcore_rate_limiting_requests_total{job="api",aspnetcore_rate_limiting_result!="acquired"}[5m]))

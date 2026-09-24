@@ -75,7 +75,8 @@ public class BackupServiceTests : IDisposable
             )
             .Build();
 
-        return new BackupService(_processRunner.Object, config);
+        // Doble inerte: lo que emite el servicio se verifica en BackupServiceMetricasTests.
+        return new BackupService(_processRunner.Object, config, Mock.Of<IMetricasDeNegocio>());
     }
 
     /// <summary>Extrae la ruta que el servicio pasó en --file="..." a pg_dump.</summary>

@@ -1,0 +1,33 @@
+# Superposicion: conecta la API al colector de telemetria.
+#
+# Se aplica SOBRE el docker-compose.yml de la raiz, que no se modifica:
+#
+#   docker compose -f docker-compose.yml -f monitoring/docker-compose.api.yml up -d --build
+#
+# Requiere que el entorno de monitoreo este levantado ANTES, porque la red
+# gsp-observabilidad se declara aqui como externa. Si no lo esta, Docker falla con
+# "network gsp-observabilidad declared as external, but could not be found".
+# scripts/monitoreo-up.* impone ese orden.
+#
+# La lista de redes incluye `default` explicitamente: Compose reemplaza la lista
+# entera en lugar de fusionarla, y sin ella la API dejaria de hablar con el proxy.
+
+services:
+  api:
+    environment:
+      # Esta unica variable es todo lo que la aplicacion necesita saber del monitoreo.
+      # El codigo que la lee ya existe desde el issue #124 y hasta hoy no tenia
+      # destino al que apuntar: la instrumentacion estaba puesta y nadie la consumia.
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      OTEL_EXPORTER_OTLP_PROTOCOL: grpc
+      # Aparece como etiqueta del recurso, no en cada serie. Distingue este entorno
+      # del servicio publicado, que se observa desde fuera con el sondeo.
+      DEPLOYMENT_ENVIRONMENT: local
+    networks:
+      - default
+      - observabilidad
+
+networks:
+  observabilidad:
+    external: true
+    name: gsp-observabilidad

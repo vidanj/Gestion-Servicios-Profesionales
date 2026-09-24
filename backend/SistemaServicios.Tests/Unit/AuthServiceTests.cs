@@ -23,7 +23,14 @@ public class AuthServiceTests
         _mockRepo = new Mock<IUserRepository>();
         _mockToken = new Mock<ITokenService>();
         _mockEmail = new Mock<IEmailService>();
-        _authService = new AuthService(_mockRepo.Object, _mockToken.Object, _mockEmail.Object);
+        // Las métricas no cambian el comportamiento de este servicio: aquí basta un doble
+        // inerte. Lo que emite se verifica aparte, en AuthServiceMetricasTests.
+        _authService = new AuthService(
+            _mockRepo.Object,
+            _mockToken.Object,
+            _mockEmail.Object,
+            Mock.Of<IMetricasDeNegocio>()
+        );
 
         _usuarioActivo = new User
         {

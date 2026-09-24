@@ -10,16 +10,19 @@ public class AuthService : IAuthService
     private readonly IUserRepository _userRepo;
     private readonly ITokenService _tokenService;
     private readonly IEmailService _emailService;
+    private readonly IMetricasDeNegocio _metricas;
 
     public AuthService(
         IUserRepository userRepo,
         ITokenService tokenService,
-        IEmailService emailService
+        IEmailService emailService,
+        IMetricasDeNegocio metricas
     )
     {
         _userRepo = userRepo;
         _tokenService = tokenService;
         _emailService = emailService;
+        _metricas = metricas;
     }
 
     public async Task<AuthResponseDto> LoginAsync(LoginRequestDto dto)
@@ -28,16 +31,25 @@ public class AuthService : IAuthService
 
         // Homogeneizamos el error: Si no existe el usuario, o si la contraseña falla,
         // o si está desactivado, siempre devolvemos el mismo mensaje genérico.
+        //
+        // La métrica sí distingue los dos casos, y eso no rompe esta decisión: lo que el
+        // cliente recibe sigue siendo idéntico, y la métrica es agregada, interna y sin
+        // identificadores. Es lo que permite responder si la gente no entra porque se
+        // equivoca o porque sus cuentas están desactivadas, que son dos problemas
+        // distintos con dos soluciones distintas.
         if (user == null || !BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash))
         {
+            _metricas.IntentoDeAutenticacion(ResultadoDeAutenticacion.CredencialesInvalidas);
             throw new UnauthorizedAccessException("Credenciales inválidas.");
         }
 
         if (!user.Status)
         {
+            _metricas.IntentoDeAutenticacion(ResultadoDeAutenticacion.CuentaInactiva);
             throw new UnauthorizedAccessException("Credenciales inválidas.");
         }
 
+        _metricas.IntentoDeAutenticacion(ResultadoDeAutenticacion.Exito);
         return BuildAuthResponse(user);
     }
 
@@ -48,6 +60,7 @@ public class AuthService : IAuthService
             // Nota: En registro es un estándar aceptado indicar si el correo está en uso
             // por motivos de usabilidad, pero si se requiere máxima seguridad estricta,
             // se usaría un flujo de confirmación por correo. Lo dejaremos así para no romper el flujo.
+            _metricas.UsuarioRegistrado(creado: false);
             throw new InvalidOperationException("El correo ya está registrado.");
         }
 
@@ -66,6 +79,7 @@ public class AuthService : IAuthService
 
         await _userRepo.CreateAsync(user);
 
+        _metricas.UsuarioRegistrado(creado: true);
         return BuildAuthResponse(user);
     }
 

@@ -1,0 +1,244 @@
+name: Monitoreo — Validación del stack
+
+# Una regla de alerta con un error de sintaxis, o mal calibrada, no se descubre hasta que
+# hace falta que dispare: es decir, durante un incidente. Este flujo la valida antes.
+#
+# El segundo trabajo va mas alla de validar sintaxis: levanta el entorno completo con la
+# aplicacion, genera trafico y comprueba que las metricas del catalogo llegan de verdad.
+# Un tablero aprovisionado sin errores puede estar permanentemente vacio si un nombre de
+# metrica cambio, y eso la validacion de sintaxis no lo ve.
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - dev
+      - ci/**
+      - feat/**
+      - chore/**
+      - fix/**
+    paths:
+      - 'monitoring/**'
+      - 'scripts/verificar-monitoreo.sh'
+      - 'scripts/generar-trafico.sh'
+      - '.github/workflows/monitoring-stack.yml'
+  pull_request:
+    branches:
+      - main
+      - dev
+    paths:
+      - 'monitoring/**'
+      - 'backend/SistemaServicios.API/Telemetry/**'
+      - 'backend/SistemaServicios.API/Extensions/TelemetryConfiguration.cs'
+      - 'scripts/verificar-monitoreo.sh'
+      - '.github/workflows/monitoring-stack.yml'
+
+env:
+  PROMETHEUS: prom/prometheus:v3.14.0
+  ALERTMANAGER: prom/alertmanager:v0.34.1
+  COLECTOR: otel/opentelemetry-collector-contrib:0.161.0
+
+jobs:
+  validar-configuracion:
+    name: Validar configuración y reglas
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configuración de Prometheus
+        run: |
+          docker run --rm --entrypoint promtool \
+            -v "${{ github.workspace }}/monitoring/prometheus:/etc/prometheus:ro" \
+            "$PROMETHEUS" check config /etc/prometheus/prometheus.yml
+
+      - name: Reglas de registro y de alerta
+        run: |
+          docker run --rm --entrypoint promtool \
+            -v "${{ github.workspace }}/monitoring/prometheus:/etc/prometheus:ro" \
+            "$PROMETHEUS" check rules \
+              /etc/prometheus/reglas/registros.yml \
+              /etc/prometheus/reglas/alertas.yml
+
+      # Esto es lo que demuestra que la alerta dispara cuando debe y, sobre todo, que NO
+      # dispara durante un arranque en frio. Si A1 avisara cada vez que el servicio
+      # despierta de una siesta, en dos semanas nadie se creeria las alarmas.
+      - name: Casos de prueba de las reglas
+        run: |
+          docker run --rm --entrypoint promtool \
+            -v "${{ github.workspace }}/monitoring/prometheus:/etc/prometheus:ro" \
+            "$PROMETHEUS" test rules /etc/prometheus/pruebas/alertas_test.yml
+
+      - name: Configuración del gestor de alertas
+        run: |
+          docker run --rm --entrypoint amtool \
+            -v "${{ github.workspace }}/monitoring/alertmanager:/etc/alertmanager:ro" \
+            "$ALERTMANAGER" check-config /etc/alertmanager/alertmanager.yml
+
+      - name: Configuración del colector
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}/monitoring/otel-collector:/etc/otel:ro" \
+            "$COLECTOR" validate --config=/etc/otel/config.yaml
+
+      - name: Tableros de Grafana
+        run: |
+          fallos=0
+          for tablero in monitoring/grafana/dashboards/*.json; do
+            if ! jq empty "$tablero" 2>/dev/null; then
+              echo "::error::$tablero no es JSON válido"
+              fallos=$((fallos+1))
+              continue
+            fi
+            # Un uid de origen de datos mal escrito se aprovisiona SIN ERROR y el tablero
+            # aparece vacio. Es el fallo mas dificil de diagnosticar del entorno, y por eso
+            # se comprueba aqui en lugar de descubrirlo mirando paneles en blanco.
+            distintos=$(jq -r '[.. | objects | select(has("uid") and has("type"))
+                                | select(.type == "prometheus") | .uid]
+                               | map(select(. != "gsp-prometheus")) | length' "$tablero")
+            if [ "$distintos" != "0" ]; then
+              echo "::error::$tablero referencia un origen de datos distinto de gsp-prometheus"
+              fallos=$((fallos+1))
+            else
+              echo "  OK $(basename "$tablero")"
+            fi
+          done
+          [ "$fallos" -eq 0 ] || exit 1
+
+      - name: Ninguna imagen con etiqueta móvil
+        run: |
+          # Un entorno de monitoreo que cambia solo es un entorno que un dia deja de
+          # coincidir con lo documentado (FR-010).
+          if grep -rnE 'image:.*:(latest|main|stable|edge)\s*$' monitoring/; then
+            echo "::error::Hay imágenes sin versión fijada."
+            exit 1
+          fi
+          echo "Todas las imágenes están fijadas."
+
+  humo-monitoreo:
+    name: Levantar el entorno y comprobar las métricas
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    needs: validar-configuracion
+
+    env:
+      GRAFANA_ADMIN_PASSWORD: clave-de-prueba-solo-ci
+      IMAGEN: gsp-api:monitoreo-ci
+      DB_NAME: gsp_ci
+      DB_USER: gsp_ci
+      DB_PASSWORD: clave-de-prueba-ci
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Construir la imagen de la API
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          load: true
+          push: false
+          tags: ${{ env.IMAGEN }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Levantar el entorno de monitoreo
+        run: docker compose -f monitoring/docker-compose.yml up -d
+
+      - name: Esperar a que las herramientas respondan
+        run: |
+          espera() {
+            for intento in $(seq 1 30); do
+              if curl -fsS --max-time 5 "$2" > /dev/null 2>&1; then
+                echo "  OK $1"
+                return 0
+              fi
+              sleep 5
+            done
+            echo "::error::$1 no respondió en 150 s"
+            return 1
+          }
+          espera "colector"     "http://localhost:13133"
+          espera "prometheus"   "http://localhost:9090/-/ready"
+          espera "alertmanager" "http://localhost:9093/-/ready"
+          espera "grafana"      "http://localhost:3001/api/health"
+
+      - name: Levantar PostgreSQL y la API en la red del monitoreo
+        run: |
+          docker run -d --name gsp-postgres --network gsp-observabilidad \
+            -e POSTGRES_DB="$DB_NAME" \
+            -e POSTGRES_USER="$DB_USER" \
+            -e POSTGRES_PASSWORD="$DB_PASSWORD" \
+            --health-cmd="pg_isready -U $DB_USER -d $DB_NAME" \
+            --health-interval=5s --health-timeout=3s --health-retries=12 \
+            postgres:18-alpine
+
+          for intento in $(seq 1 24); do
+            estado=$(docker inspect -f '{{.State.Health.Status}}' gsp-postgres)
+            [ "$estado" = "healthy" ] && break
+            sleep 5
+          done
+
+          docker run -d --name api --network gsp-observabilidad -p 10000:10000 \
+            -e ASPNETCORE_URLS=http://+:10000 \
+            -e DB_HOST=gsp-postgres -e DB_PORT=5432 \
+            -e DB_NAME="$DB_NAME" -e DB_USER="$DB_USER" -e DB_PASSWORD="$DB_PASSWORD" \
+            -e JWT_KEY=clave-de-prueba-suficientemente-larga-para-firmar-32 \
+            -e JWT_ISSUER=gsp-ci -e JWT_AUDIENCE=gsp-ci -e JWT_EXPIRES_MINUTES=60 \
+            -e ALLOWED_ORIGINS=http://localhost:3000 \
+            -e SMTP_HOST=localhost -e SMTP_PORT=25 \
+            -e SMTP_USER=ci -e SMTP_PASSWORD=ci -e SMTP_FROM=ci@ejemplo.com \
+            -e OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317 \
+            -e OTEL_METRIC_EXPORT_INTERVAL=5000 \
+            "$IMAGEN"
+
+      - name: Esperar a que la API responda sana
+        run: |
+          for intento in $(seq 1 30); do
+            if ! docker ps --format '{{.Names}}' | grep -q '^api$'; then
+              echo "::error::El contenedor se detuvo antes de responder (intento ${intento})."
+              exit 1
+            fi
+            respuesta=$(curl -fsS "http://localhost:10000/health/ready" 2>/dev/null || true)
+            case "$respuesta" in
+              *'"status":"Healthy"'*) echo "API sana."; exit 0 ;;
+            esac
+            sleep 5
+          done
+          echo "::error::La API nunca respondió sana en 150 s."
+          exit 1
+
+      # Se usa el guion versionado y no ordenes sueltas dentro del YAML: asi lo que se
+      # ejercita aqui es exactamente lo mismo que se ejercita en un equipo de trabajo.
+      - name: Generar tráfico
+        run: bash scripts/generar-trafico.sh --url http://localhost:10000 --duracion 20
+
+      # Dos relojes distintos, y el lento manda: la aplicacion EXPORTA por OTLP cada
+      # 60 s por defecto -de ahi OTEL_METRIC_EXPORT_INTERVAL arriba, que lo baja a 5 s
+      # solo para esta comprobacion- y Prometheus RECOGE cada 15 s. Con la espera de
+      # 35 s y el intervalo por omision, el job fallaba sin que nada estuviera roto:
+      # las metricas simplemente aun no habian salido de la aplicacion.
+      - name: Esperar a que las métricas lleguen
+        run: sleep 45
+
+      - name: Verificar el catálogo de métricas y las reglas
+        run: bash scripts/verificar-monitoreo.sh
+
+      - name: Diagnóstico
+        if: always()
+        run: |
+          echo "── API ──"
+          docker logs api --tail 60 2>&1 || true
+          echo "── Colector ──"
+          docker logs gsp-otel-collector --tail 40 2>&1 || true
+          echo "── Métricas publicadas por el colector ──"
+          curl -sS http://localhost:8889/metrics 2>/dev/null | head -40 || true
+
+      - name: Limpiar
+        if: always()
+        run: |
+          docker rm -f api gsp-postgres 2>/dev/null || true
+          docker compose -f monitoring/docker-compose.yml down -v 2>/dev/null || true

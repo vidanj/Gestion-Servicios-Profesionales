@@ -1,0 +1,23 @@
+# Sondeo del servicio publicado.
+#
+# Copiar este archivo a `render.yml` (sin extension .ejemplo) y sustituir la
+# direccion por la real. Mientras `render.yml` no exista, el grupo de sondeo queda
+# sin objetivos y no dispara nada: es la mitigacion del hallazgo A3 del analisis.
+#
+# Despues de crearlo:
+#   curl -X POST http://localhost:9090/-/reload
+#
+# La direccion no es un secreto, pero tampoco se versiona: evita que el monitoreo
+# de un equipo de trabajo acabe apuntando a produccion sin que nadie lo decidiera.
+
+- targets:
+    - https://ejemplo.onrender.com/health/ready
+  labels:
+    ambiente: produccion
+    sonda: ready
+
+- targets:
+    - https://ejemplo.onrender.com/health/live
+  labels:
+    ambiente: produccion
+    sonda: live

@@ -1,0 +1,135 @@
+# Entorno de monitoreo: recoleccion de metricas, alarmas y tableros.
+#
+# Vive aparte del docker-compose.yml de la raiz y eso es deliberado. El monitoreo
+# tiene que seguir en pie precisamente cuando la aplicacion se cae; si compartieran
+# proyecto de composicion, un `docker compose down` se llevaria por delante la
+# evidencia del incidente. Ademas el compose raiz existe para un proposito acotado
+# -verificar las cabeceras reenviadas contra NGINX- y anadirle cinco servicios
+# convertiria una comprobacion de veinte segundos en un arranque de dos minutos.
+# Mismo criterio que sonarqube/docker-compose.yml.
+#
+#   # 1. Solo el monitoreo (sobrevive a la aplicacion)
+#   docker compose -f monitoring/docker-compose.yml up -d
+#
+#   # 2. La aplicacion conectada al colector
+#   docker compose -f docker-compose.yml -f monitoring/docker-compose.api.yml up -d --build
+#
+# O, mas simple: scripts/monitoreo-up.ps1
+#
+# La API no se raspa directamente: no expone /metrics a proposito. Empuja por OTLP
+# al colector y es el colector quien publica. El porque esta en
+# specs/008-monitoreo-metricas-alertas/research.md, decision D1.
+#
+# Versiones verificadas en Docker Hub el 2026-09-23. Ninguna etiqueta movil:
+# un entorno que cambia solo es un entorno que un dia deja de coincidir con lo
+# documentado, y monitoring-stack.yml lo comprueba.
+
+services:
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.161.0
+    container_name: gsp-otel-collector
+    restart: unless-stopped
+    command: ["--config=/etc/otel/config.yaml"]
+    volumes:
+      - ./otel-collector/config.yaml:/etc/otel/config.yaml:ro
+    ports:
+      # 4317/4318 los usa la aplicacion; 8889 lo raspa Prometheus; 13133 es la sonda.
+      - "4317:4317"
+      - "4318:4318"
+      - "8889:8889"
+      - "13133:13133"
+    networks: [observabilidad]
+    healthcheck:
+      test: ["CMD", "/otelcol-contrib", "--version"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  prometheus:
+    image: prom/prometheus:v3.14.0
+    container_name: gsp-prometheus
+    restart: unless-stopped
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=15d
+      # Necesario para recargar la configuracion sin reiniciar:
+      #   curl -X POST http://localhost:9090/-/reload
+      - --web.enable-lifecycle
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./prometheus/reglas:/etc/prometheus/reglas:ro
+      # Objetivos del sondeo del servicio publicado. El directorio se versiona con
+      # su archivo de ejemplo; el real (render.yml) esta ignorado.
+      - ./prometheus/objetivos:/etc/prometheus/objetivos:ro
+      - prometheus_datos:/prometheus
+    ports:
+      - "9090:9090"
+    depends_on:
+      - otel-collector
+      - blackbox
+    networks: [observabilidad]
+
+  alertmanager:
+    image: prom/alertmanager:v0.34.1
+    container_name: gsp-alertmanager
+    restart: unless-stopped
+    command:
+      - --config.file=/etc/alertmanager/alertmanager.yml
+      - --storage.path=/alertmanager
+    volumes:
+      - ./alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+      - alertmanager_datos:/alertmanager
+    ports:
+      - "9093:9093"
+    networks: [observabilidad]
+
+  grafana:
+    image: grafana/grafana-oss:13.0.2
+    container_name: gsp-grafana
+    restart: unless-stopped
+    environment:
+      # Sin valor por defecto a proposito: si la variable falta, Grafana no arranca
+      # con admin/admin en silencio. scripts/monitoreo-up.* avisa antes de llegar aqui.
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?Define GRAFANA_ADMIN_PASSWORD en el .env}
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+      GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana_datos:/var/lib/grafana
+    ports:
+      # 3001 y no 3000: el 3000 lo ocupa el frontend de Next.js.
+      - "3001:3000"
+    depends_on:
+      - prometheus
+    networks: [observabilidad]
+
+  blackbox:
+    image: prom/blackbox-exporter:v0.28.0
+    container_name: gsp-blackbox
+    restart: unless-stopped
+    command: ["--config.file=/etc/blackbox/blackbox.yml"]
+    volumes:
+      - ./blackbox/blackbox.yml:/etc/blackbox/blackbox.yml:ro
+    ports:
+      # Publicado solo para diagnostico manual; quien lo consulta es Prometheus.
+      - "9115:9115"
+    networks: [observabilidad]
+
+volumes:
+  prometheus_datos:
+    name: gsp_prometheus_datos
+  alertmanager_datos:
+    name: gsp_alertmanager_datos
+  grafana_datos:
+    name: gsp_grafana_datos
+
+networks:
+  observabilidad:
+    # Nombre explicito para que docker-compose.api.yml pueda referenciarla como externa.
+    name: gsp-observabilidad

@@ -264,14 +264,78 @@ colector es **opcional**:
 OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317
 ```
 
-Sin esa variable la aplicación **arranca igual y no exporta nada**, que es la
-situación actual: no hay colector desplegado. La instrumentación sigue activa
-aunque no se exporte, porque de ella sale el `TraceId` de los logs.
+Sin esa variable la aplicación **arranca igual y no exporta nada**. La
+instrumentación sigue activa aunque no se exporte, porque de ella sale el
+`TraceId` de los logs.
 
 No se usa el paquete de instrumentación de EF Core ni el exportador de
 Prometheus: ambos siguen en preestreno y este build trata las advertencias como
 errores. Las trazas de base de datos se obtienen del driver con `AddNpgsql()`,
 que sí es estable.
+
+### Métricas
+
+La aplicación **no expone `/metrics`**: empuja por OTLP a un colector, y es el
+colector quien publica en el formato que Prometheus entiende. Las razones están
+en [`specs/008-monitoreo-metricas-alertas/research.md`](specs/008-monitoreo-metricas-alertas/research.md),
+decisión D1. Hay una prueba de integración que afirma que esa ruta responde 404,
+para que la decisión no se erosione en silencio.
+
+Se recogen tres familias: las automáticas de ASP.NET Core (latencia, errores,
+saturación, rechazos del limitador), las del tiempo de ejecución de .NET
+(memoria, recolección de basura, cola de hilos) y las de negocio, con un medidor
+propio: solicitudes creadas, cambios de estado, intentos de autenticación, altas
+y respaldos. **Ninguna etiqueta lleva datos personales ni identificadores**: la
+métrica cuenta, el registro identifica.
+
+### Entorno de monitoreo
+
+Vive en [`monitoring/`](monitoring/), con su propio archivo de composición para
+que siga en pie cuando la aplicación se cae.
+
+```powershell
+.\scripts\monitoreo-up.ps1          # colector, Prometheus, Alertmanager, Grafana, sondeo
+.\scripts\generar-trafico.ps1       # puebla los tableros
+.\scripts\verificar-monitoreo.ps1   # comprueba el catálogo y las 10 alarmas
+```
+
+| Herramienta | Dirección |
+|---|---|
+| Tableros (Grafana) | http://localhost:3001 — el 3000 lo ocupa el frontend |
+| Prometheus | http://localhost:9090 |
+| Alarmas | http://localhost:9093 |
+
+Requiere `GRAFANA_ADMIN_PASSWORD` en el `.env`; sin ella el guion se detiene en
+lugar de dejar Grafana con la contraseña por defecto.
+
+El documento completo —flujo del pipeline, entorno, niveles de servicio, catálogo
+de métricas, alarmas y parámetros de cada herramienta— está en
+[`docs/monitoreo-metricas-y-alertas.md`](docs/monitoreo-metricas-y-alertas.md).
+
+## 🚀 Despliegue
+
+Integrar en `dev` con las cuatro comprobaciones en verde dispara
+[`deploy.yml`](.github/workflows/deploy.yml), que despliega, espera y sondea
+`/health/ready` hasta 600 s exigiendo **tres respuestas sanas consecutivas**
+antes de darlo por bueno. La espera inicial no es decorativa: sin ella se
+sondearía la instancia anterior, que responde sana, y el despliegue se daría por
+bueno sin haber ocurrido.
+
+**Revertir es desplegar el commit sano anterior**, con la misma verificación:
+
+```text
+Actions → Despliegue → Run workflow → sha = <commit sano anterior>
+```
+
+o en local, `.\scripts\desplegar.ps1 -Revertir <sha>`.
+
+> Una migración destructiva **no** se revierte redesplegando: la imagen vuelve
+> atrás, los datos no. La recuperación pasa por los guiones de respaldo, que son
+> destructivos y exigen confirmación explícita.
+
+Requiere el secreto `RENDER_DEPLOY_HOOK_URL` y la variable `RENDER_SERVICE_URL`
+en la plataforma de integración continua, más un ambiente `production` con
+revisor.
 
 ## 📊 Índices de Base de Datos — Notas de Diseño
 

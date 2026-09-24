@@ -1,0 +1,63 @@
+# Enrutado, agrupacion e inhibicion de las alarmas.
+
+global:
+  resolve_timeout: 5m
+
+route:
+  receiver: consola
+  # Por alarma y ambiente: un aviso por hecho, no uno por serie afectada.
+  group_by: [alertname, ambiente]
+  group_wait: 30s
+  group_interval: 5m
+  # Espaciada a proposito: sin esto, un incidente que dura toda la tarde se
+  # convierte en ruido continuo y acaba silenciado entero, incluidas las alarmas
+  # que si importaban.
+  repeat_interval: 4h
+  routes:
+    - matchers: ['severidad="critica"']
+      receiver: consola
+      group_wait: 10s
+      repeat_interval: 1h
+
+# Una aplicacion caida dispara ademas latencia, error y saturacion: son cuatro
+# sintomas del mismo hecho. Sin inhibicion llegarian cuatro avisos y el ruido
+# taparia la causa, que es justo lo que hay que ver primero.
+inhibit_rules:
+  - source_matchers: ['alertname="ApiNoDisponible"']
+    target_matchers: ['severidad=~"advertencia|critica"']
+    equal: [ambiente]
+
+  # Si ya se sabe que la base no responde, la tasa de error es consecuencia.
+  - source_matchers: ['alertname="BaseDeDatosInalcanzable"']
+    target_matchers: ['alertname="TasaDeErrorServidorAlta"']
+    equal: [ambiente]
+
+  # Las dos alarmas de latencia miden lo mismo con distinto umbral: si salto la
+  # del acuerdo formal, la del objetivo interno no anade informacion.
+  - source_matchers: ['alertname="LatenciaP95FueraDelAcuerdo"']
+    target_matchers: ['alertname="LatenciaP95Degradada"']
+    equal: [ambiente]
+
+receivers:
+  # Destino por omision: la propia interfaz en :9093. Es deliberado. Un entorno
+  # de pruebas que envia correos en cada ensayo se vuelve inusable en una semana,
+  # y entonces alguien lo desactiva sin documentarlo, que es peor que no tenerlo.
+  - name: consola
+
+  # Destino real, preparado y desactivado. Para habilitarlo: mover su nombre a
+  # `route.receiver`, montar el archivo con la contrasena y descomentar.
+  # Reutiliza el SMTP que el proyecto ya tiene configurado.
+  #
+  # La contrasena va por archivo (`auth_password_file`) y nunca como valor: este
+  # archivo se versiona, y la constitucion prohibe credenciales en el repositorio.
+  #
+  # - name: correo
+  #   email_configs:
+  #     - to: '<responsable>'
+  #       from: '<SMTP_FROM>'
+  #       smarthost: '<SMTP_HOST>:<SMTP_PORT>'
+  #       auth_username: '<SMTP_USER>'
+  #       auth_password_file: '/etc/alertmanager/smtp_password'
+  #       send_resolved: true
+  #       headers:
+  #         subject: '[{{ .CommonLabels.severidad }}] {{ .CommonAnnotations.resumen }}'

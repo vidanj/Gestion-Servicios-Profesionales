@@ -1,0 +1,40 @@
+# Sondeo externo de las sondas de salud.
+#
+# Es la unica forma de observar el servicio publicado. Su contenedor corre en
+# Render y no puede empujar telemetria a un colector que vive en el equipo de una
+# persona; exponer ese colector a internet seria abrir un receptor publico de
+# telemetria. A cambio, el sondeo da desde fuera los dos datos que hacen falta del
+# entorno real: si esta disponible y cuanto tarda en despertar.
+
+modules:
+  # Entorno local, donde no hay siestas.
+  http_2xx:
+    prober: http
+    timeout: 15s
+    http:
+      valid_http_versions: [HTTP/1.1, HTTP/2.0]
+      valid_status_codes: [200]
+      method: GET
+      # No basta con el 200. Las sondas responden un cuerpo con su estado, y un
+      # estado degradado podria devolver 200 igualmente. Afirmar el cuerpo es lo
+      # que impide que "medio roto" pase por sano.
+      fail_if_body_not_matches_regexp:
+        - '"status"\s*:\s*"Healthy"'
+      preferred_ip_protocol: ip4
+      follow_redirects: true
+
+  # Servicio publicado. El plan gratuito duerme la instancia por inactividad y el
+  # primer acceso tras la siesta tarda decenas de segundos. Con el plazo de 15 s se
+  # reportaria como caida lo que es un arranque en frio, y esa es exactamente la
+  # clase de falso positivo que hace que en dos semanas nadie se crea las alarmas.
+  http_2xx_frio:
+    prober: http
+    timeout: 55s
+    http:
+      valid_http_versions: [HTTP/1.1, HTTP/2.0]
+      valid_status_codes: [200]
+      method: GET
+      fail_if_body_not_matches_regexp:
+        - '"status"\s*:\s*"Healthy"'
+      preferred_ip_protocol: ip4
+      follow_redirects: true
