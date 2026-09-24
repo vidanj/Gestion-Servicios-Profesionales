@@ -104,9 +104,11 @@ jobs:
 
       - name: Configuración de Tempo
         run: |
+          # En Tempo 3.0 -config.verify es un flag con valor, no un interruptor: sin
+          # el =true el binario lo rechaza e imprime la ayuda completa.
           docker run --rm \
             -v "${{ github.workspace }}/monitoring/tempo:/etc/tempo:ro" \
-            "$TEMPO" -config.file=/etc/tempo/tempo.yml -config.verify
+            "$TEMPO" -config.file=/etc/tempo/tempo.yml -config.verify=true
 
       - name: Configuración de Alloy
         run: |

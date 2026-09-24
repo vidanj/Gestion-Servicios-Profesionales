@@ -142,7 +142,9 @@ services:
       # no puede consultar su propio /ready. Mismo criterio que el colector y Tempo:
       # se comprueba que el binario responde. Que Loki este listo de verdad lo
       # comprueban desde fuera los guiones de arranque y de verificacion.
-      test: ["CMD", "/usr/bin/loki", "-version"]
+      # -health consulta /ready y termina: una sonda real, pensada para esta imagen
+      # distroless, que no trae shell ni wget. Confirmado en la ayuda de la 3.0.3.
+      test: ["CMD", "/tempo", "-health"]
       interval: 30s
       timeout: 5s
       retries: 3
