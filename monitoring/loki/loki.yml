@@ -1,0 +1,84 @@
+# Almacen de registros. Modo monolitico: un solo proceso, disco local, sin anillo
+# distribuido ni cola de mensajes.
+#
+# Por que Loki y no Elasticsearch: Loki indexa solo las etiquetas, no el contenido
+# de la linea. Para el volumen de este proyecto un indice de texto completo cuesta
+# varios GB de memoria y no compra nada. Detalle en
+# specs/009-visor-trazabilidad/research.md, decision D1.
+#
+# Version verificada el 2026-09-24: grafana/loki:3.6.17.
+
+# Sin multiusuario: un solo inquilino, accesible solo desde el equipo local.
+# Grafana sigue siendo la unica interfaz con usuario del entorno.
+auth_enabled: false
+
+server:
+  http_listen_port: 3100
+  grpc_listen_port: 9096
+  # Loki en nivel `info` escribe varias lineas por segundo sobre su propio
+  # funcionamiento. Al arrancar el entorno completo eso tapa la salida de las
+  # demas herramientas justo cuando interesa leerla.
+  log_level: warn
+
+common:
+  path_prefix: /loki
+  storage:
+    filesystem:
+      chunks_directory: /loki/chunks
+      rules_directory: /loki/rules
+  # Un solo proceso: sin replicas y con el anillo en memoria. Cualquier otro valor
+  # deja a Loki esperando companeros que no van a llegar.
+  replication_factor: 1
+  ring:
+    kvstore:
+      store: inmemory
+
+schema_config:
+  configs:
+    # v13 sobre TSDB es el esquema por omision de Loki 3.x y el unico que soporta
+    # metadatos estructurados, que es como llega el punto final nativo de OTLP.
+    # La fecha es el inicio de la vigencia del esquema, no la de instalacion:
+    # anterior al primer dato para que no queden registros sin esquema aplicable.
+    - from: 2026-01-01
+      store: tsdb
+      object_store: filesystem
+      schema: v13
+      index:
+        prefix: index_
+        period: 24h
+
+limits_config:
+  # Siete dias. Es un entorno de desarrollo en el disco de un equipo de trabajo:
+  # mas retencion no aporta a la entrega y si llena el disco sin avisar.
+  retention_period: 168h
+  # Descartar lo viejo evita que un contenedor con el reloj desfasado meta lineas
+  # fuera de rango y desordene los bloques.
+  reject_old_samples: true
+  reject_old_samples_max_age: 168h
+  # Necesario para que los campos del JSON puedan viajar como metadatos y no solo
+  # dentro del texto de la linea.
+  allow_structured_metadata: true
+  # Habilita el panel de volumen por nivel del tablero de trazabilidad.
+  volume_enabled: true
+    # Loki 3.x crea por omision una etiqueta `service_name`, derivada de otras
+  # etiquetas o con valor "unknown_service" si no reconoce ninguna. Seria una
+  # tercera etiqueta, contra FR-005. La lista vacia desactiva ese descubrimiento.
+  discover_service_name: []
+
+compactor:
+  working_directory: /loki/compactor
+  # Sin esto la retencion se declara pero no se aplica: Loki dejaria de aceptar
+  # consultas sobre datos viejos pero seguiria guardandolos en disco.
+  retention_enabled: true
+  delete_request_store: filesystem
+  retention_delete_delay: 2h
+
+ruler:
+  storage:
+    type: local
+    local:
+      directory: /loki/rules
+
+# Mismo criterio que Grafana en docker-compose.yml: nada sale del equipo.
+analytics:
+  reporting_enabled: false

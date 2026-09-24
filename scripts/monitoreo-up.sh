@@ -64,6 +64,11 @@ esperar "colector"     "http://localhost:13133"            || SANAS=1
 esperar "prometheus"   "http://localhost:9090/-/ready"     || SANAS=1
 esperar "alertmanager" "http://localhost:9093/-/ready"     || SANAS=1
 esperar "grafana"      "http://localhost:3001/api/health"  || SANAS=1
+# Spec 009. Loki tarda unos segundos mas que el resto en responder /ready: espera
+# a que su anillo interno se estabilice antes de declararse listo.
+esperar "loki"         "http://localhost:3100/ready"       || SANAS=1
+esperar "tempo"        "http://localhost:3200/ready"       || SANAS=1
+esperar "alloy"        "http://localhost:12345/-/ready"    || SANAS=1
 
 if [ "$SANAS" -ne 0 ]; then
   echo "El entorno no quedo sano." >&2
@@ -86,6 +91,9 @@ cat <<'FIN'
   Prometheus ............ http://localhost:9090
   Alarmas ............... http://localhost:9093
   Sondeo externo ........ http://localhost:9115
+  Registros (Loki) ...... http://localhost:3100   (solo API; se consulta desde Grafana)
+  Trazas (Tempo) ........ http://localhost:3200   (solo API; se consulta desde Grafana)
+  Recolector (Alloy) .... http://localhost:12345  (diagnostico de la recoleccion)
 
  Siguiente paso:
    ./scripts/generar-trafico.sh
