@@ -1,0 +1,185 @@
+{
+  "uid": "gsp-trazabilidad",
+  "title": "GSP · Trazabilidad",
+  "description": "Registros (Loki) y trazas (Tempo) de la API, enlazados por TraceId. Spec 009.",
+  "tags": ["gsp", "trazabilidad", "registros", "trazas"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "editable": false,
+  "refresh": "30s",
+  "time": { "from": "now-1h", "to": "now" },
+  "templating": {
+    "list": [
+      {
+        "name": "traceid",
+        "label": "TraceId",
+        "description": "Identificador de 32 caracteres hexadecimales traido de otra parte: una fila de la bitacora de auditoria, un registro, un reporte de error.",
+        "type": "textbox",
+        "query": "",
+        "current": { "text": "", "value": "" },
+        "hide": 0
+      },
+      {
+        "name": "umbral",
+        "label": "Umbral de lentitud",
+        "description": "Solo para el panel de trazas mas lentas.",
+        "type": "custom",
+        "query": "100ms,250ms,500ms,1s",
+        "current": { "text": "250ms", "value": "250ms", "selected": true },
+        "options": [
+          { "text": "100ms", "value": "100ms", "selected": false },
+          { "text": "250ms", "value": "250ms", "selected": true },
+          { "text": "500ms", "value": "500ms", "selected": false },
+          { "text": "1s", "value": "1s", "selected": false }
+        ],
+        "hide": 0
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "timeseries",
+      "title": "Volumen de registros por nivel",
+      "description": "Lineas por nivel en el intervalo: si esta subiendo el ruido o los errores. Una serie sin nombre son lineas que no son JSON, que se conservan sin nivel (FR-006); si crece, algo esta escribiendo fuera del formato de Serilog.",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "datasource": { "type": "loki", "uid": "gsp-loki" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (nivel) (count_over_time({servicio=\"api\"} [$__auto]))",
+          "legendFormat": "{{nivel}}",
+          "queryType": "range"
+        }
+      ],
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom" },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "drawStyle": "bars",
+            "fillOpacity": 80,
+            "lineWidth": 1,
+            "stacking": { "mode": "normal", "group": "A" }
+          }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "Information" },
+            "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "#3d71d9" } }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Warning" },
+            "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "#fab219" } }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Error" },
+            "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "#d03b3b" } }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Fatal" },
+            "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "#8f1d1d" } }]
+          }
+        ]
+      }
+    },
+    {
+      "id": 2,
+      "type": "table",
+      "title": "Trazas mas lentas del intervalo",
+      "description": "Las 20 trazas mas recientes con algun tramo por encima del umbral elegido arriba, ordenadas de la mas lenta a la mas rapida. TraceQL no ordena por duracion, por eso el umbral: acota a lo que vale la pena mirar. Clic en el identificador abre la traza, y desde ella el boton de registros lleva a los de esa peticion (recorrido 2).",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "datasource": { "type": "tempo", "uid": "gsp-tempo" },
+      "targets": [
+        {
+          "refId": "A",
+          "queryType": "traceql",
+          "query": "{ duration > $umbral }",
+          "limit": 20,
+          "tableType": "traces"
+        }
+      ],
+      "options": {
+        "showHeader": true,
+        "sortBy": [{ "displayName": "Duration", "desc": true }]
+      },
+      "fieldConfig": { "defaults": {}, "overrides": [] }
+    },
+    {
+      "id": 3,
+      "type": "logs",
+      "title": "Errores y advertencias recientes",
+      "description": "Warning, Error y Fatal de la API, lo mas reciente arriba. Al desplegar una linea, el boton 'Ver traza' abre la peticion completa en Tempo (recorrido 1).",
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 8 },
+      "datasource": { "type": "loki", "uid": "gsp-loki" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "{servicio=\"api\", nivel=~\"Warning|Error|Fatal\"}",
+          "queryType": "range"
+        }
+      ],
+      "options": {
+        "showTime": true,
+        "showLabels": false,
+        "showCommonLabels": false,
+        "wrapLogMessage": true,
+        "prettifyLogMessage": false,
+        "enableLogDetails": true,
+        "dedupStrategy": "none",
+        "sortOrder": "Descending"
+      }
+    },
+    {
+      "id": 4,
+      "type": "row",
+      "title": "Una peticion: pega su TraceId en el campo de arriba",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 18 },
+      "collapsed": false,
+      "panels": []
+    },
+    {
+      "id": 5,
+      "type": "logs",
+      "title": "Registros de la peticion",
+      "description": "Todas las lineas con el TraceId del campo de arriba, en orden cronologico: la historia de la peticion contada por la aplicacion. Vacio si el campo esta vacio. Si con un TraceId valido no aparece nada, amplia el intervalo de tiempo: los registros solo se buscan dentro de el.",
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 19 },
+      "datasource": { "type": "loki", "uid": "gsp-loki" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "{servicio=\"api\"} | TraceId != \"\" | TraceId = \"$traceid\"",
+          "queryType": "range"
+        }
+      ],
+      "options": {
+        "showTime": true,
+        "showLabels": false,
+        "showCommonLabels": false,
+        "wrapLogMessage": true,
+        "prettifyLogMessage": false,
+        "enableLogDetails": true,
+        "dedupStrategy": "none",
+        "sortOrder": "Ascending"
+      }
+    },
+    {
+      "id": 6,
+      "type": "traces",
+      "title": "Traza de la peticion",
+      "description": "La traza completa del TraceId de arriba: el tramo HTTP y, debajo, las consultas a PostgreSQL y las llamadas salientes, cada una con su duracion. Responde donde se fue el tiempo.",
+      "gridPos": { "h": 14, "w": 24, "x": 0, "y": 29 },
+      "datasource": { "type": "tempo", "uid": "gsp-tempo" },
+      "targets": [
+        {
+          "refId": "A",
+          "queryType": "traceql",
+          "query": "$traceid"
+        }
+      ]
+    }
+  ]
+}

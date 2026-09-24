@@ -29,6 +29,9 @@ if ($Purgar) {
     Write-Host "  gsp_prometheus_datos   (historico de metricas)"
     Write-Host "  gsp_alertmanager_datos (silencios y estado de alarmas)"
     Write-Host "  gsp_grafana_datos      (estado de Grafana)"
+    Write-Host "  gsp_loki_datos         (registros de la API)"
+    Write-Host "  gsp_tempo_datos        (trazas de la API)"
+    Write-Host "  gsp_alloy_datos        (posicion de lectura del recolector)"
     Write-Host ""
     Write-Host "Esto NO se puede deshacer." -ForegroundColor Yellow
     $respuesta = Read-Host "Escribe PURGAR para confirmar"
