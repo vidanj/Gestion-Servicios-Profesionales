@@ -1,0 +1,37 @@
+# Origen de datos de trazas. Mismo criterio que prometheus.yml y loki.yml: nombre
+# y uid iguales, y uid fijo porque lo referencian los tableros y el enlace que
+# sale de cada linea de registro en Loki.
+
+apiVersion: 1
+
+datasources:
+  - name: gsp-tempo
+    uid: gsp-tempo
+    type: tempo
+    access: proxy
+    url: http://tempo:3200
+    isDefault: false
+    editable: false
+    jsonData:
+      # Pareja de `stream_over_http_enabled: true` en monitoring/tempo/tempo.yml:
+      # los resultados de busqueda llegan conforme se encuentran, sin esperar a la
+      # consulta completa.
+      streamingEnabled:
+        search: true
+
+      # Traza -> registros. Desde cualquier tramo de una traza, un boton abre en
+      # Loki las lineas que la API escribio durante esa misma peticion.
+      tracesToLogsV2:
+        datasourceUid: gsp-loki
+        # Margen alrededor del tramo. Cubre lineas escritas justo antes de abrir
+        # el tramo o justo despues de cerrarlo, y un desfase menor entre relojes.
+        # Mas margen solo encarece la consulta sin encontrar nada nuevo.
+        spanStartTimeShift: "-1m"
+        spanEndTimeShift: "1m"
+        # Consulta propia en lugar de la que Grafana arma sola: la automatica
+        # busca el identificador como texto dentro de la linea; esta filtra por el
+        # metadato estructurado que Alloy extrae, que es exacto y no depende de
+        # como este escrito el JSON.
+        customQuery: true
+        # Doble $$: ver el comentario del mismo caso en loki.yml.
+        query: '{servicio="api"} | TraceId = "$${__trace.traceId}"'

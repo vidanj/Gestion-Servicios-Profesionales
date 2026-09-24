@@ -7,6 +7,10 @@ name: Monitoreo — Validación del stack
 # aplicacion, genera trafico y comprueba que las metricas del catalogo llegan de verdad.
 # Un tablero aprovisionado sin errores puede estar permanentemente vacio si un nombre de
 # metrica cambio, y eso la validacion de sintaxis no lo ve.
+#
+# Desde la spec 009 hace lo mismo con la trazabilidad: valida Loki, Tempo y Alloy con sus
+# propios validadores y comprueba que los registros llegan con nivel y que su TraceId
+# existe como traza.
 
 on:
   workflow_dispatch:
@@ -38,6 +42,11 @@ env:
   PROMETHEUS: prom/prometheus:v3.14.0
   ALERTMANAGER: prom/alertmanager:v0.34.1
   COLECTOR: otel/opentelemetry-collector-contrib:0.161.0
+  # Spec 009. Mismas versiones que monitoring/docker-compose.yml: se valida con la
+  # herramienta que va a leer el archivo, no con una parecida.
+  LOKI: grafana/loki:3.6.17
+  TEMPO: grafana/tempo:3.0.3
+  ALLOY: grafana/alloy:v1.19.2
 
 jobs:
   validar-configuracion:
@@ -82,6 +91,28 @@ jobs:
           docker run --rm \
             -v "${{ github.workspace }}/monitoring/otel-collector:/etc/otel:ro" \
             "$COLECTOR" validate --config=/etc/otel/config.yaml
+      
+      # Spec 009. Cada herramienta con su propio validador, no con un analizador de YAML
+      # generico: lo que importa no es que el archivo sea YAML valido sino que la
+      # herramienta acepte cada clave. Tempo 3.0 en particular rechaza claves de 2.x que
+      # un analizador generico daria por buenas.
+      - name: Configuración de Loki
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}/monitoring/loki:/etc/loki:ro" \
+            "$LOKI" -config.file=/etc/loki/loki.yml -verify-config
+
+      - name: Configuración de Tempo
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}/monitoring/tempo:/etc/tempo:ro" \
+            "$TEMPO" -config.file=/etc/tempo/tempo.yml -config.verify
+
+      - name: Configuración de Alloy
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}/monitoring/alloy:/etc/alloy:ro" \
+            "$ALLOY" validate /etc/alloy/config.alloy
 
       - name: Tableros de Grafana
         run: |
@@ -95,11 +126,14 @@ jobs:
             # Un uid de origen de datos mal escrito se aprovisiona SIN ERROR y el tablero
             # aparece vacio. Es el fallo mas dificil de diagnosticar del entorno, y por eso
             # se comprueba aqui en lugar de descubrirlo mirando paneles en blanco.
+            # Desde la spec 009 hay tres origenes, y los tres siguen la misma convencion:
+            # uid = "gsp-" + tipo. Cualquier otro valor apunta a un origen que no existe.
             distintos=$(jq -r '[.. | objects | select(has("uid") and has("type"))
-                                | select(.type == "prometheus") | .uid]
-                               | map(select(. != "gsp-prometheus")) | length' "$tablero")
-            if [ "$distintos" != "0" ]; then
-              echo "::error::$tablero referencia un origen de datos distinto de gsp-prometheus"
+                                | select(.type == "prometheus" or .type == "loki" or .type == "tempo")
+                                | select(.uid != "gsp-" + .type) | "\(.type)=\(.uid)"]
+                               | unique | join(", ")' "$tablero")
+            if [ -n "$distintos" ]; then
+              echo "::error::$tablero referencia origenes de datos inexistentes: $distintos"
               fallos=$((fallos+1))
             else
               echo "  OK $(basename "$tablero")"
@@ -165,6 +199,9 @@ jobs:
           espera "prometheus"   "http://localhost:9090/-/ready"
           espera "alertmanager" "http://localhost:9093/-/ready"
           espera "grafana"      "http://localhost:3001/api/health"
+          espera "loki"         "http://localhost:3100/ready"
+          espera "tempo"        "http://localhost:3200/ready"
+          espera "alloy"        "http://localhost:12345/-/ready"
 
       - name: Levantar PostgreSQL y la API en la red del monitoreo
         run: |
@@ -182,7 +219,11 @@ jobs:
             sleep 5
           done
 
+          # La etiqueta imita la que Compose pone en un equipo de trabajo. Alloy
+          # selecciona la API por ella (monitoring/alloy/config.alloy); sin ella, en CI
+          # Loki quedaria vacio y la verificacion de trazabilidad fallaria.
           docker run -d --name api --network gsp-observabilidad -p 10000:10000 \
+            --label com.docker.compose.service=api \
             -e ASPNETCORE_URLS=http://+:10000 \
             -e DB_HOST=gsp-postgres -e DB_PORT=5432 \
             -e DB_NAME="$DB_NAME" -e DB_USER="$DB_USER" -e DB_PASSWORD="$DB_PASSWORD" \
@@ -236,6 +277,12 @@ jobs:
           docker logs gsp-otel-collector --tail 40 2>&1 || true
           echo "── Métricas publicadas por el colector ──"
           curl -sS http://localhost:8889/metrics 2>/dev/null | head -40 || true
+          echo "── Loki ──"
+          docker logs gsp-loki --tail 30 2>&1 || true
+          echo "── Tempo ──"
+          docker logs gsp-tempo --tail 30 2>&1 || true
+          echo "── Alloy ──"
+          docker logs gsp-alloy --tail 30 2>&1 || true
 
       - name: Limpiar
         if: always()

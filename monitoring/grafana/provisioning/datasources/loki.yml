@@ -1,0 +1,40 @@
+# Origen de datos de registros. Un archivo por herramienta, igual que prometheus.yml.
+#
+# El identificador es fijo y no generado: los tableros lo referencian por `uid`, y
+# si Grafana lo asignara al azar en cada aprovisionamiento, el JSON del tablero
+# apuntaria a un origen inexistente en cada equipo.
+
+apiVersion: 1
+
+datasources:
+  - name: gsp-loki
+    uid: gsp-loki
+    type: loki
+    # Grafana consulta a Loki por la red interna; el navegador nunca habla con el
+    # 3100 directamente. Es lo que permite no publicar Loki al exterior.
+    access: proxy
+    url: http://loki:3100
+    isDefault: false
+    # Se aprovisiona como codigo: editarlo desde la interfaz crearia una diferencia
+    # entre lo que se ve y lo que esta versionado. Mismo criterio que la spec 008.
+    editable: false
+    jsonData:
+      # Tope de lineas por consulta. Mas que esto no se lee en pantalla y si
+      # castiga al navegador en los paneles de registros.
+      maxLines: 1000
+      timeout: 60
+      # Registro -> traza. Convierte el identificador de traza de cada linea en un
+      # boton que abre esa traza en Tempo.
+      derivedFields:
+        - name: TraceId
+                    # `label` y no `regex`: el identificador no se busca dentro del texto de
+          # la linea, se toma del metadato estructurado `TraceId` que extrae
+          # Alloy (research.md, D3).
+          matcherType: label
+          matcherRegex: TraceId
+          datasourceUid: gsp-tempo
+          # Doble $$: Grafana sustituye $VAR y ${VAR} con variables de entorno al
+          # leer el aprovisionamiento. Con uno solo, esto quedaria vacio y el
+          # enlace abriria una busqueda sin identificador, sin ningun error.
+          url: "$${__value.raw}"
+          urlDisplayLabel: Ver traza

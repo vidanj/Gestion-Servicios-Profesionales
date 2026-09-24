@@ -1,0 +1,114 @@
+// Recolector de registros. Lee la salida del contenedor de la API por la API de
+// Docker y la empuja a Loki.
+//
+// Por que Alloy y no Promtail: Promtail llego a fin de vida el 2 de marzo de 2026
+// y su codigo se fusiono en Alloy. Por que por la API de Docker y no montando
+// /var/lib/docker/containers: en Docker Desktop para Windows ese directorio vive
+// dentro de la maquina virtual y no es montable desde el anfitrion.
+//
+// Version verificada el 2026-09-24: grafana/alloy:v1.19.2.
+//
+// Este archivo NO es YAML. La sintaxis de Alloy usa bloques y atributos con `=`;
+// el validador de YAML de los demas archivos no aplica aqui.
+
+logging {
+  // Mismo criterio que Loki: en `info` Alloy narra cada ciclo de descubrimiento y
+  // tapa la salida de las demas herramientas al arrancar el entorno.
+  level  = "warn"
+  format = "logfmt"
+}
+
+// --- Descubrimiento ---------------------------------------------------------
+// Lista todos los contenedores del anfitrion. El filtrado viene despues.
+discovery.docker "contenedores" {
+  host             = "unix:///var/run/docker.sock"
+  refresh_interval = "15s"
+}
+
+// --- Seleccion y etiquetado -------------------------------------------------
+discovery.relabel "api" {
+  targets = discovery.docker.contenedores.targets
+
+  // Solo la API (FR-002). Sin esta regla entrarian tambien Prometheus, Grafana,
+  // el colector y el proxy, y el visor se llenaria de ruido del propio entorno.
+  //
+  // Se filtra por el servicio de Compose y no por el nombre del contenedor, que
+  // Compose deriva del nombre de la carpeta del proyecto. En la integracion
+  // continua la API no corre con Compose: el flujo le pone esta misma etiqueta en
+  // su `docker run`, para que la regla sea identica en ambos entornos.
+  rule {
+    source_labels = ["__meta_docker_container_label_com_docker_compose_service"]
+    regex         = "api"
+    action        = "keep"
+  }
+
+  // FR-005: esta es una de las dos unicas etiquetas. La otra, `nivel`, se pone
+  // en loki.process. El nombre del contenedor NO es etiqueta: cambia en cada
+  // recreacion y abriria un flujo nuevo cada vez (data-model.md, 1.3).
+  rule {
+    source_labels = ["__meta_docker_container_label_com_docker_compose_service"]
+    target_label  = "servicio"
+  }
+}
+
+// --- Lectura ----------------------------------------------------------------
+loki.source.docker "api" {
+  host             = "unix:///var/run/docker.sock"
+  targets          = discovery.relabel.api.output
+  refresh_interval = "15s"
+  forward_to       = [loki.process.gsp.receiver]
+}
+
+// --- Transformacion ---------------------------------------------------------
+// Aqui se decide que va al indice y que se queda en la linea. Las etiquetas de
+// Loki SON el indice: cada combinacion distinta crea un flujo nuevo. Por eso solo
+// se promueven campos de dominio cerrado.
+loki.process "gsp" {
+  forward_to = [loki.write.gsp.receiver]
+
+  // Formato compacto de Serilog: @t marca de tiempo, @l nivel. TraceId y SpanId
+  // los anade el enriquecedor de OpenTelemetry. Confirmar contra una linea real
+  // antes de cerrar el PR (T002). Una linea que no es JSON no se descarta: este
+  // paso falla en silencio y la linea sigue su camino sin campos extraidos.
+  stage.json {
+    expressions = {
+      marca   = "\"@t\"",
+      nivel   = "\"@l\"",
+      TraceId = "TraceId",
+      SpanId  = "SpanId",
+    }
+  }
+
+  // El formato compacto OMITE @l cuando el nivel es Information (research.md, D4).
+  // Se rellena solo si la linea es JSON de Serilog, reconocible por @t, que esta
+  // en todas. Una linea que no es JSON -una traza de pila al arrancar, por
+  // ejemplo- se queda sin nivel en lugar de disfrazarse de Information (FR-006).
+  stage.template {
+    source   = "nivel"
+    template = "{{ if .Value }}{{ .Value }}{{ else if .marca }}Information{{ end }}"
+  }
+
+  // Dominio cerrado: Serilog tiene seis niveles y no mas. Si la plantilla dejo el
+  // valor vacio, la etiqueta simplemente no se pone.
+  stage.labels {
+    values = { nivel = "nivel" }
+  }
+
+  // FR-004 y research.md D3: metadato, no etiqueta. Unicos por peticion: como
+  // etiqueta crearian un flujo por peticion. Como metadato siguen siendo
+  // filtrables y son la clave del enlace hacia Tempo.
+  stage.structured_metadata {
+    values = {
+      TraceId = "TraceId",
+      SpanId  = "SpanId",
+    }
+  }
+}
+
+// --- Escritura --------------------------------------------------------------
+loki.write "gsp" {
+  endpoint {
+    // Por nombre de servicio en la red gsp-observabilidad, no por localhost.
+    url = "http://loki:3100/loki/api/v1/push"
+  }
+}

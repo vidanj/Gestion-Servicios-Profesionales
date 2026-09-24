@@ -121,6 +121,92 @@ services:
       - "9115:9115"
     networks: [observabilidad]
 
+  loki:
+    image: grafana/loki:3.6.17
+    container_name: gsp-loki
+    restart: unless-stopped
+    # Tope para que un pico de consultas no deje sin memoria al resto del entorno.
+    # El consumo medido se anota en monitoring/README.md (T028).
+    mem_limit: 512m
+    command: ["-config.file=/etc/loki/loki.yml"]
+    volumes:
+      - ./loki/loki.yml:/etc/loki/loki.yml:ro
+      - loki_datos:/loki
+    ports:
+      # Publicado para diagnostico manual y para el guion de verificacion; quien
+      # lo consulta de verdad es Grafana, por la red interna.
+      - "3100:3100"
+    networks: [observabilidad]
+    healthcheck:
+      # Desde la 3.6 la imagen de Loki es distroless: no trae shell ni wget, asi que
+      # no puede consultar su propio /ready. Mismo criterio que el colector y Tempo:
+      # se comprueba que el binario responde. Que Loki este listo de verdad lo
+      # comprueban desde fuera los guiones de arranque y de verificacion.
+      test: ["CMD", "/usr/bin/loki", "-version"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+  
+  alloy:
+    image: grafana/alloy:v1.19.2
+    container_name: gsp-alloy
+    restart: unless-stopped
+    mem_limit: 256m
+    # Alloy corre como usuario `alloy` dentro del contenedor y el socket de Docker
+    # pertenece a root. Sin esto no descubre ni un solo contenedor y falla en
+    # silencio: arranca sano y no recolecta nada.
+    user: root
+    command:
+      - run
+      - --server.http.listen-addr=0.0.0.0:12345
+      - --storage.path=/var/lib/alloy/datos
+      - /etc/alloy/config.alloy
+    volumes:
+      - ./alloy/config.alloy:/etc/alloy/config.alloy:ro
+      # Solo lectura. Aun asi da acceso efectivo al demonio de Docker: ver la nota
+      # de riesgo en monitoring/README.md.
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      # Posiciones de lectura. Sin persistirlas, cada reinicio de Alloy reenviaria
+      # el historico completo de cada contenedor y duplicaria los registros.
+      - alloy_datos:/var/lib/alloy/datos
+    ports:
+      # Interfaz de diagnostico de Alloy: muestra los componentes, sus destinos y
+      # cuantas lineas ha enviado cada uno. Util cuando no llega nada a Loki.
+      - "12345:12345"
+    depends_on:
+      - loki
+    networks: [observabilidad]
+    healthcheck:
+      test: ["CMD", "/bin/alloy", "--version"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  tempo:
+    image: grafana/tempo:3.0.3
+    container_name: gsp-tempo
+    restart: unless-stopped
+    mem_limit: 512m
+    command: ["-config.file=/etc/tempo/tempo.yml"]
+    volumes:
+      - ./tempo/tempo.yml:/etc/tempo/tempo.yml:ro
+      - tempo_datos:/var/tempo
+    ports:
+      # Solo la API de consulta, para diagnostico y para el guion de verificacion.
+      # El 4317 de Tempo NO se publica: el colector ya ocupa el 4317 del anfitrion
+      # y publicarlo aqui haria fallar el arranque con "port is already allocated".
+      # El colector llega a Tempo por la red interna, como tempo:4317.
+      - "3200:3200"
+    networks: [observabilidad]
+    healthcheck:
+      test: ["CMD", "/tempo", "-version"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
 volumes:
   prometheus_datos:
     name: gsp_prometheus_datos
@@ -128,6 +214,12 @@ volumes:
     name: gsp_alertmanager_datos
   grafana_datos:
     name: gsp_grafana_datos
+  loki_datos:
+    name: gsp_loki_datos
+  alloy_datos:
+    name: gsp_alloy_datos
+  tempo_datos:
+    name: gsp_tempo_datos
 
 networks:
   observabilidad:

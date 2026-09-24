@@ -1,4 +1,5 @@
-# Colector de telemetria: recibe OTLP de la API y lo republica en formato Prometheus.
+# Colector de telemetria: recibe OTLP de la API, republica las metricas en formato
+# Prometheus y reenvia las trazas a Tempo.
 #
 # Por que existe esta pieza, en lugar de que la API exponga /metrics directamente:
 # el exportador de Prometheus en proceso (OpenTelemetry.Exporter.Prometheus.AspNetCore)
@@ -52,10 +53,19 @@ exporters:
     metric_expiration: 5m
     enable_open_metrics: true
 
-  # Destino provisional de las trazas. La aplicacion ya las produce e instrumenta
-  # desde el issue #124; aqui solo se registran.
-  debug:
-    verbosity: basic
+    # Almacen de trazas (spec 009). Hasta esta entrega las trazas se imprimian en la
+  # consola del colector y se descartaban; la aplicacion ya las producia desde el
+  # issue #124.
+  #
+  # `otlp_grpc` y no `otlp`: desde la 0.144 el segundo es un alias obsoleto que
+  # registra una advertencia en cada arranque.
+  otlp_grpc/tempo:
+    # Por nombre de servicio en la red gsp-observabilidad. Tempo no publica su
+    # 4317 en el anfitrion: ese puerto lo ocupa este mismo colector.
+    endpoint: tempo:4317
+    # Trafico dentro de la red interna de Docker, sin salir del equipo.
+    tls:
+      insecure: true
 
 extensions:
   health_check:
@@ -69,16 +79,14 @@ service:
       processors: [memory_limiter, batch]
       exporters: [prometheus]
 
-    # PUNTO 2 DEL CASO DE ESTUDIO -- visor de trazabilidad.
-    # La tuberia existe y recibe de verdad; lo que falta es el almacen de trazas y
-    # su interfaz de consulta. Este es el punto exacto donde se conecta: se anade el
-    # exportador correspondiente a esta lista y nada mas cambia, porque la API ya
-    # esta exportando trazas de ASP.NET Core, HttpClient y el driver de PostgreSQL.
-    # No se desarrolla en esta entrega.
+    # PUNTO 2 DEL CASO DE ESTUDIO -- visor de trazabilidad (spec 009).
+    # Trazas de ASP.NET Core, HttpClient y el driver de PostgreSQL hacia Tempo. Lo
+    # unico que cambia respecto a la spec 008 es el destino: receptor y procesadores
+    # siguen iguales, y la API no se toco.
     traces:
       receivers: [otlp]
       processors: [memory_limiter, batch]
-      exporters: [debug]
+      exporters: [otlp_grpc/tempo]
 
   telemetry:
     metrics:

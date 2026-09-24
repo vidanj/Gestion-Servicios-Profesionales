@@ -36,6 +36,9 @@ ATENCION: se van a eliminar los volumenes del monitoreo.
   gsp_prometheus_datos   (historico de metricas)
   gsp_alertmanager_datos (silencios y estado de alarmas)
   gsp_grafana_datos      (estado de Grafana)
+  gsp_loki_datos         (registros de la API)
+  gsp_tempo_datos        (trazas de la API)
+  gsp_alloy_datos        (posicion de lectura del recolector)
 
 Esto NO se puede deshacer.
 AVISO
