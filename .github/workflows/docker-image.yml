@@ -47,17 +47,17 @@ jobs:
 
     steps:
       - name: Checkout del repositorio
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Configurar Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       # ── Construcción ─────────────────────────────────────────────
       # load: true deja la imagen en el daemon local para poder arrancarla.
       # No se publica en ningun registro: hoy Render construye por su cuenta, asi que
       # subir la imagen a un registro no desplegaria nada.
       - name: Construir la imagen
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .
           load: true
