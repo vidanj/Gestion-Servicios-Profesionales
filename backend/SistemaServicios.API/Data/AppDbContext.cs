@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using SistemaServicios.API.Auditoria;
 using SistemaServicios.API.Models;
 
 namespace SistemaServicios.API.Data;
@@ -25,6 +26,8 @@ public class AppDbContext : DbContext
     public DbSet<UserLog> UserLogs { get; set; }
 
     public DbSet<StoredFile> StoredFiles { get; set; }
+
+    public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
 
     // Configuración especial de relaciones (Fluent API)
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -105,5 +108,17 @@ public class AppDbContext : DbContext
         // El reemplazo de avatar busca por dueño: sin índice sería un scan completo
         // de una tabla que guarda binarios.
         modelBuilder.Entity<StoredFile>().HasIndex(f => f.OwnerUserId);
+
+        modelBuilder.Entity<AuditLog>(entity =>
+        {
+            entity.ToTable("audit_logs");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.OldValues).HasColumnType("jsonb");
+            entity.Property(e => e.NewValues).HasColumnType("jsonb");
+            entity.Property(e => e.ChangedColumns).HasColumnType("jsonb");
+            entity.HasIndex(e => e.UserId);
+            entity.HasIndex(e => e.CreatedAtUtc);
+            entity.HasIndex(e => e.TraceId);
+        });
     }
 }
