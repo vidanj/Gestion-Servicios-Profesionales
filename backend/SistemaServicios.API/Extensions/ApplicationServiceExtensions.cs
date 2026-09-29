@@ -73,7 +73,6 @@ public static class ApplicationServiceExtensions
         var connectionString =
             $"Host={dbHost};Port={dbPort};Database={dbName};Username={dbUser};Password={dbPassword}";
 
-        services.AddDbContext<AppDbContext>(options => options.UseNpgsql(connectionString));
         services.AddHttpContextAccessor();
         services.AddSingleton<AuditSaveChangesInterceptor>();
         services.AddDbContext<AppDbContext>(
