@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using SistemaServicios.API.Auditoria;
 using SistemaServicios.API.Data;
 using SistemaServicios.API.Interfaces;
 using SistemaServicios.API.Repositories;
@@ -73,6 +74,16 @@ public static class ApplicationServiceExtensions
             $"Host={dbHost};Port={dbPort};Database={dbName};Username={dbUser};Password={dbPassword}";
 
         services.AddDbContext<AppDbContext>(options => options.UseNpgsql(connectionString));
+        services.AddHttpContextAccessor();
+        services.AddSingleton<AuditSaveChangesInterceptor>();
+        services.AddDbContext<AppDbContext>(
+            (serviceProvider, options) =>
+                options
+                    .UseNpgsql(connectionString)
+                    .AddInterceptors(
+                        serviceProvider.GetRequiredService<AuditSaveChangesInterceptor>()
+                    )
+        );
 
         // Instancia única: un Meter es un recurso de proceso, y crear uno por petición
         // multiplicaría los ámbitos y la memoria sin ganar nada. Va antes de AddTelemetry
