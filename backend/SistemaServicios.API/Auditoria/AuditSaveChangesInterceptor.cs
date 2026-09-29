@@ -100,16 +100,9 @@ public class AuditSaveChangesInterceptor(IHttpContextAccessor httpContextAccesso
             return null;
         }
 
-        foreach (var claimType in claimTypes)
-        {
-            var value = user.FindFirst(claimType)?.Value;
-            if (!string.IsNullOrEmpty(value))
-            {
-                return value;
-            }
-        }
-
-        return null;
+        return claimTypes
+            .Select(claimType => user.FindFirst(claimType)?.Value)
+            .FirstOrDefault(value => !string.IsNullOrEmpty(value));
     }
 
     private static string GetEntityId(EntityEntry entry)
